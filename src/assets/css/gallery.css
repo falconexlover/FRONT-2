@@ -1,0 +1,49 @@
+/**
+ * Стили для галереи
+ * Содержит основные стили для компонентов галереи
+ */
+
+/* Анимации */
+.fade-in {
+  animation: fadeIn 0.4s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Дополнительные стили для галереи */
+.gallery-animation-enter {
+  opacity: 0;
+}
+
+.gallery-animation-enter-active {
+  opacity: 1;
+  transition: opacity 300ms;
+}
+
+.gallery-animation-exit {
+  opacity: 1;
+}
+
+.gallery-animation-exit-active {
+  opacity: 0;
+  transition: opacity 300ms;
+}
+
+/* Адаптивные медиа-запросы */
+@media (max-width: 768px) {
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+} 
