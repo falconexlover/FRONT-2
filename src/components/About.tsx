@@ -1,7 +1,11 @@
 import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { loadHomePageContent } from '../utils/homePageUtils';
+import { HomePageContent } from '../types/HomePage';
+
+interface AboutProps {
+  content: HomePageContent['about'];
+}
 
 const AboutSection = styled.section`
   padding: 6rem 2rem;
@@ -146,10 +150,11 @@ const SectionTitle = styled.div`
   }
 `;
 
-const About: React.FC = () => {
-  // Загружаем контент из localStorage
-  const { about } = loadHomePageContent();
-  
+const About: React.FC<AboutProps> = ({ content }) => {
+  const title = content?.title || 'О Лесном Дворике';
+  const textContent = content?.content || 'Информация о нашем санатории скоро появится здесь.';
+  const imageUrl = content?.image || '/images/about-placeholder.jpg';
+
   return (
     <AboutSection id="about">
       <SectionTitle>
@@ -159,7 +164,7 @@ const About: React.FC = () => {
           transition={{ duration: 0.7 }}
           viewport={{ once: true, amount: 0.3 }}
         >
-          {about.title}
+          {title}
         </motion.h2>
       </SectionTitle>
       
@@ -171,7 +176,7 @@ const About: React.FC = () => {
           transition={{ duration: 0.7, delay: 0.2 }}
           viewport={{ once: true, amount: 0.3 }}
         >
-          {about.content.split('\n\n').map((paragraph, index) => (
+          {textContent.split('\n\n').map((paragraph, index) => (
             <p key={index}>{paragraph}</p>
           ))}
           <AboutButton href="#rooms">Посмотреть номера</AboutButton>
@@ -183,7 +188,7 @@ const About: React.FC = () => {
           transition={{ duration: 0.7 }}
           viewport={{ once: true, amount: 0.3 }}
         >
-          <img src={about.image} alt="О гостинице Лесной дворик" />
+          <img src={imageUrl} alt="О гостинице Лесной дворик" />
         </AboutImage>
       </AboutContent>
     </AboutSection>

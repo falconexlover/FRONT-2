@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
 import ImageUploader from './ImageUploader';
-import { useImageUpload, UploadedImage } from '../utils/imageUpload';
+import { galleryService } from '../utils/api';
+import { toast } from 'react-toastify';
 
 const UploadManagerContainer = styled.div`
   padding: 2rem;
@@ -43,127 +43,47 @@ const CategoryButton = styled.button<{ active: boolean }>`
     transform: translateY(-3px);
     box-shadow: var(--shadow-sm);
   }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 `;
 
-const UploadedImagesGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1.5rem;
+const UploadStatusList = styled.ul`
   margin-top: 2rem;
+  list-style: none;
+  padding: 0;
+  max-height: 40vh;
+  overflow-y: auto;
 `;
 
-const ImageCard = styled(motion.div)`
-  position: relative;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  transition: var(--transition);
-  
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-md);
-  }
-  
-  img {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-  }
-  
-  .card-content {
-    padding: 1rem;
-    background-color: white;
-  }
-  
-  h4 {
-    margin-bottom: 0.5rem;
-    font-size: 1rem;
-    color: var(--dark-color);
-  }
-  
-  p {
-    font-size: 0.9rem;
-    color: var(--text-color);
-    margin-bottom: 1rem;
-  }
-  
-  .card-actions {
-    display: flex;
-    justify-content: space-between;
-  }
-`;
-
-const ActionButton = styled.button`
-  background: none;
-  border: none;
-  color: var(--primary-color);
-  cursor: pointer;
-  transition: var(--transition);
-  font-size: 0.9rem;
-  
-  &:hover {
-    color: var(--accent-color);
-    text-decoration: underline;
-  }
-  
-  &.delete {
-    color: #d9534f;
-    
-    &:hover {
-      color: #c9302c;
-    }
-  }
-`;
-
-const DeleteButton = styled.button`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background-color: rgba(255, 255, 255, 0.8);
-  border: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
+const UploadStatusItem = styled.li<{ status: 'pending' | 'uploading' | 'success' | 'error' }>`
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: var(--transition);
-  color: #d9534f;
-  
-  &:hover {
-    background-color: rgba(255, 255, 255, 1);
-    transform: scale(1.1);
-  }
-`;
+  justify-content: space-between;
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: var(--radius-sm);
+  background-color: white;
+  border: 1px solid #eee;
+  font-size: 0.9rem;
 
-const ImageDetails = styled.div`
-  margin-top: 1rem;
-  
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-    color: var(--dark-color);
+  .file-info {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 1rem;
   }
-  
-  input, textarea {
-    width: 100%;
-    padding: 0.7rem;
-    border: 1px solid #eee;
-    border-radius: var(--radius-sm);
-    margin-bottom: 1rem;
-    font-family: inherit;
-    
-    &:focus {
-      outline: none;
-      border-color: var(--primary-color);
-    }
-  }
-  
-  textarea {
-    min-height: 100px;
-    resize: vertical;
+
+  .file-status {
+    font-weight: 600;
+    white-space: nowrap;
+    color: ${props =>
+      props.status === 'success' ? 'var(--secondary-color)' :
+      props.status === 'error' ? '#e53935' :
+      props.status === 'pending' ? 'gray' :
+      'var(--text-color)'};
   }
 `;
 
@@ -175,82 +95,115 @@ const CATEGORIES = [
   { id: 'party', label: 'Детские праздники' }
 ];
 
+interface FileUploadStatus {
+  id: string;
+  name: string;
+  status: 'pending' | 'uploading' | 'success' | 'error';
+  message?: string;
+}
+
 interface GalleryUploadManagerProps {
-  onImageUpload?: (images: UploadedImage[]) => void;
+  onImageUpload: () => void;
 }
 
 const GalleryUploadManager: React.FC<GalleryUploadManagerProps> = ({ onImageUpload }) => {
   const [selectedCategory, setSelectedCategory] = useState('rooms');
-  const [editingImage, setEditingImage] = useState<string | null>(null);
-  const [imageDetails, setImageDetails] = useState<{
-    title: string;
-    description: string;
-  }>({ title: '', description: '' });
-  
-  const { 
-    uploadedImages, 
-    isUploading, 
-    uploadError, 
-    uploadImages, 
-    removeImage,
-    updateImageDetails 
-  } = useImageUpload();
-  
+  const [uploadQueue, setUploadQueue] = useState<FileUploadStatus[]>([]);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [overallError, setOverallError] = useState<string | null>(null);
+
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
   };
   
-  const handleImageUpload = async (files: File[], category: string) => {
-    const newImages = await uploadImages(files, category);
-    if (onImageUpload && newImages.length > 0) {
-      onImageUpload(newImages);
+  const handleUpload = useCallback(async (files: File[], category: string) => {
+    if (files.length === 0) return;
+
+    setIsUploading(true);
+    setOverallError(null);
+    
+    const initialQueue: FileUploadStatus[] = files.map((file, index) => ({
+      id: `${Date.now()}-${index}-${file.name}`,
+      name: file.name,
+      status: 'pending',
+    }));
+    setUploadQueue(initialQueue);
+
+    let uploadSuccessCount = 0;
+    let uploadErrorCount = 0;
+
+    const updateFileStatus = (id: string, status: FileUploadStatus['status'], message?: string) => {
+      setUploadQueue(prev => 
+        prev.map(item => item.id === id ? { ...item, status, message } : item)
+      );
+    };
+
+    const uploadPromises = initialQueue.map(async (fileStatus) => {
+      const fileIndex = files.findIndex(f => f.name === fileStatus.name);
+      const file = files[fileIndex];
+
+      if (!file) {
+        console.error(`File not found for status: ${fileStatus.name}`);
+        updateFileStatus(fileStatus.id, 'error', 'Внутренняя ошибка: файл не найден');
+        uploadErrorCount++;
+        return;
+      }
+
+      updateFileStatus(fileStatus.id, 'uploading');
+      
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('category', category);
+      
+      try {
+        await galleryService.uploadImage(formData);
+        updateFileStatus(fileStatus.id, 'success');
+        uploadSuccessCount++;
+      } catch (err: any) {
+        const message = err.message || 'Ошибка загрузки';
+        console.error(`Ошибка загрузки файла ${fileStatus.name}:`, err);
+        updateFileStatus(fileStatus.id, 'error', message);
+        uploadErrorCount++;
+        setOverallError('При загрузке некоторых файлов произошла ошибка.');
+      }
+    });
+
+    await Promise.all(uploadPromises);
+
+    setIsUploading(false);
+
+    if (uploadErrorCount === 0 && uploadSuccessCount > 0) {
+      const imageWord = uploadSuccessCount === 1 ? 'изображение' : (uploadSuccessCount >= 2 && uploadSuccessCount <= 4) ? 'изображения' : 'изображений';
+      toast.success(`${uploadSuccessCount} ${imageWord} успешно загружено!`);
+    } else if (uploadSuccessCount > 0 && uploadErrorCount > 0) {
+      toast.warning(`Загружено ${uploadSuccessCount} из ${files.length} изображений. Проверьте ошибки.`);
+    } else if (uploadErrorCount > 0 && uploadSuccessCount === 0) {
+      toast.error(`Не удалось загрузить изображения. Проверьте ошибки.`);
     }
-    return newImages;
-  };
-  
-  const handleDeleteImage = (id: string) => {
-    removeImage(id);
-    if (editingImage === id) {
-      setEditingImage(null);
+    
+    if (onImageUpload) {
+      onImageUpload();
     }
-  };
-  
-  const handleEditClick = (image: UploadedImage) => {
-    setEditingImage(image.id);
-    setImageDetails({
-      title: image.title,
-      description: image.description
-    });
-  };
-  
-  const handleDetailChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setImageDetails({
-      ...imageDetails,
-      [e.target.name]: e.target.value
-    });
-  };
-  
-  const handleSaveDetails = (id: string) => {
-    updateImageDetails(id, {
-      title: imageDetails.title,
-      description: imageDetails.description
-    });
-    setEditingImage(null);
-  };
-  
-  // Фильтрация изображений по выбранной категории
-  const filteredImages = uploadedImages.filter(img => img.category === selectedCategory);
+
+    setTimeout(() => {
+      if (uploadErrorCount === 0) {
+        setUploadQueue([]);
+      }
+    }, 5000);
+
+  }, [onImageUpload]);
   
   return (
     <UploadManagerContainer>
       <CategorySelector>
-        <h3>Выберите категорию для загрузки</h3>
+        <h3>1. Выберите категорию для загрузки</h3>
         <div className="category-buttons">
           {CATEGORIES.map(category => (
             <CategoryButton
               key={category.id}
               active={selectedCategory === category.id}
               onClick={() => handleCategorySelect(category.id)}
+              disabled={isUploading}
             >
               {category.label}
             </CategoryButton>
@@ -258,69 +211,32 @@ const GalleryUploadManager: React.FC<GalleryUploadManagerProps> = ({ onImageUplo
         </div>
       </CategorySelector>
       
-      <ImageUploader
-        category={selectedCategory}
-        onUpload={handleImageUpload}
-        isUploading={isUploading}
-        error={uploadError}
-      />
+      <div>
+        <h3>2. Выберите файлы для загрузки</h3>
+        <ImageUploader
+          category={selectedCategory}
+          onUpload={handleUpload}
+          isUploading={isUploading}
+          error={overallError}
+        />
+      </div>
       
-      {filteredImages.length > 0 && (
+      {uploadQueue.length > 0 && (
         <>
-          <h3>Загруженные изображения ({filteredImages.length})</h3>
-          <UploadedImagesGrid>
-            {filteredImages.map(image => (
-              <ImageCard 
-                key={image.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <img src={image.url} alt={image.title} />
-                <DeleteButton onClick={() => handleDeleteImage(image.id)}>
-                  ×
-                </DeleteButton>
-                <div className="card-content">
-                  {editingImage === image.id ? (
-                    <ImageDetails>
-                      <label htmlFor={`title-${image.id}`}>Название:</label>
-                      <input 
-                        id={`title-${image.id}`}
-                        name="title"
-                        value={imageDetails.title}
-                        onChange={handleDetailChange}
-                      />
-                      
-                      <label htmlFor={`description-${image.id}`}>Описание:</label>
-                      <textarea 
-                        id={`description-${image.id}`}
-                        name="description"
-                        value={imageDetails.description}
-                        onChange={handleDetailChange}
-                      />
-                      
-                      <ActionButton onClick={() => handleSaveDetails(image.id)}>
-                        Сохранить
-                      </ActionButton>
-                      <ActionButton onClick={() => setEditingImage(null)}>
-                        Отмена
-                      </ActionButton>
-                    </ImageDetails>
-                  ) : (
-                    <>
-                      <h4>{image.title}</h4>
-                      <p>{image.description || 'Нет описания'}</p>
-                      <div className="card-actions">
-                        <ActionButton onClick={() => handleEditClick(image)}>
-                          Редактировать
-                        </ActionButton>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </ImageCard>
+          <h3>Статус загрузки:</h3>
+          <UploadStatusList>
+            {uploadQueue.map(item => (
+              <UploadStatusItem key={item.id} status={item.status}>
+                <span className="file-info" title={item.name}>{item.name}</span>
+                <span className="file-status">
+                  {item.status === 'pending' && 'Ожидание...'}
+                  {item.status === 'uploading' && 'Загрузка...'}
+                  {item.status === 'success' && '✓ Успешно'}
+                  {item.status === 'error' && `✗ Ошибка: ${item.message}`}
+                </span>
+              </UploadStatusItem>
             ))}
-          </UploadedImagesGrid>
+          </UploadStatusList>
         </>
       )}
     </UploadManagerContainer>

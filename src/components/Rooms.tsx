@@ -1,9 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { loadHomePageContent } from '../utils/homePageUtils';
 import { IMAGES } from '../assets/placeholders';
+import { roomsService } from '../utils/api';
+import { RoomType } from '../types/Room';
+import { toast } from 'react-toastify';
+
+interface RoomsProps {
+  title?: string;
+  subtitle?: string;
+}
 
 const RoomsSection = styled.section`
   padding: 6rem 2rem;
@@ -150,6 +157,11 @@ const RoomDetails = styled.div`
     color: #666;
     margin-bottom: 1.5rem;
     line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 `;
 
@@ -216,10 +228,61 @@ const ViewAllButton = styled(Link)`
   }
 `;
 
-const Rooms: React.FC = () => {
-  // Загружаем контент из localStorage
-  const { rooms } = loadHomePageContent();
-  
+const LoadingPlaceholder = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  font-size: 1.2rem;
+  color: var(--text-color);
+`;
+
+const ErrorPlaceholder = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  font-size: 1.1rem;
+  color: #e53935;
+  padding: 2rem;
+  text-align: center;
+  background-color: #ffebee;
+  border: 1px solid #e53935;
+  border-radius: var(--radius-sm);
+  max-width: 800px;
+  margin: 0 auto;
+`;
+
+const Rooms: React.FC<RoomsProps> = ({ 
+  title = 'Наши номера',
+  subtitle = 'Выберите идеальный номер для вашего отдыха' 
+}) => {
+  const [roomsData, setRoomsData] = useState<RoomType[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await roomsService.getAllRooms();
+        setRoomsData(data?.slice(0, 3) || []); 
+      } catch (err) {
+        console.error("Ошибка загрузки номеров:", err);
+        let message = 'Не удалось загрузить информацию о номерах.';
+        if (err instanceof Error) {
+          message = err.message;
+        }
+        setError(message);
+        toast.error(message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchRooms();
+  }, []);
+
   return (
     <RoomsSection id="rooms">
       <SectionTitle>
@@ -229,7 +292,7 @@ const Rooms: React.FC = () => {
           transition={{ duration: 0.5 }}
           viewport={{ once: true, amount: 0.3 }}
         >
-          {rooms.title}
+          {title}
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -237,42 +300,52 @@ const Rooms: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           viewport={{ once: true, amount: 0.3 }}
         >
-          {rooms.subtitle}
+          {subtitle}
         </motion.p>
       </SectionTitle>
       
-      <RoomsGrid>
-        {rooms.roomsData.map((room, index) => (
-          <RoomCard 
-            key={room.id}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: index * 0.1 }}
-            viewport={{ once: true, amount: 0.3 }}
-          >
-            <RoomImage>
-              <img src={room.image} alt={room.title} />
-              <RoomPrice>{room.price}</RoomPrice>
-            </RoomImage>
-            <RoomDetails>
-              <h3>{room.title}</h3>
-              <p>{room.description}</p>
-              <RoomButtons>
-                <BookButton to="/booking">
-                  Забронировать
-                </BookButton>
-                <DetailsButton to="/rooms">
-                  Подробнее
-                </DetailsButton>
-              </RoomButtons>
-            </RoomDetails>
-          </RoomCard>
-        ))}
-      </RoomsGrid>
+      {isLoading ? (
+        <LoadingPlaceholder>Загрузка номеров...</LoadingPlaceholder>
+      ) : error ? (
+        <ErrorPlaceholder>{error}</ErrorPlaceholder>
+      ) : roomsData.length === 0 ? (
+        <LoadingPlaceholder>Нет доступных номеров для отображения.</LoadingPlaceholder>
+      ) : (
+        <RoomsGrid>
+          {roomsData.map((room: RoomType, index: number) => (
+            <RoomCard 
+              key={room._id}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+              viewport={{ once: true, amount: 0.3 }}
+            >
+              <RoomImage>
+                <img src={room.imageUrl || IMAGES.ROOM_ECONOMY} alt={room.title} />
+                <RoomPrice>{room.price}</RoomPrice>
+              </RoomImage>
+              <RoomDetails>
+                <h3>{room.title}</h3>
+                <p>{room.description || 'Описание номера скоро появится...'}</p>
+                <RoomButtons>
+                  <BookButton to="/booking">
+                    Забронировать
+                  </BookButton>
+                  <DetailsButton to="/rooms">
+                    Подробнее
+                  </DetailsButton>
+                </RoomButtons>
+              </RoomDetails>
+            </RoomCard>
+          ))}
+        </RoomsGrid>
+      )}
       
-      <ViewAllButton to="/rooms">
-        Посмотреть все номера
-      </ViewAllButton>
+      {!isLoading && !error && roomsData.length > 0 && (
+        <ViewAllButton to="/rooms">
+          Посмотреть все номера
+        </ViewAllButton>
+      )}
     </RoomsSection>
   );
 };

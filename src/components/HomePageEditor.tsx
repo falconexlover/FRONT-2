@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import HomeImageUploader from './HomeImageUploader';
@@ -155,52 +155,114 @@ const SuccessMessage = styled.div`
   margin-bottom: 1.5rem;
 `;
 
+const ErrorMessage = styled.div`
+  color: var(--error-color);
+  background-color: rgba(255, 0, 0, 0.1);
+  padding: 0.8rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 1.5rem;
+`;
+
+const LoadingIndicator = styled.div`
+  color: var(--primary-color);
+  padding: 0.8rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 1.5rem;
+`;
+
 const HomePageEditor: React.FC<HomePageEditorProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<'banner' | 'about' | 'rooms' | 'services' | 'contact' | 'images'>('banner');
   const [content, setContent] = useState<HomePageContent>(loadHomePageContent());
   const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const loadContent = async () => {
+    try {
+      const data = await loadHomePageContent();
+      setContent(data);
+      setIsLoading(false);
+    } catch (err) {
+      setError('Ошибка загрузки данных');
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    loadContent();
+  }, [loadContent]);
   
   const handleInputChange = (section: keyof HomePageContent, field: string, value: string) => {
-    setContent(prev => ({
+    setContent((prev: HomePageContent) => ({
       ...prev,
       [section]: {
+        // @ts-ignore - Оставляем игнор, т.к. структура разная, но для простых полей сработает
         ...prev[section],
         [field]: value
       }
     }));
   };
   
-  const handleRoomChange = (roomId: string, field: string, value: string) => {
-    setContent(prev => ({
+  const handleRoomChange = (index: number, field: keyof HomePageContent['rooms']['roomsData'][0], value: string) => {
+    setContent((prev: HomePageContent) => ({
       ...prev,
       rooms: {
         ...prev.rooms,
-        roomsData: prev.rooms.roomsData.map(room => 
-          room.id === roomId ? { ...room, [field]: value } : room
+        roomsData: prev.rooms.roomsData.map((room, i) =>
+          i === index ? { ...room, [field]: value } : room
         )
       }
     }));
   };
   
-  const handleServiceChange = (serviceId: string, field: string, value: string) => {
-    setContent(prev => ({
+  const handleServiceChange = (index: number, field: keyof HomePageContent['services']['servicesData'][0], value: string) => {
+    setContent((prev: HomePageContent) => ({
       ...prev,
       services: {
         ...prev.services,
-        servicesData: prev.services.servicesData.map(service => 
-          service.id === serviceId ? { ...service, [field]: value } : service
+        servicesData: prev.services.servicesData.map((service, i) =>
+          i === index ? { ...service, [field]: value } : service
         )
       }
     }));
   };
   
-  const handleSave = () => {
-    saveHomePageContent(content);
-    setSuccess('Контент главной страницы успешно сохранен! Обновите страницу, чтобы увидеть изменения.');
-    setTimeout(() => {
-      setSuccess(null);
-    }, 5000);
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await saveHomePageContent(content);
+      setSuccess('Контент главной страницы успешно сохранен! Обновите страницу, чтобы увидеть изменения.');
+      setTimeout(() => {
+        setSuccess(null);
+      }, 5000);
+    } catch (err) {
+      setError('Ошибка сохранения данных');
+    }
+    setIsSaving(false);
   };
+  
+  const handlePhoneChange = (index: number, value: string) => {
+    setContent((prev: HomePageContent) => { // Указываем тип HomePageContent
+      const newPhones = [...(prev.contact.phone || [])];
+      newPhones[index] = value;
+      while (newPhones.length > 0 && !newPhones[newPhones.length - 1]) {
+         newPhones.pop();
+      }
+      return {
+        ...prev,
+        contact: { ...prev.contact, phone: newPhones },
+      };
+    });
+  };
+  
+  if (isLoading) {
+    return (
+      <EditorContainer>
+        <LoadingIndicator>Загрузка редактора...</LoadingIndicator>
+      </EditorContainer>
+    );
+  }
   
   return (
     <EditorContainer
@@ -211,48 +273,18 @@ const HomePageEditor: React.FC<HomePageEditorProps> = ({ onClose }) => {
     >
       <EditorHeader>
         <h2>Редактирование главной страницы</h2>
-        <CloseButton onClick={onClose}>×</CloseButton>
+        <CloseButton onClick={onClose} disabled={isSaving}>×</CloseButton>
       </EditorHeader>
       
-      {success && <SuccessMessage>{success}</SuccessMessage>}
+      {error && <ErrorMessage>{error}</ErrorMessage>}
       
       <TabsContainer>
-        <TabButton 
-          active={activeTab === 'banner'} 
-          onClick={() => setActiveTab('banner')}
-        >
-          Баннер
-        </TabButton>
-        <TabButton 
-          active={activeTab === 'about'} 
-          onClick={() => setActiveTab('about')}
-        >
-          О нас
-        </TabButton>
-        <TabButton 
-          active={activeTab === 'rooms'} 
-          onClick={() => setActiveTab('rooms')}
-        >
-          Номера
-        </TabButton>
-        <TabButton 
-          active={activeTab === 'services'} 
-          onClick={() => setActiveTab('services')}
-        >
-          Услуги
-        </TabButton>
-        <TabButton 
-          active={activeTab === 'contact'} 
-          onClick={() => setActiveTab('contact')}
-        >
-          Контакты
-        </TabButton>
-        <TabButton 
-          active={activeTab === 'images'} 
-          onClick={() => setActiveTab('images')}
-        >
-          Изображения
-        </TabButton>
+        <TabButton active={activeTab === 'banner'} onClick={() => setActiveTab('banner')} disabled={isSaving}>Баннер</TabButton>
+        <TabButton active={activeTab === 'about'} onClick={() => setActiveTab('about')} disabled={isSaving}>О нас</TabButton>
+        <TabButton active={activeTab === 'rooms'} onClick={() => setActiveTab('rooms')} disabled={isSaving}>Номера</TabButton>
+        <TabButton active={activeTab === 'services'} onClick={() => setActiveTab('services')} disabled={isSaving}>Услуги</TabButton>
+        <TabButton active={activeTab === 'contact'} onClick={() => setActiveTab('contact')} disabled={isSaving}>Контакты</TabButton>
+        <TabButton active={activeTab === 'images'} onClick={() => setActiveTab('images')} disabled={isSaving}>Изображения</TabButton>
       </TabsContainer>
       
       {activeTab === 'banner' && (
@@ -264,6 +296,7 @@ const HomePageEditor: React.FC<HomePageEditorProps> = ({ onClose }) => {
               type="text"
               value={content.banner.title}
               onChange={(e) => handleInputChange('banner', 'title', e.target.value)}
+              disabled={isSaving}
             />
           </FormGroup>
           
@@ -274,6 +307,7 @@ const HomePageEditor: React.FC<HomePageEditorProps> = ({ onClose }) => {
               type="text"
               value={content.banner.subtitle}
               onChange={(e) => handleInputChange('banner', 'subtitle', e.target.value)}
+              disabled={isSaving}
             />
           </FormGroup>
           
@@ -284,10 +318,13 @@ const HomePageEditor: React.FC<HomePageEditorProps> = ({ onClose }) => {
               type="text"
               value={content.banner.buttonText}
               onChange={(e) => handleInputChange('banner', 'buttonText', e.target.value)}
+              disabled={isSaving}
             />
           </FormGroup>
           
-          <SaveButton onClick={handleSave}>Сохранить изменения</SaveButton>
+          <SaveButton onClick={handleSave} disabled={isSaving}>
+             {isSaving ? 'Сохранение...' : 'Сохранить изменения'}
+          </SaveButton>
         </div>
       )}
       
@@ -300,6 +337,7 @@ const HomePageEditor: React.FC<HomePageEditorProps> = ({ onClose }) => {
               type="text"
               value={content.about.title}
               onChange={(e) => handleInputChange('about', 'title', e.target.value)}
+              disabled={isSaving}
             />
           </FormGroup>
           
@@ -309,10 +347,13 @@ const HomePageEditor: React.FC<HomePageEditorProps> = ({ onClose }) => {
               id="about-content"
               value={content.about.content}
               onChange={(e) => handleInputChange('about', 'content', e.target.value)}
+              disabled={isSaving}
             />
           </FormGroup>
           
-          <SaveButton onClick={handleSave}>Сохранить изменения</SaveButton>
+          <SaveButton onClick={handleSave} disabled={isSaving}>
+             {isSaving ? 'Сохранение...' : 'Сохранить изменения'}
+          </SaveButton>
         </div>
       )}
       
@@ -323,8 +364,9 @@ const HomePageEditor: React.FC<HomePageEditorProps> = ({ onClose }) => {
             <input 
               id="rooms-title"
               type="text"
-              value={content.rooms.title}
-              onChange={(e) => handleInputChange('rooms', 'title', e.target.value)}
+              value={content.rooms?.title || ''}
+              onChange={(e) => handleInputChange('rooms', 'title', e.target.value)} 
+              disabled={isSaving}
             />
           </FormGroup>
           
@@ -333,51 +375,54 @@ const HomePageEditor: React.FC<HomePageEditorProps> = ({ onClose }) => {
             <input 
               id="rooms-subtitle"
               type="text"
-              value={content.rooms.subtitle}
+              value={content.rooms?.subtitle || ''}
               onChange={(e) => handleInputChange('rooms', 'subtitle', e.target.value)}
+              disabled={isSaving}
             />
           </FormGroup>
           
-          <h3>Список номеров</h3>
-          
-          {content.rooms.roomsData.map(room => (
-            <RoomCard key={room.id}>
-              <h4>
-                <span>{room.title}</span>
-              </h4>
+          <h3>Список номеров (редактирование данных для отображения на главной)</h3>
+          {(content.rooms?.roomsData || []).map((room, index) => (
+            <RoomCard key={room.id || index}>
+              <h4><span>{room.title}</span></h4>
               
               <FormGroup>
-                <label htmlFor={`room-${room.id}-title`}>Название номера</label>
+                <label htmlFor={`room-${index}-title`}>Название</label>
                 <input 
-                  id={`room-${room.id}-title`}
+                  id={`room-${index}-title`}
                   type="text"
                   value={room.title}
-                  onChange={(e) => handleRoomChange(room.id, 'title', e.target.value)}
+                  onChange={(e) => handleRoomChange(index, 'title', e.target.value)}
+                  disabled={isSaving}
                 />
               </FormGroup>
               
               <FormGroup>
-                <label htmlFor={`room-${room.id}-description`}>Описание</label>
+                <label htmlFor={`room-${index}-description`}>Описание</label>
                 <textarea 
-                  id={`room-${room.id}-description`}
+                  id={`room-${index}-description`}
                   value={room.description}
-                  onChange={(e) => handleRoomChange(room.id, 'description', e.target.value)}
+                  onChange={(e) => handleRoomChange(index, 'description', e.target.value)}
+                  disabled={isSaving}
                 />
               </FormGroup>
               
               <FormGroup>
-                <label htmlFor={`room-${room.id}-price`}>Цена</label>
+                <label htmlFor={`room-${index}-price`}>Цена</label>
                 <input 
-                  id={`room-${room.id}-price`}
+                  id={`room-${index}-price`}
                   type="text"
                   value={room.price}
-                  onChange={(e) => handleRoomChange(room.id, 'price', e.target.value)}
+                  onChange={(e) => handleRoomChange(index, 'price', e.target.value)}
+                  disabled={isSaving}
                 />
               </FormGroup>
             </RoomCard>
           ))}
           
-          <SaveButton onClick={handleSave}>Сохранить изменения</SaveButton>
+          <SaveButton onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Сохранение...' : 'Сохранить изменения'}
+          </SaveButton>
         </div>
       )}
       
@@ -388,8 +433,9 @@ const HomePageEditor: React.FC<HomePageEditorProps> = ({ onClose }) => {
             <input 
               id="services-title"
               type="text"
-              value={content.services.title}
+              value={content.services?.title || ''}
               onChange={(e) => handleInputChange('services', 'title', e.target.value)}
+              disabled={isSaving}
             />
           </FormGroup>
           
@@ -398,63 +444,68 @@ const HomePageEditor: React.FC<HomePageEditorProps> = ({ onClose }) => {
             <input 
               id="services-subtitle"
               type="text"
-              value={content.services.subtitle}
+              value={content.services?.subtitle || ''}
               onChange={(e) => handleInputChange('services', 'subtitle', e.target.value)}
+              disabled={isSaving}
             />
           </FormGroup>
           
           <h3>Список услуг</h3>
-          
-          {content.services.servicesData.map(service => (
-            <ServiceCard key={service.id}>
-              <h4>
-                <span>{service.title}</span>
-              </h4>
+          {(content.services?.servicesData || []).map((service, index) => (
+            <ServiceCard key={service.id || index}>
+              <h4><span>{service.title}</span></h4>
               
               <FormGroup>
-                <label htmlFor={`service-${service.id}-title`}>Название услуги</label>
+                <label htmlFor={`service-${index}-title`}>Название</label>
                 <input 
-                  id={`service-${service.id}-title`}
+                  id={`service-${index}-title`}
                   type="text"
                   value={service.title}
-                  onChange={(e) => handleServiceChange(service.id, 'title', e.target.value)}
+                  onChange={(e) => handleServiceChange(index, 'title', e.target.value)}
+                  disabled={isSaving}
                 />
               </FormGroup>
               
               <FormGroup>
-                <label htmlFor={`service-${service.id}-description`}>Описание</label>
+                <label htmlFor={`service-${index}-description`}>Описание</label>
                 <textarea 
-                  id={`service-${service.id}-description`}
+                  id={`service-${index}-description`}
                   value={service.description}
-                  onChange={(e) => handleServiceChange(service.id, 'description', e.target.value)}
+                  onChange={(e) => handleServiceChange(index, 'description', e.target.value)}
+                  disabled={isSaving}
                 />
               </FormGroup>
               
               <FormGroup>
-                <label htmlFor={`service-${service.id}-icon`}>Иконка (класс Font Awesome)</label>
+                <label htmlFor={`service-${index}-icon`}>Иконка (Font Awesome)</label>
                 <input 
-                  id={`service-${service.id}-icon`}
+                  id={`service-${index}-icon`}
                   type="text"
                   value={service.icon}
-                  onChange={(e) => handleServiceChange(service.id, 'icon', e.target.value)}
+                  onChange={(e) => handleServiceChange(index, 'icon', e.target.value)}
+                   placeholder="например, fas fa-concierge-bell"
+                  disabled={isSaving}
                 />
               </FormGroup>
             </ServiceCard>
           ))}
           
-          <SaveButton onClick={handleSave}>Сохранить изменения</SaveButton>
+          <SaveButton onClick={handleSave} disabled={isSaving}>
+             {isSaving ? 'Сохранение...' : 'Сохранить изменения'}
+          </SaveButton>
         </div>
       )}
       
       {activeTab === 'contact' && (
         <div>
           <FormGroup>
-            <label htmlFor="contact-title">Заголовок раздела "Контакты"</label>
+            <label htmlFor="contact-title">Заголовок "Контакты"</label>
             <input 
               id="contact-title"
               type="text"
-              value={content.contact.title}
+              value={content.contact?.title || ''}
               onChange={(e) => handleInputChange('contact', 'title', e.target.value)}
+              disabled={isSaving}
             />
           </FormGroup>
           
@@ -463,8 +514,9 @@ const HomePageEditor: React.FC<HomePageEditorProps> = ({ onClose }) => {
             <input 
               id="contact-address"
               type="text"
-              value={content.contact.address}
+              value={content.contact?.address || ''}
               onChange={(e) => handleInputChange('contact', 'address', e.target.value)}
+              disabled={isSaving}
             />
           </FormGroup>
           
@@ -473,18 +525,9 @@ const HomePageEditor: React.FC<HomePageEditorProps> = ({ onClose }) => {
             <input 
               id="contact-phone1"
               type="text"
-              value={content.contact.phone[0] || ''}
-              onChange={(e) => {
-                const newPhones = [...content.contact.phone];
-                newPhones[0] = e.target.value;
-                setContent(prev => ({
-                  ...prev,
-                  contact: {
-                    ...prev.contact,
-                    phone: newPhones
-                  }
-                }));
-              }}
+              value={content.contact?.phone?.[0] || ''}
+              onChange={(e) => handlePhoneChange(0, e.target.value)}
+              disabled={isSaving}
             />
           </FormGroup>
           
@@ -493,18 +536,9 @@ const HomePageEditor: React.FC<HomePageEditorProps> = ({ onClose }) => {
             <input 
               id="contact-phone2"
               type="text"
-              value={content.contact.phone[1] || ''}
-              onChange={(e) => {
-                const newPhones = [...content.contact.phone];
-                newPhones[1] = e.target.value;
-                setContent(prev => ({
-                  ...prev,
-                  contact: {
-                    ...prev.contact,
-                    phone: newPhones
-                  }
-                }));
-              }}
+              value={content.contact?.phone?.[1] || ''}
+              onChange={(e) => handlePhoneChange(1, e.target.value)}
+              disabled={isSaving}
             />
           </FormGroup>
           
@@ -513,21 +547,24 @@ const HomePageEditor: React.FC<HomePageEditorProps> = ({ onClose }) => {
             <input 
               id="contact-email"
               type="email"
-              value={content.contact.email}
+              value={content.contact?.email || ''}
               onChange={(e) => handleInputChange('contact', 'email', e.target.value)}
+              disabled={isSaving}
             />
           </FormGroup>
           
-          <SaveButton onClick={handleSave}>Сохранить изменения</SaveButton>
+          <SaveButton onClick={handleSave} disabled={isSaving}>
+             {isSaving ? 'Сохранение...' : 'Сохранить изменения'}
+          </SaveButton>
         </div>
       )}
       
       {activeTab === 'images' && (
         <div>
-          <h3>Загрузка изображений</h3>
-          <p>Здесь вы можете загрузить новые изображения для разных разделов главной страницы.</p>
-          
+          <h3>Загрузка изображений главной страницы</h3>
+          <p>Здесь вы можете управлять изображениями, используемыми в разных секциях главной страницы (например, фон баннера, изображения "О нас" и т.д.).</p>
           <HomeImageUploader />
+          <p style={{marginTop: '1rem', color: 'orange'}}>Примечание: Загрузка изображений для главной страницы пока не подключена к API.</p>
         </div>
       )}
     </EditorContainer>

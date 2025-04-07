@@ -1,10 +1,9 @@
 import React, { useState, useRef } from 'react';
 import styled from 'styled-components';
-import { UploadedImage } from '../utils/imageUpload';
 
 interface ImageUploaderProps {
   category: string;
-  onUpload: (files: File[], category: string, title?: string, description?: string) => Promise<UploadedImage[]>;
+  onUpload: (files: File[], category: string) => Promise<void>;
   isUploading: boolean;
   error: string | null;
 }
@@ -127,7 +126,6 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   const handleUploadClick = async () => {
     if (selectedFiles && selectedFiles.length > 0) {
       await onUpload(Array.from(selectedFiles), category);
-      // Сбрасываем выбранные файлы после загрузки
       setSelectedFiles(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';

@@ -1,86 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { RoomType, loadRoomsFromStorage, addRoom, updateRoom, deleteRoom, resetToDefaultRooms } from '../utils/roomsData';
+import { roomsService } from '../utils/api';
+import { RoomType } from '../types/Room';
 import RoomForm from './RoomForm';
-
-/**
- * Функция для изменения размера изображения
- * @param file - Исходный файл изображения
- * @param maxWidth - Максимальная ширина выходного изображения
- * @returns Promise с объектом File уменьшенного размера
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const resizeImage = (file: File, maxWidth: number = 800): Promise<File> => {
-  return new Promise((resolve, reject) => {
-    // Создаем объекты для работы с изображением
-    const reader = new FileReader();
-    const image = new Image();
-    
-    reader.onload = (event) => {
-      if (!event.target?.result) {
-        reject(new Error('Не удалось прочитать файл'));
-        return;
-      }
-      
-      image.onload = () => {
-        // Проверяем, нужно ли изменять размер
-        if (image.width <= maxWidth) {
-          resolve(file); // Если изображение меньше maxWidth, возвращаем исходный файл
-          return;
-        }
-        
-        // Вычисляем новые размеры с сохранением пропорций
-        const ratio = image.height / image.width;
-        const newWidth = maxWidth;
-        const newHeight = Math.round(newWidth * ratio);
-        
-        // Создаем canvas для изменения размера
-        const canvas = document.createElement('canvas');
-        canvas.width = newWidth;
-        canvas.height = newHeight;
-        
-        // Рисуем изображение на canvas
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('Не удалось создать контекст canvas'));
-          return;
-        }
-        
-        ctx.drawImage(image, 0, 0, newWidth, newHeight);
-        
-        // Конвертируем canvas в blob
-        canvas.toBlob((blob) => {
-          if (!blob) {
-            reject(new Error('Не удалось создать blob'));
-            return;
-          }
-          
-          // Создаем новый файл с тем же именем и типом
-          const resizedFile = new File([blob], file.name, {
-            type: file.type,
-            lastModified: Date.now()
-          });
-          
-          resolve(resizedFile);
-        }, file.type, 0.85); // Качество 0.85 (85%)
-      };
-      
-      image.onerror = () => {
-        reject(new Error('Не удалось загрузить изображение'));
-      };
-      
-      // Загружаем URL изображения
-      image.src = event.target.result as string;
-    };
-    
-    reader.onerror = () => {
-      reject(new Error('Не удалось прочитать файл'));
-    };
-    
-    // Читаем файл как Data URL
-    reader.readAsDataURL(file);
-  });
-};
+import { toast } from 'react-toastify';
 
 interface RoomsAdminPanelProps {
   onLogout: () => void;
@@ -329,202 +252,233 @@ const ConfirmDialog = styled.div`
   }
 `;
 
+const LoadingIndicator = styled.div`
+  text-align: center;
+  padding: 2rem;
+  font-style: italic;
+  color: var(--text-color);
+`;
+
+const ErrorMessage = styled.div`
+  text-align: center;
+  padding: 2rem;
+  color: #e53935;
+  background-color: #ffebee;
+  border: 1px solid #e53935;
+  border-radius: var(--radius-sm);
+`;
+
 const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
-  // Состояния
-  const [rooms, setRooms] = useState<RoomType[]>([]);
-  const [isAddingRoom, setIsAddingRoom] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [editingRoom, setEditingRoom] = useState<RoomType | null>(null);
-  const [roomToDelete, setRoomToDelete] = useState<string | null>(null);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-  
-  // Загрузка номеров при монтировании компонента
-  useEffect(() => {
-    loadRooms();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingRoomId, setDeletingRoomId] = useState<string | null>(null);
+  const [rooms, setRooms] = useState<RoomType[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchRooms = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await roomsService.getAllRooms();
+      setRooms(data || []);
+    } catch (err: any) {
+      console.error("Ошибка при загрузке номеров:", err);
+      setError(err.message || 'Не удалось загрузить список номеров.');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
   
-  // Функция для загрузки номеров
-  const loadRooms = () => {
-    const loadedRooms = loadRoomsFromStorage();
-    setRooms(loadedRooms);
-  };
-  
-  // Обработчик для добавления нового номера
-  const handleAddRoom = (newRoom: RoomType) => {
-    const updatedRooms = addRoom(newRoom);
-    setRooms(updatedRooms);
-    setIsAddingRoom(false);
-  };
-  
-  // Обработчик для обновления номера
-  const handleUpdateRoom = (updatedRoom: RoomType) => {
-    const updatedRooms = updateRoom(updatedRoom.id, updatedRoom);
-    setRooms(updatedRooms);
+  useEffect(() => {
+    fetchRooms();
+  }, [fetchRooms]);
+
+  const handleAddRoomClick = () => {
     setEditingRoom(null);
+    setShowForm(true);
   };
-  
-  // Обработчик для удаления номера
-  const handleDeleteRoom = (roomId: string) => {
-    setRoomToDelete(roomId);
+
+  const handleEditRoomClick = (room: RoomType) => {
+    setEditingRoom(room);
+    setShowForm(true);
   };
-  
-  // Подтверждение удаления
-  const confirmDeleteRoom = () => {
-    if (roomToDelete) {
-      const updatedRooms = deleteRoom(roomToDelete);
-      setRooms(updatedRooms);
-      setRoomToDelete(null);
+
+  const handleDeleteRoomClick = (id: string) => {
+    setDeletingRoomId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteRoom = async () => {
+    if (!deletingRoomId) return;
+
+    setIsLoading(true);
+    setError(null);
+    setShowDeleteConfirm(false);
+
+    try {
+      console.log(`Удаление номера с ID: ${deletingRoomId}...`);
+      await roomsService.deleteRoom(deletingRoomId);
+      toast.success('Номер успешно удален!');
+      await fetchRooms();
+    } catch (err: any) {
+      console.error("Ошибка при удалении номера:", err);
+      const errorMessage = err.response?.data?.message || err.message || 'Не удалось удалить номер.';
+      setError(errorMessage);
+      toast.error(`Ошибка: ${errorMessage}`);
+    } finally {
+      setIsLoading(false);
+      setDeletingRoomId(null);
     }
   };
-  
-  // Сброс к исходным номерам
-  const handleResetRooms = () => {
-    const defaultRooms = resetToDefaultRooms();
-    setRooms(defaultRooms);
-    setShowResetConfirm(false);
+
+  const cancelDeleteRoom = () => {
+    setShowDeleteConfirm(false);
+    setDeletingRoomId(null);
   };
+
+  const handleFormSave = async (roomData: RoomType, imageFile: File | null) => {
+    const isEditing = !!editingRoom?._id;
+    const roomId = editingRoom?._id;
+
+    setIsLoading(true);
+    setError(null);
+    
+    const formData = new FormData();
+    formData.append('title', roomData.title);
+    formData.append('price', roomData.price);
+    formData.append('priceValue', roomData.priceValue.toString());
+    formData.append('capacity', roomData.capacity.toString());
+    formData.append('features', JSON.stringify(roomData.features));
+    
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+    
+    try {
+      let savedRoom;
+      if (isEditing && roomId) {
+        console.log(`Обновление номера с ID: ${roomId}...`);
+        savedRoom = await roomsService.updateRoom(roomId, formData);
+        toast.success('Номер успешно обновлен!');
+      } else {
+        console.log("Добавление нового номера...");
+        savedRoom = await roomsService.createRoom(formData);
+        toast.success('Номер успешно добавлен!');
+      }
+      
+      await fetchRooms(); 
+      setShowForm(false);
+      setEditingRoom(null);
+      
+    } catch (err: any) {
+      console.error("Ошибка при сохранении номера:", err);
+      const errorMessage = err.response?.data?.message || err.message || 'Не удалось сохранить номер.';
+      setError(errorMessage);
+      toast.error(`Ошибка: ${errorMessage}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFormCancel = () => {
+    setShowForm(false);
+    setEditingRoom(null);
+  };
+
+  const roomToDelete = deletingRoomId ? rooms.find(room => room._id === deletingRoomId) : null;
+  const roomToDeleteTitle = roomToDelete ? roomToDelete.title : 'этот номер';
   
   return (
     <AdminPanelContainer>
       <PanelHeader>
         <h2>Управление номерами</h2>
-        <ActionButton className="outline" onClick={onLogout}>
-          Выйти из режима администратора
-        </ActionButton>
       </PanelHeader>
       
       <ActionButtonsContainer>
         <ActionButton 
           className="primary"
-          onClick={() => setIsAddingRoom(true)}
+          onClick={handleAddRoomClick} 
+          disabled={isLoading}
         >
-          Добавить новый номер
-        </ActionButton>
-        
-        <ActionButton 
-          className="danger"
-          onClick={() => setShowResetConfirm(true)}
-        >
-          Сбросить к исходным номерам
+          <i className="fas fa-plus" style={{ marginRight: '0.5rem' }}></i> Добавить номер
         </ActionButton>
       </ActionButtonsContainer>
       
-      {isAddingRoom && (
+      {showForm && (
         <RoomForm 
-          onSubmit={handleAddRoom}
-          onCancel={() => setIsAddingRoom(false)}
-        />
-      )}
-      
-      {editingRoom && (
-        <RoomForm 
-          initialData={editingRoom}
-          onSubmit={handleUpdateRoom}
-          onCancel={() => setEditingRoom(null)}
+          initialData={editingRoom ?? undefined}
+          onSave={handleFormSave}
+          onCancel={handleFormCancel}
+          isLoading={isLoading}
         />
       )}
       
       <RoomsList>
-        <h3>Список номеров ({rooms.length})</h3>
-        
-        {rooms.length === 0 ? (
-          <EmptyState>
-            <h3>Номера не найдены</h3>
-            <p>Добавьте первый номер, нажав на кнопку "Добавить номер"</p>
-            <ActionButton 
-              className="primary"
-              onClick={() => setIsAddingRoom(true)}
-            >
-              Добавить номер
-            </ActionButton>
-          </EmptyState>
-        ) : (
-          rooms.map(room => (
-            <RoomCard key={room.id}>
+        {isLoading && <LoadingIndicator>Загрузка номеров...</LoadingIndicator>}
+        {error && <ErrorMessage>Ошибка: {error}</ErrorMessage>}
+        {!isLoading && !error && rooms.length === 0 && <LoadingIndicator>Номера еще не добавлены.</LoadingIndicator>}
+        {!isLoading && !error && rooms.map((room) => (
+          <RoomCard key={room._id}>
               <div className="room-image">
-                <img src={room.image} alt={room.title} />
+              <img src={room.imageUrl || '/placeholder-image.jpg'} alt={room.title} />
               </div>
-              
               <div className="room-info">
                 <h3>{room.title}</h3>
-                
                 <div className="room-details">
-                  <span><i className="fas fa-user"></i> {room.capacity} гостя</span>
-                  <span><i className="fas fa-expand"></i> {room.size} м²</span>
-                  <span><i className="fas fa-bed"></i> {room.bedType}</span>
-                  {room.roomCount && (
-                    <span><i className="fas fa-door-closed"></i> {room.roomCount} номеров</span>
-                  )}
-                </div>
-                
-                <div className="room-price">
-                  {room.price} {room.priceNote}
-                  {room.additionalPrice && (
-                    <span> / {room.additionalPrice} {room.additionalPriceNote}</span>
-                  )}
-                </div>
+                <span><i className="fas fa-users"></i> {room.capacity} чел.</span>
               </div>
-              
+              <div className="room-price">{room.price}</div>
+              {room.features && room.features.length > 0 && (
+                <div style={{fontSize: '0.8em', color: '#666', marginTop: '0.5rem'}}>
+                  {room.features.join(', ')}
+                </div>
+                  )}
+                </div>
               <div className="room-actions">
                 <button 
                   className="edit"
-                  onClick={() => setEditingRoom(room)}
+                onClick={() => handleEditRoomClick(room)} 
+                disabled={isLoading}
                 >
-                  Редактировать
+                <i className="fas fa-pencil-alt" style={{ marginRight: '0.5rem' }}></i> Редактировать
                 </button>
                 <button 
                   className="delete"
-                  onClick={() => handleDeleteRoom(room.id)}
-                >
-                  Удалить
+                onClick={() => {
+                  if (room._id) {
+                    handleDeleteRoomClick(room._id);
+                  }
+                }}
+                disabled={isLoading}
+              >
+                <i className="fas fa-trash" style={{ marginRight: '0.5rem' }}></i> Удалить
                 </button>
               </div>
             </RoomCard>
-          ))
-        )}
+        ))}
       </RoomsList>
       
-      {/* Диалог подтверждения удаления */}
-      {roomToDelete && (
+      {showDeleteConfirm && (
         <ConfirmDialog>
           <div className="dialog-content">
-            <h3>Подтверждение удаления</h3>
-            <p>Вы уверены, что хотите удалить этот номер? Это действие нельзя будет отменить.</p>
+             <h3>Подтвердите удаление</h3>
+             <p>Вы уверены, что хотите удалить номер "{roomToDeleteTitle}"? Это действие необратимо.</p>
             <div className="dialog-buttons">
               <ActionButton 
                 className="outline"
-                onClick={() => setRoomToDelete(null)}
+                   onClick={cancelDeleteRoom} 
+                   disabled={isLoading}
               >
                 Отмена
               </ActionButton>
               <ActionButton 
                 className="danger"
                 onClick={confirmDeleteRoom}
-              >
-                Удалить
-              </ActionButton>
-            </div>
-          </div>
-        </ConfirmDialog>
-      )}
-      
-      {/* Диалог подтверждения сброса */}
-      {showResetConfirm && (
-        <ConfirmDialog>
-          <div className="dialog-content">
-            <h3>Сбросить к исходным номерам?</h3>
-            <p>Вы собираетесь сбросить все изменения и вернуться к исходному списку номеров. Это действие нельзя будет отменить.</p>
-            <div className="dialog-buttons">
-              <ActionButton 
-                className="outline"
-                onClick={() => setShowResetConfirm(false)}
-              >
-                Отмена
-              </ActionButton>
-              <ActionButton 
-                className="danger"
-                onClick={handleResetRooms}
-              >
-                Сбросить
+                   disabled={isLoading}
+                >
+                   {isLoading ? 'Удаление...' : 'Удалить'}
               </ActionButton>
             </div>
           </div>

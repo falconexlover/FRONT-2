@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { IMAGES } from '../assets/placeholders';
+import { getRooms, createBooking, checkRoomAvailability } from '../utils/api';
 
 const BookingSection = styled.section`
   padding: 6rem 2rem;
@@ -315,8 +316,31 @@ interface RoomType {
 }
 
 const BookingPage: React.FC = () => {
-  // Комнаты для выбора
-  const rooms: RoomType[] = [
+  // Состояния для API
+  const [isLoading, setIsLoading] = useState(false);
+  const [roomsData, setRoomsData] = useState<RoomType[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Загрузка комнат при монтировании компонента
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getRooms();
+        setRoomsData(data);
+      } catch (err) {
+        setError('Не удалось загрузить данные о комнатах');
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchRooms();
+  }, []);
+  
+  // Используем загруженные комнаты или резервные данные
+  const rooms = roomsData.length > 0 ? roomsData : [
     {
       id: '2-economy',
       title: '2-местный эконом',
@@ -395,15 +419,48 @@ const BookingPage: React.FC = () => {
     setSelectedRoomId(roomId);
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  // Обновленный обработчик отправки формы
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Имитация отправки формы
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // Проверка доступности комнаты
+      const availabilityCheck = await checkRoomAvailability(
+        selectedRoomId,
+        bookingData.checkIn,
+        bookingData.checkOut
+      );
+      
+      if (!availabilityCheck.available) {
+        setError(availabilityCheck.message || 'Комната недоступна в указанные даты');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Создание бронирования
+      const bookingResponse = await createBooking({
+        firstName: bookingData.firstName,
+        lastName: bookingData.lastName,
+        email: bookingData.email,
+        phone: bookingData.phone,
+        checkIn: bookingData.checkIn,
+        checkOut: bookingData.checkOut,
+        adults: parseInt(bookingData.adults),
+        children: parseInt(bookingData.children),
+        roomId: selectedRoomId,
+        totalCost: totalCost,
+        notes: bookingData.notes
+      });
+      
       setIsSubmitted(true);
-    }, 1500);
+      
+    } catch (err) {
+      setError('Не удалось создать бронирование. Пожалуйста, попробуйте позже.');
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   // Форматирование даты для отображения

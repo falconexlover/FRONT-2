@@ -1,12 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { RoomType } from '../utils/roomsData';
 import RoomImageUploader from './RoomImageUploader';
+// Импортируем ОБЩИЙ тип
+import { RoomType } from '../types/Room'; 
+
+// Удаляем локальное определение интерфейса RoomType
+/*
+interface RoomType { ... } 
+*/
 
 interface RoomFormProps {
-  initialData?: RoomType;
-  onSubmit: (roomData: RoomType) => void;
+  initialData?: RoomType | null; 
+  // Обновляем тип onSave, чтобы он принимал Promise
+  onSave: (roomData: RoomType, imageFile: File | null) => Promise<void>; 
   onCancel: () => void;
+  isLoading: boolean;
 }
 
 const FormContainer = styled.div`
@@ -161,322 +169,220 @@ const Button = styled.button`
   }
 `;
 
-// Базовый шаблон для создания нового номера
-const DEFAULT_ROOM: RoomType = {
-  id: "",
+// Обновляем DEFAULT_ROOM под новый интерфейс
+const DEFAULT_ROOM: Omit<RoomType, '_id'> = {
   title: "",
-  description: "",
-  image: "",
-  features: [],
-  price: "",
-  priceNote: "/сутки",
+  imageUrl: "", 
+  price: "", // Пользователь введет строку
+  priceValue: 0, // И число
   capacity: 2,
-  hasPrivateBathroom: true,
-  size: 20,
-  bedType: "Двуспальная кровать",
-  roomCount: 1
+  features: [],
 };
 
-const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSubmit, onCancel }) => {
-  // Состояние для данных формы
-  const [formData, setFormData] = useState<RoomType>(initialData || DEFAULT_ROOM);
+const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel, isLoading }) => {
+  // Инициализируем состояние с учетом возможного отсутствия _id
+  const [formData, setFormData] = useState<RoomType>(() => {
+    const data = initialData || DEFAULT_ROOM;
+    // Убедимся, что все поля нового типа присутствуют
+    return {
+      _id: initialData?._id,
+      title: data.title || '',
+      imageUrl: data.imageUrl || '',
+      price: data.price || '',
+      priceValue: data.priceValue || 0,
+      capacity: data.capacity || 2,
+      features: data.features || [],
+    };
+  });
   
-  // Состояние для нового удобства, которое добавляется через инпут
   const [newFeature, setNewFeature] = useState("");
-  
-  // При изменении initialData обновляем состояние формы
+  // Добавляем состояние для файла изображения
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+
   useEffect(() => {
-    if (initialData) {
-      setFormData(initialData);
+    // Обновляем форму при изменении initialData (например, при выборе другого номера для редактирования)
+    const data = initialData || DEFAULT_ROOM;
+     setFormData({
+      _id: initialData?._id,
+      title: data.title || '',
+      imageUrl: data.imageUrl || '',
+      price: data.price || '',
+      priceValue: data.priceValue || 0,
+      capacity: data.capacity || 2,
+      features: data.features || [],
+    });
+    setSelectedImageFile(null); // Сбрасываем выбранный файл при смене редактируемого номера
+  }, [initialData]);
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    let processedValue: string | number = value;
+
+    // Преобразуем числовые поля
+    if (type === 'number') {
+      processedValue = parseFloat(value) || 0; // Используем 0, если парсинг не удался
+    }
+
+    setFormData(prev => ({ ...prev, [name]: processedValue }));
+  };
+
+  // Обработчик для загрузчика изображений
+  const handleImageChange = useCallback((file: File | null) => {
+    setSelectedImageFile(file);
+    // Обновляем imageUrl для превью, если файл выбран, иначе оставляем старый
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, imageUrl: reader.result as string }));
+      }
+      reader.readAsDataURL(file);
+    } else {
+       // Если файл сброшен, возвращаем исходный imageUrl (если был)
+       setFormData(prev => ({ ...prev, imageUrl: initialData?.imageUrl || DEFAULT_ROOM.imageUrl }));
     }
   }, [initialData]);
   
-  // Обработчик изменения полей формы
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    
-    // Для числовых полей конвертируем строку в число
-    if (type === 'number') {
-      setFormData({
-        ...formData,
-        [name]: parseFloat(value)
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value
-      });
-    }
-  };
-  
-  // Обработчик изменения чекбокса
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    
-    setFormData({
-      ...formData,
-      [name]: checked
-    });
-  };
-  
-  // Добавление нового удобства
+  // Добавление фичи
   const handleAddFeature = () => {
     if (newFeature.trim() === "") return;
-    
-    setFormData({
-      ...formData,
-      features: [...formData.features, newFeature.trim()]
-    });
-    
+    setFormData(prev => ({
+      ...prev,
+      features: [...prev.features, newFeature.trim()]
+    }));
     setNewFeature("");
   };
   
-  // Удаление удобства
+  // Удаление фичи
   const handleRemoveFeature = (index: number) => {
-    const updatedFeatures = [...formData.features];
-    updatedFeatures.splice(index, 1);
-    
-    setFormData({
-      ...formData,
-      features: updatedFeatures
-    });
+    setFormData(prev => ({
+      ...prev,
+      features: prev.features.filter((_, i) => i !== index)
+    }));
   };
   
-  // Отправка формы
-  const handleSubmit = (e: React.FormEvent) => {
+  // Отправка формы (теперь может быть асинхронной)
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Генерируем уникальный ID для нового номера, если он не задан
-    if (!formData.id) {
-      const roomId = `room-${Date.now()}`;
-      onSubmit({ ...formData, id: roomId });
-    } else {
-      onSubmit(formData);
+    try {
+      // Вызываем onSave и ждем завершения
+      await onSave(formData, selectedImageFile); 
+    } catch (error) {
+      // Ошибки должны обрабатываться в родительском компоненте (RoomsAdminPanel),
+      // но можно добавить логирование здесь при необходимости
+      console.error("Ошибка при вызове onSave в RoomForm:", error);
+      // Возможно, показать локальное сообщение об ошибке в форме?
     }
   };
-  
+
   return (
     <FormContainer>
-      <FormTitle>{initialData ? 'Редактирование номера' : 'Добавление нового номера'}</FormTitle>
-      
+      <FormTitle>{initialData?._id ? 'Редактировать номер' : 'Добавить новый номер'}</FormTitle>
       <form onSubmit={handleSubmit}>
+        
+        {/* Загрузчик изображений */}
         <FormGroup>
-          <label htmlFor="title">Название номера *</label>
-          <input 
-            type="text" 
-            id="title" 
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            required
+          <label>Изображение</label>
+          <RoomImageUploader 
+            initialImage={formData.imageUrl}
+            onImageChange={handleImageChange} 
           />
         </FormGroup>
-        
-        <FormGroup>
-          <label htmlFor="description">Описание *</label>
-          <textarea 
-            id="description" 
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            required
-          />
-        </FormGroup>
-        
+
         <FormRow>
           <FormGroup>
-            <label>Изображение номера *</label>
-            <RoomImageUploader 
-              initialImage={formData.image}
-              onImageChange={(imageData) => setFormData({...formData, image: imageData})}
-            />
-          </FormGroup>
-          
-          <FormGroup>
-            <label htmlFor="tag">Тег (необязательно)</label>
+            <label htmlFor="title">Название номера</label>
             <input 
               type="text" 
-              id="tag" 
-              name="tag"
-              value={formData.tag || ""}
-              onChange={handleChange}
+              id="title" 
+              name="title" 
+              value={formData.title} 
+              onChange={handleChange} 
+              required 
             />
           </FormGroup>
-        </FormRow>
-        
-        <FormRow>
           <FormGroup>
-            <label htmlFor="price">Цена *</label>
-            <input 
-              type="text" 
-              id="price" 
-              name="price"
-              value={formData.price}
-              onChange={handleChange}
-              required
-              placeholder="например, 2 500 ₽"
-            />
-          </FormGroup>
-          
-          <FormGroup>
-            <label htmlFor="priceNote">Примечание к цене</label>
-            <input 
-              type="text" 
-              id="priceNote" 
-              name="priceNote"
-              value={formData.priceNote || ""}
-              onChange={handleChange}
-              placeholder="например, /сутки (1 чел)"
-            />
-          </FormGroup>
-        </FormRow>
-        
-        <FormRow>
-          <FormGroup>
-            <label htmlFor="additionalPrice">Дополнительная цена (необязательно)</label>
-            <input 
-              type="text" 
-              id="additionalPrice" 
-              name="additionalPrice"
-              value={formData.additionalPrice || ""}
-              onChange={handleChange}
-              placeholder="например, 3 000 ₽"
-            />
-          </FormGroup>
-          
-          <FormGroup>
-            <label htmlFor="additionalPriceNote">Примечание к доп. цене</label>
-            <input 
-              type="text" 
-              id="additionalPriceNote" 
-              name="additionalPriceNote"
-              value={formData.additionalPriceNote || ""}
-              onChange={handleChange}
-              placeholder="например, /сутки (2 чел)"
-            />
-          </FormGroup>
-        </FormRow>
-        
-        <FormRow>
-          <FormGroup>
-            <label htmlFor="capacity">Вместимость (чел.) *</label>
+            <label htmlFor="capacity">Вместимость (чел.)</label>
             <input 
               type="number" 
               id="capacity" 
-              name="capacity"
-              value={formData.capacity}
-              onChange={handleChange}
-              min="1"
-              max="10"
-              required
-            />
-          </FormGroup>
-          
-          <FormGroup>
-            <label htmlFor="size">Площадь (кв.м) *</label>
-            <input 
-              type="number" 
-              id="size" 
-              name="size"
-              value={formData.size}
-              onChange={handleChange}
-              min="5"
-              max="100"
-              required
-            />
-          </FormGroup>
-          
-          <FormGroup>
-            <label htmlFor="roomCount">Количество номеров</label>
-            <input 
-              type="number" 
-              id="roomCount" 
-              name="roomCount"
-              value={formData.roomCount || 1}
-              onChange={handleChange}
-              min="1"
-              max="50"
+              name="capacity" 
+              value={formData.capacity} 
+              onChange={handleChange} 
+              min="1" 
+              required 
             />
           </FormGroup>
         </FormRow>
-        
+
         <FormRow>
-          <FormGroup>
-            <label htmlFor="bedType">Тип кровати *</label>
-            <select 
-              id="bedType" 
-              name="bedType"
-              value={formData.bedType}
-              onChange={handleChange}
-              required
-            >
-              <option value="Односпальная кровать">Односпальная кровать</option>
-              <option value="Две односпальные кровати">Две односпальные кровати</option>
-              <option value="Двуспальная кровать">Двуспальная кровать</option>
-              <option value="Три односпальные кровати">Три односпальные кровати</option>
-              <option value="Четыре односпальные кровати">Четыре односпальные кровати</option>
-              <option value="Двуспальная и односпальная">Двуспальная и односпальная</option>
-            </select>
+           <FormGroup>
+            <label htmlFor="price">Цена (строка для отображения)</label>
+            <input 
+              type="text" 
+              id="price" 
+              name="price" 
+              value={formData.price} 
+              onChange={handleChange} 
+              placeholder="например, 3 500 ₽ / сутки" 
+              required 
+            />
           </FormGroup>
-          
           <FormGroup>
-            <div className="checkbox-group">
-              <input 
-                type="checkbox" 
-                id="hasPrivateBathroom" 
-                name="hasPrivateBathroom"
-                checked={formData.hasPrivateBathroom}
-                onChange={handleCheckboxChange}
-              />
-              <label htmlFor="hasPrivateBathroom">Собственная ванная комната</label>
-            </div>
+            <label htmlFor="priceValue">Цена (число, только цифры)</label>
+            <input 
+              type="number" 
+              id="priceValue" 
+              name="priceValue" 
+              value={formData.priceValue} 
+              onChange={handleChange} 
+              min="0" 
+              required 
+            />
           </FormGroup>
         </FormRow>
-        
+
+        {/* Убраны старые поля: description, size, bedType, roomCount, hasPrivateBathroom */}
+
+        {/* Редактирование фич */}
         <FormFeatures>
-          <label>Удобства и особенности номера *</label>
-          
+          <label>Удобства номера</label>
           <div className="features-list">
             {formData.features.map((feature, index) => (
               <div key={index} className="feature-tag">
                 {feature}
-                <button 
-                  type="button" 
-                  onClick={() => handleRemoveFeature(index)}
-                >
-                  ×
-                </button>
+                <button type="button" onClick={() => handleRemoveFeature(index)}>&times;</button>
               </div>
             ))}
           </div>
-          
           <div className="feature-input">
             <input 
               type="text" 
-              value={newFeature}
-              onChange={(e) => setNewFeature(e.target.value)}
-              placeholder="Добавить удобство, например: Телевизор"
-              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddFeature())}
+              value={newFeature} 
+              onChange={(e) => setNewFeature(e.target.value)} 
+              placeholder="Добавить удобство..." 
             />
-            <button type="button" onClick={handleAddFeature}>
-              Добавить
-            </button>
+            <button type="button" onClick={handleAddFeature}>Добавить</button>
           </div>
         </FormFeatures>
         
         <ButtonGroup>
           <Button 
-            type="button" 
-            className="secondary"
-            onClick={onCancel}
+             type="button" 
+             className="secondary" 
+             onClick={onCancel} 
+             disabled={isLoading}
           >
-            Отмена
+             Отмена
           </Button>
           <Button 
-            type="submit" 
-            className="primary"
+             type="submit" 
+             className="primary" 
+             disabled={isLoading}
           >
-            {initialData ? 'Сохранить изменения' : 'Добавить номер'}
+             {isLoading 
+               ? (initialData?._id ? 'Сохранение...' : 'Добавление...') 
+               : (initialData?._id ? 'Сохранить изменения' : 'Добавить номер')
+             }
           </Button>
         </ButtonGroup>
       </form>

@@ -1,11 +1,23 @@
 import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { loadHomePageContent } from '../utils/homePageUtils';
+// Удаляем homePageUtils
+// import { loadHomePageContent } from '../utils/homePageUtils';
+// Импортируем тип из HomePage.ts
+import { HomePageContent } from '../types/HomePage';
 
-const BannerSection = styled.section<{ backgroundImage: string }>`
+// Определяем тип для пропсов
+interface BannerProps {
+  content: HomePageContent['banner']; // Ожидаем получить секцию banner из HomePageContent
+  // Добавляем backgroundImage, если он не входит в content.banner
+  // backgroundImage?: string; 
+}
+
+const BannerSection = styled.section<{ backgroundImage?: string }>` // Делаем backgroundImage необязательным
   height: 85vh;
-  background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.5)), url('${props => props.backgroundImage}') center/cover no-repeat;
+  // Используем дефолтное изображение, если backgroundImage не передан или отсутствует
+  background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.5)), 
+              url('${props => props.backgroundImage || '/default-banner.jpg'}') center/cover no-repeat;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -109,13 +121,23 @@ const BookButton = styled(motion.a)`
   }
 `;
 
-const Banner: React.FC = () => {
-  // Загружаем контент из localStorage или используем дефолтный
-  const content = loadHomePageContent();
-  const { title, subtitle, buttonText, backgroundImage } = content.banner;
+// Принимаем props
+const Banner: React.FC<BannerProps> = ({ content }) => { 
+  // Удаляем загрузку из localStorage
+  // const content = loadHomePageContent();
   
+  // Используем данные из props. Если content не пришел, используем пустые строки
+  const title = content?.title || 'Добро пожаловать!';
+  const subtitle = content?.subtitle || 'Лучшее место для отдыха и оздоровления.';
+  const buttonText = content?.buttonText || 'Забронировать';
+  // Предполагаем, что backgroundImage будет частью content.banner или передаваться отдельно
+  // const backgroundImage = content?.backgroundImage || '/default-banner.jpg';
+  // Если backgroundImage нет в content.banner, нужно будет передать его отдельно или изменить HomePageContent
+  const backgroundImage = '/images/banner-bg.jpg'; // Временная заглушка, если нет в content
+
   return (
-    <BannerSection backgroundImage={backgroundImage}>
+    // Передаем backgroundImage в BannerSection
+    <BannerSection backgroundImage={backgroundImage}> 
       <BannerContent
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

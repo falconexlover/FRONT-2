@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { IMAGES } from '../assets/placeholders';
-import { loadHomePageContent } from '../utils/homePageUtils';
+import servicesService from '../services/servicesService';
+import { ServiceType } from '../types/Service';
 
 const ServicesSection = styled.section`
   padding: 6rem 2rem;
@@ -182,10 +183,52 @@ const OutlineButton = styled.a`
   }
 `;
 
-const Services: React.FC = () => {
-  // Загружаем контент из localStorage
-  const { services } = loadHomePageContent();
-  
+const LoadingPlaceholder = styled.div`
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+`;
+
+const ErrorPlaceholder = styled.div`
+  text-align: center;
+  padding: 2rem;
+  color: var(--error-color);
+  border: 1px solid var(--error-color);
+  border-radius: var(--radius-sm);
+  background-color: rgba(255, 0, 0, 0.05);
+`;
+
+interface ServicesProps {
+  title?: string;
+  subtitle?: string;
+}
+
+const Services: React.FC<ServicesProps> = ({ 
+  title = "Наши Услуги",
+  subtitle = "Все необходимое для вашего комфорта"
+}) => {
+  const [servicesData, setServicesData] = useState<ServiceType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await servicesService.getAllServices();
+        setServicesData(data);
+      } catch (err) {
+        console.error("Ошибка загрузки услуг:", err);
+        setError("Не удалось загрузить список услуг. Попробуйте позже.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
+
   return (
     <ServicesSection id="services">
       <SectionTitle>
@@ -195,7 +238,7 @@ const Services: React.FC = () => {
           transition={{ duration: 0.5 }}
           viewport={{ once: true, amount: 0.3 }}
         >
-          {services.title}
+          {title}
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -203,37 +246,42 @@ const Services: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           viewport={{ once: true, amount: 0.3 }}
         >
-          {services.subtitle}
+          {subtitle}
         </motion.p>
       </SectionTitle>
       
-      <ServicesGrid>
-        {services.servicesData.map((service, index) => (
-          <ServiceCard
-            key={service.id}
-            as={motion.div}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-            viewport={{ once: true, amount: 0.3 }}
-          >
-            <ServiceIcon>
-              <img 
-                src={service.icon} 
-                alt={service.title}
-                onError={(e) => {
-                  e.currentTarget.src = `https://via.placeholder.com/200x150/f2f2f2/217148?text=${service.title}`;
-                }} 
-              />
-            </ServiceIcon>
-            <h3>{service.title}</h3>
-            <p>{service.description}</p>
-            <OutlineButton href="#booking" data-service={service.id}>
-              Забронировать
-            </OutlineButton>
-          </ServiceCard>
-        ))}
-      </ServicesGrid>
+      {loading && <LoadingPlaceholder>Загрузка услуг...</LoadingPlaceholder>}
+      {error && <ErrorPlaceholder>{error}</ErrorPlaceholder>}
+      
+      {!loading && !error && (
+        <ServicesGrid>
+          {servicesData.map((service: ServiceType, index: number) => (
+            <ServiceCard
+              key={service._id || index}
+              as={motion.div}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              viewport={{ once: true, amount: 0.3 }}
+            >
+              <ServiceIcon>
+                <img 
+                  src={service.icon || `https://via.placeholder.com/200x150/f2f2f2/217148?text=${encodeURIComponent(service.title)}`}
+                  alt={service.title}
+                  onError={(e) => {
+                    e.currentTarget.src = `https://via.placeholder.com/200x150/f2f2f2/217148?text=${encodeURIComponent(service.title)}`;
+                  }} 
+                />
+              </ServiceIcon>
+              <h3>{service.title}</h3>
+              <p>{service.description || 'Описание услуги скоро появится.'}</p>
+              <OutlineButton href="#booking" data-service={service._id}>
+                Забронировать
+              </OutlineButton>
+            </ServiceCard>
+          ))}
+        </ServicesGrid>
+      )}
     </ServicesSection>
   );
 };

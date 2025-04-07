@@ -1,22 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { logoutAdmin } from '../utils/auth';
 import GalleryUploadManager from './GalleryUploadManager';
-import { UploadedImage } from '../utils/imageUpload';
-import { 
-  loadGalleryFromStorage, 
-  removeImageFromStorage, 
-  updateImageInStorage,
-  clearGalleryStorage
-} from '../utils/localStorageUtils';
+import { galleryService } from '../utils/api';
+import { toast } from 'react-toastify';
+
+interface GalleryImageItem {
+  _id: string;
+  imageUrl: string;
+  category: string;
+  title: string;
+  description: string;
+  cloudinaryPublicId?: string;
+}
 
 interface AdminPanelProps {
   onLogout: () => void;
-  onImageUpload: (images: UploadedImage[]) => void;
-  onImageDelete: (imageId: string) => void;
-  onImageUpdate: (imageId: string, updates: any) => void;
-  staticImagesCount: number;
 }
 
 const PanelContainer = styled.div`
@@ -97,6 +96,11 @@ const ActionButton = styled.button`
     &:hover {
       background-color: rgba(33, 113, 72, 0.1);
     }
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 `;
 
@@ -299,6 +303,23 @@ const ConfirmDialog = styled.div`
   }
 `;
 
+const LoadingIndicator = styled.div`
+  text-align: center;
+  padding: 2rem;
+  font-style: italic;
+  color: var(--text-color);
+`;
+
+const ErrorMessage = styled.div`
+  text-align: center;
+  padding: 2rem;
+  color: #e53935;
+  background-color: #ffebee;
+  border: 1px solid #e53935;
+  border-radius: var(--radius-sm);
+  margin-bottom: 1.5rem;
+`;
+
 const NoImagesMessage = styled.div`
   text-align: center;
   padding: 3rem 1rem;
@@ -309,20 +330,6 @@ const NoImagesMessage = styled.div`
   }
 `;
 
-// Интерфейс для изображения в галерее
-interface GalleryImageItem {
-  id: string;
-  url: string;
-  category: string;
-  title: string;
-  description: string;
-  createdAt: Date;
-  fileName?: string;
-  fileType?: string;
-  fileSize?: number;
-}
-
-// Перечисление категорий
 const CATEGORIES = [
   { id: 'rooms', label: 'Номера' },
   { id: 'sauna', label: 'Сауна' },
@@ -331,70 +338,80 @@ const CATEGORIES = [
   { id: 'party', label: 'Детские праздники' }
 ];
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ 
-  onLogout, 
-  onImageUpload, 
-  onImageDelete,
-  onImageUpdate,
-  staticImagesCount
-}) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState('upload');
   const [images, setImages] = useState<GalleryImageItem[]>([]);
   const [editingImage, setEditingImage] = useState<GalleryImageItem | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [imageToDelete, setImageToDelete] = useState<string | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadImages = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await galleryService.getAllImages();
+      setImages(data || []); 
+    } catch (err: any) {
+      console.error("Ошибка при загрузке изображений галереи:", err);
+      const message = err.message || 'Не удалось загрузить изображения галереи.';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
   
-  // Загрузка изображений из localStorage при активации вкладки
-  React.useEffect(() => {
+  useEffect(() => {
     if (activeTab === 'manage') {
       loadImages();
     }
-  }, [activeTab]);
+  }, [activeTab, loadImages]);
   
-  // Функция загрузки изображений из localStorage
-  const loadImages = () => {
-    const savedImages = loadGalleryFromStorage();
-    setImages(savedImages as GalleryImageItem[]);
-  };
-  
-  // Обработчик для загрузки новых изображений
-  const handleImageUpload = (newImages: UploadedImage[]) => {
-    onImageUpload(newImages);
-    
-    // Если мы на вкладке управления, обновляем список
+  const handleUploadSuccess = useCallback(() => {
+    toast.success('Изображения успешно загружены!');
     if (activeTab === 'manage') {
       loadImages();
+    } else {
+      setActiveTab('manage');
     }
-  };
+  }, [activeTab, loadImages]);
   
-  // Обработчик для кнопки редактирования
   const handleEditClick = (image: GalleryImageItem) => {
     setEditingImage(image);
   };
   
-  // Обработчик для кнопки удаления
   const handleDeleteClick = (imageId: string) => {
     setImageToDelete(imageId);
     setShowConfirmDialog(true);
   };
   
-  // Подтверждение удаления
-  const confirmDelete = () => {
-    if (imageToDelete) {
-      // Удаляем из localStorage
-      removeImageFromStorage(imageToDelete);
-      // Удаляем из локального состояния
-      setImages(prev => prev.filter(img => img.id !== imageToDelete));
-      // Оповещаем родительский компонент
-      onImageDelete(imageToDelete);
-    }
+  const confirmDelete = async () => {
+    if (!imageToDelete) return;
+
+    setIsLoading(true);
+    setError(null);
     
-    setShowConfirmDialog(false);
-    setImageToDelete(null);
+    try {
+      await galleryService.deleteImage(imageToDelete);
+      toast.success('Изображение успешно удалено!');
+      await loadImages(); 
+      setShowConfirmDialog(false);
+      setImageToDelete(null);
+    } catch (err: any) {
+      console.error("Ошибка при удалении изображения:", err);
+      const message = err.message || 'Не удалось удалить изображение.';
+      setError(message);
+      toast.error(message);
+      setShowConfirmDialog(false);
+      setImageToDelete(null);
+    } finally {
+      setIsLoading(false);
+    }
   };
   
-  // Обработчик изменения полей в форме редактирования
   const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
@@ -406,55 +423,50 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
   
-  // Сохранение изменений в изображении
-  const saveImageChanges = () => {
-    if (editingImage) {
-      // Обновляем в localStorage
-      updateImageInStorage(editingImage.id, {
-        category: editingImage.category,
-        title: editingImage.title,
-        description: editingImage.description
-      });
-      
-      // Обновляем в локальном состоянии
-      setImages(prev => 
-        prev.map(img => 
-          img.id === editingImage.id ? editingImage : img
-        )
-      );
-      
-      // Оповещаем родительский компонент
-      onImageUpdate(editingImage.id, {
-        category: editingImage.category,
-        title: editingImage.title,
-        description: editingImage.description
-      });
-      
-      // Закрываем форму редактирования
+  const saveImageChanges = async () => {
+    if (!editingImage) return;
+
+    setIsLoading(true);
+    setError(null);
+    
+    const updates = {
+      category: editingImage.category,
+      title: editingImage.title,
+      description: editingImage.description
+    };
+
+    try {
+      await galleryService.updateImage(editingImage._id, updates);
+      toast.success('Изменения успешно сохранены!');
+      await loadImages();
       setEditingImage(null);
+    } catch (err: any) {
+      console.error("Ошибка при обновлении изображения:", err);
+      const message = err.message || 'Не удалось сохранить изменения.';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
     }
   };
   
-  // Очистка всех пользовательских изображений
   const clearAllImages = () => {
-    clearGalleryStorage();
-    setImages([]);
     setShowClearConfirm(false);
-    // Перезагрузка страницы для обновления галереи
-    window.location.reload();
+    toast.info('Функция очистки галереи временно отключена. Требуется реализация на бэкенде.');
   };
   
-  // Выход из администратора
   const handleLogout = () => {
-    logoutAdmin();
     onLogout();
   };
   
+  const imageToDeleteDetails = imageToDelete ? images.find(img => img._id === imageToDelete) : null;
+  const imageToDeleteTitle = imageToDeleteDetails ? imageToDeleteDetails.title : 'это изображение';
+
   return (
     <PanelContainer>
       <PanelHeader>
         <h2>Панель администратора галереи</h2>
-        <ActionButton className="outline" onClick={handleLogout}>
+        <ActionButton className="outline" onClick={handleLogout} disabled={isLoading}>
           Выйти из режима администратора
         </ActionButton>
       </PanelHeader>
@@ -474,13 +486,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         </Tab>
       </TabsContainer>
       
+      {error && <ErrorMessage>{error}</ErrorMessage>}
+
       {activeTab === 'upload' && (
         <Panel
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          <GalleryUploadManager onImageUpload={handleImageUpload} />
+          <GalleryUploadManager onImageUpload={handleUploadSuccess} />
         </Panel>
       )}
       
@@ -496,6 +510,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               <ActionButton 
                 className="danger" 
                 onClick={() => setShowClearConfirm(true)}
+                disabled={true}
+                title="Функция временно отключена (требуется бэкенд)"
               >
                 Очистить галерею
               </ActionButton>
@@ -513,6 +529,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     name="title"
                     value={editingImage.title}
                     onChange={handleEditFormChange}
+                    disabled={isLoading}
                   />
                 </div>
                 
@@ -523,6 +540,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     name="category"
                     value={editingImage.category}
                     onChange={handleEditFormChange}
+                    disabled={isLoading}
                   >
                     {CATEGORIES.map(category => (
                       <option key={category.id} value={category.id}>
@@ -539,6 +557,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     name="description"
                     value={editingImage.description}
                     onChange={handleEditFormChange}
+                    disabled={isLoading}
                   />
                 </div>
                 
@@ -546,20 +565,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   <ActionButton 
                     className="outline" 
                     onClick={() => setEditingImage(null)}
+                    disabled={isLoading}
                   >
                     Отмена
                   </ActionButton>
                   <ActionButton 
                     className="primary" 
                     onClick={saveImageChanges}
+                    disabled={isLoading}
                   >
-                    Сохранить
+                    {isLoading ? 'Сохранение...' : 'Сохранить'}
                   </ActionButton>
                 </div>
               </EditForm>
             )}
             
-            {images.length === 0 ? (
+            {isLoading && <LoadingIndicator>Загрузка данных...</LoadingIndicator>}
+
+            {!isLoading && !error && images.length === 0 && (
               <NoImagesMessage>
                 <p>У вас пока нет загруженных изображений.</p>
                 <ActionButton 
@@ -569,19 +592,27 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   Загрузить изображения
                 </ActionButton>
               </NoImagesMessage>
-            ) : (
+            )}
+            
+            {!isLoading && images.length > 0 && (
               <ImagesGrid>
                 {images.map(image => (
-                  <ImageCard key={image.id}>
+                  <ImageCard key={image._id}>
                     <div className="image-container">
-                      <img src={image.url} alt={image.title} />
+                      <img src={image.imageUrl} alt={image.title} />
                       <div className="image-overlay">
-                        <button onClick={() => handleEditClick(image)}>
+                        <button 
+                          onClick={() => handleEditClick(image)} 
+                          disabled={isLoading}
+                          title="Редактировать"
+                        >
                           ✎
                         </button>
                         <button 
                           className="delete"
-                          onClick={() => handleDeleteClick(image.id)}
+                          onClick={() => handleDeleteClick(image._id)}
+                          disabled={isLoading}
+                          title="Удалить"
                         >
                           ✕
                         </button>
@@ -598,12 +629,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 ))}
               </ImagesGrid>
             )}
-            
-            <div style={{ marginTop: '2rem' }}>
-              <p style={{ color: 'var(--text-color)', marginBottom: '1rem' }}>
-                Примечание: Стандартные {staticImagesCount} изображений не могут быть изменены или удалены через этот интерфейс.
-              </p>
-            </div>
           </ExistingImagesPanel>
         </Panel>
       )}
@@ -612,19 +637,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         <ConfirmDialog>
           <div className="dialog-content">
             <h3>Подтверждение удаления</h3>
-            <p>Вы уверены, что хотите удалить это изображение? Это действие нельзя будет отменить.</p>
+            <p>Вы уверены, что хотите удалить изображение "{imageToDeleteTitle}"? Это действие нельзя будет отменить.</p>
             <div className="dialog-buttons">
               <ActionButton 
                 className="outline" 
                 onClick={() => setShowConfirmDialog(false)}
+                disabled={isLoading}
               >
                 Отмена
               </ActionButton>
               <ActionButton 
                 className="danger" 
                 onClick={confirmDelete}
+                disabled={isLoading}
               >
-                Удалить
+                {isLoading ? 'Удаление...' : 'Удалить'}
               </ActionButton>
             </div>
           </div>
@@ -635,7 +662,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         <ConfirmDialog>
           <div className="dialog-content">
             <h3>Очистить галерею?</h3>
-            <p>Вы собираетесь удалить все загруженные вами изображения из галереи. Это действие нельзя будет отменить. Стандартные изображения останутся без изменений.</p>
+            <p>Вы собираетесь удалить все загруженные вами изображения из галереи. Это действие нельзя будет отменить.</p>
+             <p style={{color: 'red', marginTop: '-1rem', marginBottom: '1rem'}}><strong>Внимание:</strong> Эта функция временно отключена.</p>
             <div className="dialog-buttons">
               <ActionButton 
                 className="outline" 
@@ -646,6 +674,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               <ActionButton 
                 className="danger" 
                 onClick={clearAllImages}
+                disabled={true}
               >
                 Очистить галерею
               </ActionButton>

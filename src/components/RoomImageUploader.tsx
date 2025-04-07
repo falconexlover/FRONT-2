@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 
-// Импортируем функцию для изменения размера изображений
-import { resizeImage } from '../utils/imageUpload';
+// Импортируем функцию для изменения размера изображений из нового места
+import { resizeImage } from '../utils/imageUtils';
 
 interface RoomImageUploaderProps {
   initialImage?: string;
-  onImageChange: (imageData: string) => void;
+  onImageChange: (file: File | null) => void;
 }
 
 const UploaderContainer = styled.div`
@@ -130,14 +130,14 @@ const ErrorMessage = styled.div`
 `;
 
 const RoomImageUploader: React.FC<RoomImageUploaderProps> = ({ initialImage, onImageChange }) => {
-  const [image, setImage] = useState<string | null>(initialImage || null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(initialImage || null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
     if (initialImage) {
-      setImage(initialImage);
+      setImagePreviewUrl(initialImage);
     }
   }, [initialImage]);
   
@@ -162,14 +162,12 @@ const RoomImageUploader: React.FC<RoomImageUploaderProps> = ({ initialImage, onI
   };
   
   const validateFile = (file: File): boolean => {
-    // Проверка типа файла
     const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       setError('Пожалуйста, загрузите изображение в формате JPG, PNG, GIF или WEBP');
       return false;
     }
     
-    // Проверка размера (10MB)
     const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       setError('Размер изображения должен быть не более 10MB');
@@ -201,23 +199,23 @@ const RoomImageUploader: React.FC<RoomImageUploaderProps> = ({ initialImage, onI
   const processFile = async (file: File) => {
     if (validateFile(file)) {
       try {
-        // Изменяем размер изображения перед загрузкой
         const resizedFile = await resizeImage(file, 800);
         
         const reader = new FileReader();
         
         reader.onload = (event) => {
           if (event.target && typeof event.target.result === 'string') {
-            const imageData = event.target.result;
-            setImage(imageData);
-            onImageChange(imageData);
+            setImagePreviewUrl(event.target.result);
           }
         };
         
         reader.readAsDataURL(resizedFile);
+        
+        onImageChange(resizedFile);
       } catch (error) {
-        console.error('Ошибка при изменении размера изображения:', error);
+        console.error('Ошибка при обработке изображения:', error);
         setError('Не удалось обработать изображение. Пожалуйста, попробуйте другой файл.');
+        onImageChange(null);
       }
     }
   };
@@ -229,8 +227,8 @@ const RoomImageUploader: React.FC<RoomImageUploaderProps> = ({ initialImage, onI
   };
   
   const removeImage = () => {
-    setImage(null);
-    onImageChange('');
+    setImagePreviewUrl(null);
+    onImageChange(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -240,24 +238,27 @@ const RoomImageUploader: React.FC<RoomImageUploaderProps> = ({ initialImage, onI
     <UploaderContainer>
       <DropZone 
         isDragging={isDragging}
-        hasImage={!!image}
+        hasImage={!!imagePreviewUrl}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         onClick={handleClick}
       >
-        {!image && (
+        {!imagePreviewUrl && (
           <>
             <i className="fas fa-cloud-upload-alt"></i>
             <p>Перетащите изображение номера сюда или нажмите для выбора</p>
           </>
         )}
+        {imagePreviewUrl && (
+          <p>Изображение выбрано. Нажмите, чтобы заменить, или перетащите новое.</p>
+        )}
         <HiddenInput 
           type="file" 
           ref={fileInputRef}
           onChange={handleInputChange}
-          accept="image/png, image/jpeg, image/jpg, image/gif, image/webp"
+          accept="image/jpeg,image/png,image/gif,image/webp"
         />
       </DropZone>
       
@@ -272,10 +273,10 @@ const RoomImageUploader: React.FC<RoomImageUploaderProps> = ({ initialImage, onI
       
       {error && <ErrorMessage>{error}</ErrorMessage>}
       
-      {image && (
+      {imagePreviewUrl && (
         <ImagePreview>
-          <img src={image} alt="Превью номера" />
-          <RemoveButton onClick={removeImage} type="button">
+          <img src={imagePreviewUrl} alt="Превью номера" />
+          <RemoveButton onClick={(e) => { e.stopPropagation(); removeImage(); }}>
             <i className="fas fa-times"></i>
           </RemoveButton>
         </ImagePreview>

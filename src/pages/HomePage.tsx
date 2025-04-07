@@ -1,35 +1,74 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import Banner from '../components/Banner';
 import About from '../components/About';
 import Services from '../components/Services';
 import Rooms from '../components/Rooms';
 import YandexMap from '../components/YandexMap';
-import { loadHomePageContent, saveHomePageContent, DEFAULT_HOME_CONTENT } from '../utils/homePageUtils';
+import { homepageService } from '../utils/api';
+import { HomePageContent } from '../types/HomePage';
+import { toast } from 'react-toastify';
+
+// Начальное состояние (может быть null до загрузки)
+const initialContent: HomePageContent | null = null;
 
 const HomePage: React.FC = () => {
-  // При первом рендере проверяем, есть ли данные в localStorage
-  // Если нет - инициализируем дефолтными значениями
-  useEffect(() => {
-    const content = loadHomePageContent();
-    if (!content) {
-      saveHomePageContent(DEFAULT_HOME_CONTENT);
+  const [content, setContent] = useState<HomePageContent | null>(initialContent);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Загрузка контента с API
+  const loadContent = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await homepageService.getHomePage();
+      setContent(data);
+    } catch (err) {
+      console.error("Ошибка загрузки контента главной страницы:", err);
+      let message = 'Не удалось загрузить данные страницы.';
+      if (err instanceof Error) {
+        message = err.message;
+      }
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
-  
-  const content = loadHomePageContent();
-  const { contact } = content;
+
+  useEffect(() => {
+    loadContent();
+  }, [loadContent]);
   
   // Координаты отеля
   const hotelCoordinates: [number, number] = [55.591259, 38.141982]; 
   
+  // Отображение загрузки
+  if (isLoading) {
+    return <LoadingPlaceholder>Загрузка страницы...</LoadingPlaceholder>;
+  }
+
+  // Отображение ошибки
+  if (error) {
+    return <ErrorPlaceholder>Ошибка загрузки: {error}</ErrorPlaceholder>;
+  }
+
+  // Если контент не загрузился (null)
+  if (!content) {
+    return <ErrorPlaceholder>Не удалось загрузить контент страницы.</ErrorPlaceholder>;
+  }
+  
+  // Извлекаем нужные части контента для передачи
+  const { banner, about, rooms, services, contact } = content;
+  
   return (
     <>
-      <Banner />
-      <About />
-      <Rooms />
-      <Services />
+      <Banner content={banner} />
+      <About content={about} />
+      <Rooms title={rooms?.title} subtitle={rooms?.subtitle} />
+      <Services title={services?.title} subtitle={services?.subtitle} />
       <section id="contact" className="section" style={{ padding: '6rem 2rem', backgroundColor: 'white' }}>
         <div className="container">
           <SectionTitle>
@@ -184,6 +223,26 @@ const Icon = styled.i`
   justify-content: center;
   margin-right: 1rem;
   flex-shrink: 0;
+`;
+
+const LoadingPlaceholder = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+  font-size: 1.5rem;
+  color: var(--text-color);
+`;
+
+const ErrorPlaceholder = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+  font-size: 1.2rem;
+  color: #e53935;
+  padding: 2rem;
+  text-align: center;
 `;
 
 export default HomePage; 
