@@ -272,6 +272,7 @@ const Services: React.FC<ServicesProps> = ({
                   <img 
                     src={service.icon}
                     alt={service.name}
+                    loading="lazy"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                       const parent = e.currentTarget.parentElement;

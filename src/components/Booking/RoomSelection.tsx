@@ -143,7 +143,7 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ rooms, selectedRoomId, on
               <div className="check-mark"><i className="fas fa-check"></i></div>
             )}
             <RoomImage>
-              <img src={room.imageUrls?.[0] || '/placeholder-image.jpg'} alt={room.title} />
+              <img src={room.imageUrls?.[0] || '/placeholder-image.jpg'} alt={room.title} loading="lazy" />
             </RoomImage>
             <RoomInfo>
               <h3>{room.title}</h3>

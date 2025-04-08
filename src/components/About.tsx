@@ -188,7 +188,7 @@ const About: React.FC<AboutProps> = ({ content }) => {
           transition={{ duration: 0.7 }}
           viewport={{ once: true, amount: 0.3 }}
         >
-          <img src={imageUrl} alt="О гостинице Лесной дворик" />
+          <img src={imageUrl} alt="О гостинице Лесной дворик" loading="lazy" />
         </AboutImage>
       </AboutContent>
     </AboutSection>

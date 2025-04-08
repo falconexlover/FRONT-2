@@ -321,7 +321,7 @@ const Rooms: React.FC<RoomsProps> = ({
               viewport={{ once: true, amount: 0.3 }}
             >
               <RoomImage>
-                <img src={room.imageUrls?.[0] || IMAGES.ROOM_ECONOMY} alt={room.title} />
+                <img src={room.imageUrls?.[0] || IMAGES.ROOM_ECONOMY} alt={room.title} loading="lazy" />
                 <RoomPrice>{room.price}</RoomPrice>
               </RoomImage>
               <RoomDetails>

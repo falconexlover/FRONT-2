@@ -470,16 +470,25 @@ const GalleryPage: React.FC = () => {
             {filteredImages.map((image, index) => (
               <GalleryItem
                 key={image._id}
-                onClick={() => openLightbox(index)}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                variants={imageVariants}
+                initial="hidden"
+                animate="visible"
+                exit="hidden"
+                custom={index}
+                layout
               >
-                <img 
-                  src={image.imageUrl}
-                  alt={image.title || image.category} 
-                  loading="lazy"
-                />
+                <motion.div 
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                  onClick={() => openLightbox(index)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <img
+                    src={image.imageUrl}
+                    alt={image.title || image.category}
+                    loading="lazy"
+                  />
+                </motion.div>
                 <div className="image-caption">
                     <h3>{image.title || '(без названия)'}</h3> 
                     <p>{image.description || ''}</p> 

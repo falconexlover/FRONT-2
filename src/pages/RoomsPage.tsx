@@ -276,6 +276,7 @@ const RoomsPage: React.FC = () => {
                               target.onerror = null;
                               target.src = './placeholder-image.jpg';
                             }}
+                            loading="lazy"
                           />
                         </div>
                       ))}
@@ -285,6 +286,7 @@ const RoomsPage: React.FC = () => {
                       src={'./placeholder-image.jpg'}
                       alt={`${room.title} - плейсхолдер`}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      loading="lazy"
                     />
                   )}
                 </SliderWrapper>
