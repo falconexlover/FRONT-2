@@ -87,6 +87,75 @@ const StyledTable = styled.table`
   border-collapse: collapse;
 `;
 
+const StyledTableRow = styled.tr<{ isDragging?: boolean }>`
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background-color: var(--bg-tertiary); /* Легкое выделение при наведении */
+  }
+
+  // Стили для перетаскивания
+  opacity: ${({ isDragging }) => (isDragging ? 0.5 : 1)};
+  box-shadow: ${({ isDragging }) => (isDragging ? '0 4px 12px rgba(0, 0, 0, 0.1)' : 'none')};
+`;
+
+const StyledTableCell = styled.td`
+  padding: 1rem 1.2rem; /* Такой же padding, как у заголовков */
+  color: var(--text-primary);
+  vertical-align: middle; /* Выравниваем по центру вертикально */
+  white-space: normal; /* Разрешаем перенос текста */
+  font-size: 0.9rem;
+
+  &.drag-handle {
+    width: 40px; // Явно задаем ширину для ручки
+    cursor: grab;
+    text-align: center;
+    color: var(--text-secondary);
+    &:active {
+        cursor: grabbing;
+    }
+  }
+
+  &.image-cell {
+    width: 120px; // Увеличим немного для превью
+    @media screen and (max-width: 768px) {
+      padding-right: 0.5rem; // Меньше отступ справа на мобильных
+    }
+  }
+
+  &.features-cell {
+    max-width: 200px; /* Ограничим ширину для фич */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: default; /* Чтобы title всплывал */
+  }
+
+  &.actions {
+    width: 100px; // Фиксированная ширина для кнопок
+    white-space: nowrap;
+    text-align: right; /* Выравниваем кнопки вправо */
+    @media screen and (max-width: 768px) {
+      width: auto; // Автоматическая ширина на мобильных
+      text-align: left;
+      padding-left: 0.5rem; // Меньше отступ слева на мобильных
+    }
+  }
+
+  // Скрываем колонки на мобильных
+  &.hide-mobile {
+    @media screen and (max-width: 768px) {
+      display: none;
+    }
+  }
+`;
+
 const TableHeader = styled.th`
   padding: 1rem 1.2rem; /* Скорректируем padding */
   text-align: left;
@@ -97,24 +166,12 @@ const TableHeader = styled.th`
   font-weight: 500;
   text-transform: uppercase; /* Заголовки капсом */
   letter-spacing: 0.5px;
-`;
 
-const TableRow = styled.tr`
-  &:hover {
-    background-color: var(--bg-tertiary); /* Фон при наведении */
-  }
-`;
-
-const TableCell = styled.td`
-  padding: 1rem 1.2rem;
-  vertical-align: middle;
-  color: var(--text-primary); /* Основной цвет текста */
-  border-bottom: 1px solid var(--border-color); /* Темная граница */
-  white-space: normal;
-  font-size: 0.95rem;
-
-  &:last-child {
-     white-space: nowrap;
+  // Скрываем колонки на мобильных
+  &.hide-mobile {
+    @media screen and (max-width: 768px) {
+      display: none;
+    }
   }
 `;
 
@@ -223,35 +280,6 @@ interface SortableRoomRowProps {
   onDelete: (id: string) => void;
 }
 
-const StyledTableRow = styled.tr<{ isDragging?: boolean }>`
-  &:hover {
-    background-color: var(--bg-tertiary); 
-  }
-  opacity: ${props => props.isDragging ? 0.5 : 1};
-`;
-
-const StyledTableCell = styled.td`
-  padding: 1rem 1.2rem;
-  vertical-align: middle;
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-color);
-  white-space: normal;
-  font-size: 0.95rem;
-
-  &:last-child {
-     white-space: nowrap;
-     border-bottom: none;
-  }
-
-  &.drag-handle {
-    cursor: grab;
-    width: 40px;
-    text-align: center;
-    color: var(--text-secondary);
-     padding: 1rem 0.5rem;
-  }
-`;
-
 function SortableRoomRow({ room, onEdit, onDelete }: SortableRoomRowProps) {
   const {
     attributes,
@@ -281,8 +309,12 @@ function SortableRoomRow({ room, onEdit, onDelete }: SortableRoomRowProps) {
        </StyledTableCell>
        <StyledTableCell>{room.title}</StyledTableCell>
        <StyledTableCell>{room.price}</StyledTableCell>
-       <StyledTableCell>{room.capacity}</StyledTableCell>
-       <StyledTableCell>{room.features?.join(', ')}</StyledTableCell>
+       <StyledTableCell className="hide-mobile">{room.capacity} чел.</StyledTableCell>
+       <StyledTableCell className="hide-mobile features-cell"
+          title={Array.isArray(room.features) ? room.features.join(', ') : room.features}
+       >
+         {Array.isArray(room.features) ? room.features.join(', ') : room.features}
+       </StyledTableCell>
        <StyledTableCell className="actions">
          <ActionButtonsContainer>
            <IconButton className="edit" onClick={() => onEdit(room)} title="Редактировать">
@@ -521,8 +553,8 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
                 <TableHeader>Фото</TableHeader>
                 <TableHeader>Название</TableHeader>
                 <TableHeader>Цена</TableHeader>
-                <TableHeader>Вмест.</TableHeader>
-                <TableHeader>Особенности</TableHeader>
+                <TableHeader className="hide-mobile">Вмест.</TableHeader>
+                <TableHeader className="hide-mobile">Особенности</TableHeader>
                 <TableHeader>Действия</TableHeader>
               </tr>
             </thead>

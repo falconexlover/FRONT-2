@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 
 const UploadManagerContainer = styled.div`
   padding: 2rem;
-  background-color: var(--light-color);
+  background-color: var(--bg-primary);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   margin-bottom: 3rem;
@@ -15,7 +15,7 @@ const UploadManagerContainer = styled.div`
 // Создаем общий стиль для заголовков секций
 const SectionHeader = styled.h3`
     margin-bottom: 1rem;
-    color: var(--dark-color); // Используем темный цвет темы
+    color: var(--text-primary); // Используем правильный темный цвет текста для светлой темы
     text-align: center; // Центрируем
 `;
 
@@ -39,8 +39,8 @@ const CategorySelector = styled.div`
 const CategoryButton = styled.button<{ active: boolean }>`
   padding: 0.7rem 1.5rem;
   background-color: ${props => props.active ? 'var(--primary-color)' : 'white'};
-  color: ${props => props.active ? 'white' : 'var(--dark-color)'};
-  border: 2px solid ${props => props.active ? 'var(--primary-color)' : '#eee'};
+  color: ${props => props.active ? 'white' : 'var(--text-primary)'};
+  border: 2px solid ${props => props.active ? 'var(--primary-color)' : 'var(--text-primary)'};
   border-radius: var(--radius-sm);
   font-weight: 600;
   font-size: 0.95rem;

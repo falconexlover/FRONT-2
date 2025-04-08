@@ -62,8 +62,6 @@ const GlobalStyle = createGlobalStyle`
     --transition: all 0.2s ease-in-out; 
   }
 
-  /* @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap'); */
-
   * {
     margin: 0;
     padding: 0;

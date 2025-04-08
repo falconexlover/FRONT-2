@@ -11,9 +11,12 @@ const LayoutContainer = styled.div`
   min-height: calc(100vh - 80px); /* Оставляем расчет высоты, если футер админки будет */
   background-color: var(--bg-primary); /* Используем темный фон */
 
+  /* Убираем flex-direction: column на мобильных, т.к. сайдбар становится fixed */
+  /* 
   @media (max-width: 768px) {
     flex-direction: column;
   }
+  */
 `;
 
 const SidebarContainer = styled.aside<{ isOpenOnMobile: boolean }>`

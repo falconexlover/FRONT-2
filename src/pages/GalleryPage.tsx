@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { galleryService } from '../utils/api';
 import { GalleryImageItem } from '../types/GalleryImage';
@@ -50,34 +50,34 @@ const CategoriesContainer = styled.div`
   justify-content: center;
 `;
 
-const CategoryButton = styled.button<{ active: boolean }>`
+const CategoryButton = styled.button<{ $active: boolean }>`
   padding: 0.7rem 1.5rem;
   margin: 0 0.5rem 1rem;
-  background: ${props => props.active ? 'var(--primary-color)' : 'transparent'};
-  color: ${props => props.active ? 'white' : 'var(--text-color)'};
-  border: 2px solid ${props => props.active ? 'var(--primary-color)' : '#eee'};
+  background: ${props => props.$active ? 'var(--primary-color)' : 'transparent'};
+  color: ${props => props.$active ? 'white' : 'var(--text-color)'};
+  border: 2px solid ${props => props.$active ? 'var(--primary-color)' : '#eee'};
   border-radius: var(--radius-full);
-  font-weight: ${props => props.active ? '600' : '400'};
+  font-weight: ${props => props.$active ? '600' : '400'};
   cursor: pointer;
   transition: var(--transition);
   
   &:hover {
     border-color: var(--primary-color);
-    color: ${props => props.active ? 'white' : 'var(--primary-color)'};
+    color: ${props => props.$active ? 'white' : 'var(--primary-color)'};
   }
 `;
 
-const SearchContainer = styled.div<{ active: boolean }>`
+const SearchContainer = styled.div<{ $active: boolean }>`
   position: relative;
-  display: ${props => props.active ? 'flex' : 'none'};
+  display: ${props => props.$active ? 'flex' : 'none'};
   align-items: center;
   margin-left: 1rem;
 `;
 
-const SearchIconButton = styled.button<{ active: boolean }>`
+const SearchIconButton = styled.button<{ $active: boolean }>`
   background: none;
   border: none;
-  color: ${props => props.active ? 'var(--primary-color)' : 'var(--dark-color)'};
+  color: ${props => props.$active ? 'var(--primary-color)' : 'var(--dark-color)'};
   font-size: 1.5rem;
   cursor: pointer;
   transition: var(--transition);
@@ -443,7 +443,7 @@ const GalleryPage: React.FC = () => {
               {categories.map((category) => (
                 <CategoryButton 
                   key={category} 
-                  active={selectedCategory === category}
+                  $active={selectedCategory === category}
                   onClick={() => setSelectedCategory(category)}
                 >
                   {category === 'all' ? 'Все' : category.charAt(0).toUpperCase() + category.slice(1)}
@@ -452,10 +452,10 @@ const GalleryPage: React.FC = () => {
             </CategoriesContainer>
             
             {images.length > 0 && (
-              <SearchContainer active={isSearchActive}>
+              <SearchContainer $active={isSearchActive}>
                 <SearchIconButton 
                   onClick={() => setIsSearchActive(!isSearchActive)}
-                  active={isSearchActive}
+                  $active={isSearchActive}
                 >
                   <i className={`fas ${isSearchActive ? 'fa-times' : 'fa-search'}`}></i>
                 </SearchIconButton>

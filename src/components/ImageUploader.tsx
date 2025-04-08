@@ -20,7 +20,7 @@ const DropZone = styled.div<{ isDragging: boolean }>`
   cursor: pointer;
   transition: border-color 0.2s ease, background-color 0.2s ease;
   background-color: var(--bg-secondary); /* Фон зоны */
-  color: var(--text-secondary); /* Цвет текста */
+  color: var(--text-primary); /* Изменяем цвет текста на основной темный */
 
   ${props => props.isDragging && css`
     border-color: var(--primary-color);

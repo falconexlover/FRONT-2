@@ -108,9 +108,15 @@ export const FooterSection = styled.div`
           display: flex;
           align-items: center;
 
-          &:hover {
-            color: #e1e1e1;
-            transform: translateX(5px);
+          @media (hover: hover) and (pointer: fine) {
+            &:hover {
+              color: #e1e1e1;
+              transform: translateX(5px);
+            }
+          }
+          
+          &:active {
+             color: #e1e1e1;
           }
 
           &::before {
@@ -150,9 +156,16 @@ export const FooterSection = styled.div`
           text-decoration: none;
           transition: color 0.3s;
 
-          &:hover {
-            color: #e1e1e1;
-            text-decoration: underline;
+          @media (hover: hover) and (pointer: fine) {
+            &:hover {
+              color: #e1e1e1;
+              text-decoration: underline;
+            }
+          }
+          
+          &:active {
+             color: #e1e1e1;
+             text-decoration: underline;
           }
         }
       }
@@ -172,7 +185,13 @@ export const FooterBottom = styled.div`
     color: #a0a7b3;
     text-decoration: underline;
     
-    &:hover {
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+          color: #e1e1e1;
+      }
+    }
+    
+    &:active {
         color: #e1e1e1;
     }
   }
