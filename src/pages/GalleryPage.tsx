@@ -413,6 +413,20 @@ const GalleryPage: React.FC = () => {
 
   const currentImage = getCurrentLightboxImage();
 
+  // Определяем variants для анимации здесь, перед return
+  const imageVariants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: (i: number) => ({
+      opacity: 1,
+      scale: 1,
+      transition: {
+        delay: i * 0.05, // Небольшая задержка для каскадного эффекта
+        duration: 0.3
+      }
+    }),
+    exit: { opacity: 0, scale: 0.8, transition: { duration: 0.2 } }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
