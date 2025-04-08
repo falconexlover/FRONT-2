@@ -5,6 +5,7 @@ import { IMAGES } from '../assets/placeholders';
 import { servicesService } from '../utils/api';
 import { ServiceType } from '../types/Service';
 import { toast } from 'react-toastify';
+import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
 
 const ServicesSection = styled.section`
   padding: 6rem 2rem;
@@ -270,7 +271,7 @@ const Services: React.FC<ServicesProps> = ({
               <ServiceIcon>
                 {service.icon && (service.icon.startsWith('http') || service.icon.startsWith('/')) ? (
                   <img 
-                    src={service.icon}
+                    src={optimizeCloudinaryImage(service.icon, 'f_auto,q_auto,w_100')}
                     alt={service.name}
                     loading="lazy"
                     onError={(e) => {

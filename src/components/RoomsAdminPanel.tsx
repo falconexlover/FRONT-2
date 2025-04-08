@@ -6,6 +6,7 @@ import { RoomType } from '../types/Room';
 import { toast } from 'react-toastify';
 import ConfirmModal from './ui/ConfirmModal';
 import { AnimatePresence, motion } from 'framer-motion';
+import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
 
 interface RoomsAdminPanelProps {
   onLogout: () => void;
@@ -385,10 +386,8 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
               <TableRow key={room._id}>
                 <TableCell>
                     <RoomImagePreview>
-                        {room.imageUrls && room.imageUrls.length > 0 ? (
-                            <img src={room.imageUrls[0]} alt={room.title} loading="lazy" />
-                        ) : (
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Нет фото</div>
+                        {room.imageUrls && room.imageUrls.length > 0 && (
+                            <img src={optimizeCloudinaryImage(room.imageUrls[0], 'f_auto,q_auto,w_100,h_60,c_fill')} alt={room.title} loading="lazy" />
                         )}
                      </RoomImagePreview>
                 </TableCell>

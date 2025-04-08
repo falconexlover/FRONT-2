@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { HomePageContent } from '../types/HomePage';
+import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
 
 interface AboutProps {
   content: HomePageContent['about'];
@@ -188,7 +189,7 @@ const About: React.FC<AboutProps> = ({ content }) => {
           transition={{ duration: 0.7 }}
           viewport={{ once: true, amount: 0.3 }}
         >
-          <img src={imageUrl} alt="О гостинице Лесной дворик" loading="lazy" />
+          <img src={optimizeCloudinaryImage(imageUrl, 'f_auto,q_auto,w_600')} alt="О гостинице Лесной дворик" loading="lazy" />
         </AboutImage>
       </AboutContent>
     </AboutSection>

@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { RoomType } from '../../types/Room'; // Убедитесь, что путь правильный
+import { optimizeCloudinaryImage } from '../../utils/cloudinaryUtils'; // Импортируем утилиту
 
 // --- Styled Components ---
 
@@ -143,7 +144,7 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ rooms, selectedRoomId, on
               <div className="check-mark"><i className="fas fa-check"></i></div>
             )}
             <RoomImage>
-              <img src={room.imageUrls?.[0] || '/placeholder-image.jpg'} alt={room.title} loading="lazy" />
+              <img src={optimizeCloudinaryImage(room.imageUrls?.[0] || '/placeholder-image.jpg', 'f_auto,q_auto,w_400')} alt={room.title} loading="lazy" />
             </RoomImage>
             <RoomInfo>
               <h3>{room.title}</h3>

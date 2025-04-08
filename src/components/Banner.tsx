@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 // import { loadHomePageContent } from '../utils/homePageUtils';
 // Импортируем тип из HomePage.ts
 import { HomePageContent } from '../types/HomePage';
+import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils'; // Импортируем утилиту
 
 // Определяем тип для пропсов
 interface BannerProps {
@@ -127,9 +128,12 @@ const Banner: React.FC<BannerProps> = ({ content }) => {
   // Если backgroundImage нет в content.banner, нужно будет передать его отдельно или изменить HomePageContent
   const backgroundUrl = content?.image || '/images/banner-bg.jpg'; // Временная заглушка, если нет в content
 
+  // Применяем оптимизацию к URL фона
+  const optimizedBackgroundUrl = optimizeCloudinaryImage(backgroundUrl, 'f_auto,q_auto,w_1920'); // Задаем большую ширину для баннера
+
   return (
-    // Передаем $backgroundImage в стилизованный компонент
-    <BannerSection $backgroundImage={backgroundUrl}>
+    // Передаем оптимизированный URL в стилизованный компонент
+    <BannerSection $backgroundImage={optimizedBackgroundUrl}>
       <BannerContent
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

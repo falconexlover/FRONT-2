@@ -9,6 +9,7 @@ import { RoomType } from '../types/Room'; // Убедимся, что эта с�
 import { roomsService } from '../utils/api'; // Новый импорт
 import { toast } from 'react-toastify'; // Убедимся, что эта строка есть
 import { Link } from 'react-router-dom';
+import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils'; // Импортируем утилиту
 
 /**
  * Стили для секции номеров
@@ -269,7 +270,7 @@ const RoomsPage: React.FC = () => {
                       {room.imageUrls.map((url, index) => (
                         <div key={index}>
                           <img 
-                            src={url}
+                            src={optimizeCloudinaryImage(url, 'f_auto,q_auto,w_600')}
                             alt={`${room.title} - изображение ${index + 1}`}
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
@@ -283,7 +284,7 @@ const RoomsPage: React.FC = () => {
                     </Slider>
                   ) : (
                     <img 
-                      src={'./placeholder-image.jpg'}
+                      src={optimizeCloudinaryImage('/placeholder-room.jpg', 'f_auto,q_auto,w_600')}
                       alt={`${room.title} - плейсхолдер`}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       loading="lazy"

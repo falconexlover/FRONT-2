@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { IMAGES } from '../assets/placeholders';
+import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
 import { roomsService } from '../utils/api';
 import { RoomType } from '../types/Room';
 import { toast } from 'react-toastify';
@@ -24,7 +24,7 @@ const RoomsSection = styled.section`
     left: 0;
     width: 100%;
     height: 100%;
-    background: url(${IMAGES.PATTERN}) center/300px repeat;
+    background: url('') center/300px repeat;
     opacity: 0.03;
     z-index: 0;
   }
@@ -321,7 +321,7 @@ const Rooms: React.FC<RoomsProps> = ({
               viewport={{ once: true, amount: 0.3 }}
             >
               <RoomImage>
-                <img src={room.imageUrls?.[0] || IMAGES.ROOM_ECONOMY} alt={room.title} loading="lazy" />
+                <img src={optimizeCloudinaryImage(room.imageUrls?.[0] || '/placeholder-room.jpg', 'f_auto,q_auto,w_500')} alt={room.title} loading="lazy" />
                 <RoomPrice>{room.price}</RoomPrice>
               </RoomImage>
               <RoomDetails>

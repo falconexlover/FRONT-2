@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 // Импортируем общий тип
 import { GalleryImageItem } from '../../types/GalleryImage';
+import { optimizeCloudinaryImage } from '../../utils/cloudinaryUtils'; // Импортируем утилиту
 
 // Удаляем локальное определение типа
 /*
@@ -159,7 +160,7 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onEditClick, onDeleteClick
             transition={{ duration: 0.3 }}
         >
             <div className="image-container">
-                <img src={image.imageUrl} alt={image.title || 'Gallery image'} loading="lazy" />
+                <img src={optimizeCloudinaryImage(image.imageUrl, 'f_auto,q_auto,w_400')} alt={image.title || 'Gallery image'} loading="lazy" />
                 <div className="image-overlay">
                     <button onClick={onEditClick} title="Редактировать">
                         <i className="fas fa-pencil-alt"></i>
