@@ -297,6 +297,9 @@ function SortableRoomRow({ room, onEdit, onDelete }: SortableRoomRowProps) {
   );
 }
 
+// Добавляем тип для данных формы без ID и полей изображений
+type RoomDataToSave = Omit<RoomType, '_id' | 'imageUrls' | 'cloudinaryPublicIds'>;
+
 const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingRoom, setEditingRoom] = useState<RoomType | null>(null);
@@ -346,65 +349,78 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
     setEditingRoom(null);
   };
 
-  const handleSaveFromForm = async (
-      roomData: Omit<RoomType, '_id' | 'imageUrls' | 'cloudinaryPublicIds' | 'displayOrder' | 'createdAt' | 'updatedAt'>, 
-      newFiles: File[], 
+  // Обработчик сохранения (создание или обновление)
+  const handleSaveRoom = useCallback(async (
+      // Обновляем тип первого аргумента
+      roomData: RoomDataToSave,
+      // Добавляем новые аргументы
+      newFiles: File[],
       deletedPublicIds: string[]
-  ) => {
+    ) => {
     setIsLoading(true);
-    
-    // Данные для отправки на бэкенд
+    setError(null);
+
+    // Создаем FormData для отправки данных, включая файлы
     const formData = new FormData();
 
-    // Добавляем текстовые поля
-    (Object.keys(roomData) as Array<keyof typeof roomData>).forEach((key) => {
-        const value = roomData[key];
-        if (key === 'features' && Array.isArray(value)) {
-            // Отправляем массив features как есть (если бэк это поддерживает)
-            // Или сериализуем в JSON, как было раньше
-            value.forEach(feature => formData.append('features', feature)); 
-            // formData.append('features', JSON.stringify(value));
-        } else if (value !== undefined && value !== null) {
-            formData.append(key, String(value)); // Преобразуем все в строку для FormData
+    // Добавляем поля комнаты в FormData
+    Object.entries(roomData).forEach(([key, value]) => {
+        // Преобразуем массивы (например, features) в строки или обрабатываем иначе,
+        // если бэкенд ожидает специфичный формат для FormData
+        if (Array.isArray(value)) {
+            // Для features, отправим каждый элемент отдельно, если бэкенд поддерживает
+            // Или JSON строку
+            // Пока отправим как JSON строку
+             if (key === 'features') {
+                formData.append(key, JSON.stringify(value));
+            } else {
+                 // Для других массивов (если появятся) нужно будет решить
+            }
+        } else if (typeof value === 'boolean') {
+             formData.append(key, value.toString()); // Boolean как строки 'true'/'false'
+        } else if (value !== null && value !== undefined) {
+            formData.append(key, value as string | Blob); // Остальные как строки или Blob
         }
     });
 
     // Добавляем новые файлы
-    if (newFiles && newFiles.length > 0) {
-      newFiles.forEach((file) => {
-        formData.append('images', file, file.name); 
-      });
-    }
-    
-    // Добавляем ID удаляемых изображений
-    if (deletedPublicIds && deletedPublicIds.length > 0) {
-        deletedPublicIds.forEach(id => formData.append('deletedPublicIds', id));
+    newFiles.forEach((file) => {
+        // Используем одинаковое имя поля для всех файлов, 
+        // бэкенд (multer) должен обработать это как массив
+        formData.append('imageFiles', file);
+    });
+
+    // Добавляем ID удаляемых изображений (как JSON строку)
+    if (deletedPublicIds.length > 0) {
+        formData.append('deletedImages', JSON.stringify(deletedPublicIds));
     }
 
     try {
-        if (editingRoom?._id) {
-            // Обновление существующего номера
-            console.log('Обновление номера (FormData):', editingRoom._id);
-            const updatedRoom: RoomType = await roomsService.updateRoom(editingRoom._id, formData);
-            toast.success(`Номер "${updatedRoom.title}" обновлен.`);
-        } else {
-            // Создание нового номера
-            console.log('Создание нового номера (FormData)...');
-            const newRoom: RoomType = await roomsService.createRoom(formData);
-            toast.success(`Номер "${newRoom.title}" создан.`);
-        }
-        fetchRooms(); // Обновляем список в любом случае
-        handleFormCancel();
-
+      let savedRoom;
+      if (editingRoom) {
+        // Обновление существующего номера
+        savedRoom = await roomsService.updateRoom(editingRoom._id, formData);
+        toast.success(`Номер "${savedRoom.title}" успешно обновлен.`);
+      } else {
+        // Создание нового номера
+        savedRoom = await roomsService.createRoom(formData);
+        toast.success(`Номер "${savedRoom.title}" успешно создан.`);
+      }
+      setShowForm(false);
+      setEditingRoom(null);
+      // Перезагружаем список номеров, чтобы увидеть изменения
+      fetchRooms(); 
     } catch (err) {
-        console.error('Ошибка при сохранении номера:', err);
-        const message = err instanceof Error ? err.message : 'Неизвестная ошибка сервера';
-        toast.error(`Ошибка сохранения: ${message}`);
+      console.error("Ошибка сохранения номера:", err);
+      const message = err instanceof Error ? err.message : 'Не удалось сохранить номер';
+      setError(message);
+      toast.error(message);
+      // Не закрываем форму при ошибке, чтобы пользователь мог исправить
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
-  };
-  
+  }, [editingRoom, fetchRooms]); // Добавляем fetchRooms в зависимости
+
   const confirmDelete = async () => {
     if (!deletingRoomId) return;
     try {
@@ -479,9 +495,10 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
             style={{ overflow: 'hidden' }}
           >
             <RoomForm 
-              initialData={editingRoom || undefined}
-              onSave={handleSaveFromForm}
-              onCancel={handleFormCancel}
+              key={editingRoom?._id || 'new'} // Ключ для сброса состояния формы
+              initialData={editingRoom} 
+              onSave={handleSaveRoom} 
+              onCancel={handleFormCancel} 
             />
           </motion.div>
         )}

@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { RoomType } from '../types/Room';
 // import { ActionButton as ConfirmActionButton } from './ui/ConfirmModal'; // Убираем импорт, если он не используется
 import ActionButton from './ui/ActionButton'; // Импортируем общую кнопку
+import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils'; // Импортируем оптимизатор
 // import { roomsService } from '../utils/api';
 // import { toast } from 'react-toastify';
 
@@ -255,6 +256,83 @@ const AddFeatureButton = styled(ActionButton)`
 
 // --- КОНЕЦ СТИЛЕЙ ДЛЯ ОСОБЕННОСТЕЙ --- 
 
+// Добавляем стили для секции изображений
+const ImageSection = styled.div`
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color);
+`;
+
+const ImageGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+`;
+
+const ImagePreviewContainer = styled.div`
+  position: relative;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background-color: var(--bg-primary);
+
+  img {
+    display: block;
+    width: 100%;
+    height: 90px;
+    object-fit: cover;
+  }
+
+  .delete-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background-color: rgba(229, 57, 53, 0.8); // Красный с прозрачностью
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    line-height: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: rgba(211, 47, 47, 1); // Темнее при наведении
+    }
+  }
+`;
+
+const FileInputLabel = styled(Label)`
+  /* Можно добавить стили для кастомной кнопки выбора файла, если нужно */
+`;
+
+const FileInput = styled.input`
+  display: block; /* Или скрыть и стилизовать label как кнопку */
+  margin-top: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+
+  /* Стили для стандартной кнопки */
+  &::file-selector-button {
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--primary-color);
+      background-color: transparent;
+      color: var(--primary-color);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background-color 0.2s, color 0.2s;
+      margin-right: 1rem;
+
+      &:hover {
+          background-color: rgba(42, 167, 110, 0.1);
+      }
+  }
+`;
+
 const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) => {
   // Инициализируем состояние формы без полей изображений
   // Теперь тип RoomFormData корректно обрабатывает опциональный _id
@@ -280,6 +358,12 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
   // Убираем imageUrl из ключей ошибок
   const [errors, setErrors] = useState<Partial<Record<keyof Omit<RoomFormData, '_id'> | 'form', string>>>({});
 
+  // --- Состояния для Изображений ---
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [newFilePreviews, setNewFilePreviews] = useState<string[]>([]);
+  // Состояние для отслеживания видимости существующих изображений
+  const [existingImages, setExistingImages] = useState<{ url: string; publicId: string }[]>([]);
+
   useEffect(() => {
     // Обновляем форму при изменении initialData
     const data = initialData || DEFAULT_ROOM;
@@ -293,12 +377,28 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
        description: data.description || '',
        isAvailable: data.isAvailable !== undefined ? data.isAvailable : true
     });
-    // Устанавливаем превью из первого URL существующего номера
-    setNewImageFiles([]);
+    // Устанавливаем существующие изображения для отображения
+    setExistingImages(
+      data.imageUrls?.map((url, index) => ({
+        url,
+        publicId: data.cloudinaryPublicIds?.[index] || '', // Берем ID, если есть
+      })) || []
+    );
+    // Сбрасываем новые файлы и удаленные ID при смене редактируемого номера
+    setNewFiles([]);
+    setNewFilePreviews([]);
     setDeletedPublicIds([]);
     setErrors({}); // Сбрасываем ошибки
   }, [initialData]);
   
+  // Эффект для очистки Object URL превью при размонтировании или смене файлов
+  useEffect(() => {
+    // Возвращаем функцию очистки
+    return () => {
+      newFilePreviews.forEach(URL.revokeObjectURL);
+    };
+  }, [newFilePreviews]); // Зависимость от массива превью
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     let processedValue: string | number | boolean = value;
@@ -376,7 +476,42 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
     }));
   };
   
-  // Вызываем onSave с новыми файлами и ID для удаления
+  // --- Обработчики для Изображений ---
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files);
+      // Очищаем предыдущие превью новых файлов
+      newFilePreviews.forEach(URL.revokeObjectURL);
+
+      setNewFiles(prev => [...prev, ...filesArray]);
+      // Генерируем превью для новых добавленных файлов
+      const previews = filesArray.map(file => URL.createObjectURL(file));
+      setNewFilePreviews(prev => [...prev, ...previews]);
+    }
+    // Очищаем значение инпута, чтобы можно было выбрать тот же файл снова
+    e.target.value = '';
+  };
+
+  // Удаление существующего изображения (помечаем ID и скрываем превью)
+  const handleDeleteExistingImage = (publicIdToDelete: string) => {
+    if (!publicIdToDelete) return; // Не удаляем, если нет ID
+    setDeletedPublicIds(prev => [...prev, publicIdToDelete]);
+    // Убираем из видимых существующих изображений
+    setExistingImages(prev => prev.filter(img => img.publicId !== publicIdToDelete));
+  };
+
+  // Удаление нового (еще не загруженного) файла
+  const handleRemoveNewFile = (indexToRemove: number) => {
+    // Освобождаем Object URL перед удалением из состояния
+    URL.revokeObjectURL(newFilePreviews[indexToRemove]);
+
+    setNewFiles(prev => prev.filter((_, index) => index !== indexToRemove));
+    setNewFilePreviews(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  // --- Валидация и Сохранение ---
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) {
@@ -392,19 +527,13 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
       isAvailable: formData.isAvailable
     };
     try {
-      await onSave(dataToSend, newImageFiles, deletedPublicIds); 
+      await onSave(dataToSend, newFiles, deletedPublicIds); 
       // Успех обработается в RoomsAdminPanel
     } catch (error) {
        console.error("Ошибка при вызове onSave:", error);
        setErrors(prev => ({ ...prev, form: 'Произошла ошибка при сохранении номера.' }));
     }
   };
-
-  // Формируем список существующих изображений для MultiImageDropzone
-  // const existingImagesForDropzone = initialData?.imageUrls?.map((url, index) => ({
-  //     url,
-  //     publicId: initialData.cloudinaryPublicIds?.[index] // Предполагаем, что массивы синхронизированы
-  // })).filter(img => img.publicId && !deletedPublicIds.includes(img.publicId)) ?? []; // Исключаем помеченные на удаление
 
   return (
     <FormWrapper>
@@ -424,17 +553,61 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
           {errors.title && <ErrorText>{errors.title}</ErrorText>}
         </FormGroup>
         
-        {/* Загрузчик изображения */}
-        <FormGroup>
+        {/* --- Секция Изображений --- */}
+        <ImageSection>
           <Label>Изображения номера</Label>
-          {/* <MultiImageDropzone 
-                existingImages={existingImagesForDropzone}
-                onFilesSelected={handleFilesSelected}
-                onExistingImageDelete={handleExistingImageDelete}
-                // maxFiles={5} // Можно задать лимит
-          /> */}
-           {/* Можно добавить вывод ошибок, связанных с файлами */}
-        </FormGroup>
+          {/* Поле для загрузки новых файлов */}
+          <FormGroup>
+             <Label htmlFor="roomImages">Добавить изображения</Label>
+             <FileInput
+                type="file"
+                id="roomImages"
+                multiple
+                accept="image/*" // Принимаем только изображения
+                onChange={handleFileChange}
+             />
+          </FormGroup>
+
+          {/* Сетка для превью */}
+          {(existingImages.length > 0 || newFiles.length > 0) && (
+            <ImageGrid>
+              {/* Превью существующих изображений */}
+              {existingImages.map((image) => (
+                <ImagePreviewContainer key={image.publicId || image.url}>
+                  <img src={optimizeCloudinaryImage(image.url, 'w_200,h_150,c_fill,q_auto')} alt="Превью номера" />
+                  {image.publicId && ( // Показываем кнопку удаления только если есть ID
+                    <button
+                      type="button"
+                      className="delete-btn"
+                      title="Удалить это изображение"
+                      onClick={() => handleDeleteExistingImage(image.publicId)}
+                    >
+                      &times; {/* Крестик */}
+                    </button>
+                  )}
+                </ImagePreviewContainer>
+              ))}
+
+              {/* Превью новых выбранных файлов */}
+              {newFiles.map((file, index) => (
+                <ImagePreviewContainer key={index}>
+                  {/* Используем newFilePreviews для отображения */}
+                  {newFilePreviews[index] && (
+                    <img src={newFilePreviews[index]} alt={`Превью ${file.name}`} />
+                  )}
+                  <button
+                    type="button"
+                    className="delete-btn"
+                    title="Убрать этот файл"
+                    onClick={() => handleRemoveNewFile(index)}
+                  >
+                    &times;
+                  </button>
+                </ImagePreviewContainer>
+              ))}
+            </ImageGrid>
+          )}
+        </ImageSection>
 
         <Grid>
            {/* Поле Price (строка) */}

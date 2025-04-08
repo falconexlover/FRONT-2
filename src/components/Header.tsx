@@ -21,10 +21,10 @@ const LogoContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 2rem;
+  padding: 0.25rem 2rem;
   
   @media screen and (max-width: 768px) {
-    padding: 1rem;
+    padding: 0.25rem 1rem;
   }
 `;
 
@@ -33,14 +33,14 @@ const Logo = styled(Link)`
   display: inline-block;
   
   img {
-    height: 100px;
+    height: 80px;
     max-width: 350px;
     object-fit: contain;
   }
   
   @media screen and (max-width: 768px) {
     img {
-      height: 60px;
+      height: 50px;
     }
   }
 `;
