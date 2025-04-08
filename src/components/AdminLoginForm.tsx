@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { authService } from '../utils/api';
+// import { authService } from '../utils/api';
+import * as apiUtils from '../utils/api';
 
 interface AdminLoginFormProps {
   onLoginSuccess: () => void;
@@ -32,6 +33,7 @@ const FormGroup = styled.div`
     margin-bottom: 0.5rem;
     color: var(--dark-color);
     font-weight: 600;
+    text-align: left;
   }
   
   input {
@@ -109,7 +111,7 @@ const AdminLoginForm: React.FC<AdminLoginFormProps> = ({ onLoginSuccess, onCance
     
     try {
       setIsLoading(true);
-      await authService.login(username, password);
+      await apiUtils.authService.login(username, password);
       onLoginSuccess();
     } catch (error) {
       const errorMessage = typeof error === 'string' ? error : 'Неверный логин или пароль';

@@ -2,16 +2,18 @@
 
 // Общий интерфейс для данных номера, используемый во всем фронтенде
 export interface RoomType {
-  _id?: string; // ID от MongoDB (присутствует у существующих номеров)
+  _id: string; // ID из MongoDB
   title: string;
-  description?: string; // Добавляем необязательное поле description
-  imageUrl?: string; // URL изображения (может отсутствовать при создании)
-  price: string; // Строковое представление цены (напр., "3 500 ₽ / сутки")
-  priceValue: number; // Числовое значение цены
-  capacity: number; // Вместимость
-  features: string[]; // Массив удобств
-  isAvailable?: boolean; // Доступность (опционально, может управляться бэкендом)
-  cloudinaryPublicId?: string; // ID изображения в Cloudinary (опционально)
+  // Заменяем imageUrl на массив
+  imageUrls: string[]; 
+  // Добавляем массив ID из Cloudinary (может понадобиться в админке)
+  cloudinaryPublicIds?: string[]; 
+  price: string; // Строка для отображения (напр. "2500 Р / сутки")
+  pricePerNight: number; // Числовое значение цены для расчетов (переименовал из priceValue)
+  capacity: number;
+  features: string[];
+  description?: string; // Добавим опциональное описание
+  isAvailable?: boolean; // Доступность номера
   createdAt?: string; // Дата создания (опционально)
   updatedAt?: string; // Дата обновления (опционально)
 } 

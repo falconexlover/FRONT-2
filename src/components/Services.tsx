@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { IMAGES } from '../assets/placeholders';
-import servicesService from '../services/servicesService';
+import { servicesService } from '../utils/api';
 import { ServiceType } from '../types/Service';
+import { toast } from 'react-toastify';
 
 const ServicesSection = styled.section`
   padding: 6rem 2rem;
@@ -217,10 +218,12 @@ const Services: React.FC<ServicesProps> = ({
       setError(null);
       try {
         const data = await servicesService.getAllServices();
-        setServicesData(data);
-      } catch (err) {
+        setServicesData(Array.isArray(data) ? data : []);
+      } catch (err: any) {
         console.error("Ошибка загрузки услуг:", err);
-        setError("Не удалось загрузить список услуг. Попробуйте позже.");
+        const message = err.message || "Не удалось загрузить список услуг. Попробуйте позже.";
+        setError(message);
+        toast.error(message);
       } finally {
         setLoading(false);
       }
@@ -265,15 +268,28 @@ const Services: React.FC<ServicesProps> = ({
               viewport={{ once: true, amount: 0.3 }}
             >
               <ServiceIcon>
-                <img 
-                  src={service.icon || `https://via.placeholder.com/200x150/f2f2f2/217148?text=${encodeURIComponent(service.title)}`}
-                  alt={service.title}
-                  onError={(e) => {
-                    e.currentTarget.src = `https://via.placeholder.com/200x150/f2f2f2/217148?text=${encodeURIComponent(service.title)}`;
-                  }} 
-                />
+                {service.icon && (service.icon.startsWith('http') || service.icon.startsWith('/')) ? (
+                  <img 
+                    src={service.icon}
+                    alt={service.name}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      const parent = e.currentTarget.parentElement;
+                      if (parent && !parent.querySelector('.fallback-icon-text')) {
+                          const textNode = document.createElement('span');
+                          textNode.className = 'fallback-icon-text';
+                          textNode.textContent = service.name;
+                          parent.appendChild(textNode);
+                      }
+                    }} 
+                  />
+                ) : service.icon && service.icon.startsWith('fa') ? (
+                  <i className={service.icon} style={{ fontSize: '3rem' }}></i>
+                ) : (
+                  <span>{service.name}</span>
+                )}
               </ServiceIcon>
-              <h3>{service.title}</h3>
+              <h3>{service.name}</h3>
               <p>{service.description || 'Описание услуги скоро появится.'}</p>
               <OutlineButton href="#booking" data-service={service._id}>
                 Забронировать

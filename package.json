@@ -11,15 +11,17 @@
     "@types/node": "^16.18.80",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
+    "@types/react-slick": "^0.23.13",
     "@types/styled-components": "^5.1.34",
     "framer-motion": "^11.0.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.0",
     "react-scripts": "5.0.1",
+    "react-slick": "^0.30.3",
     "react-toastify": "^11.0.5",
+    "slick-carousel": "^1.8.1",
     "styled-components": "^6.1.8",
-    "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -48,5 +50,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
   }
 }

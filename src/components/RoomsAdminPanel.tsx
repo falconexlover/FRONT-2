@@ -1,271 +1,202 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { roomsService } from '../utils/api';
-import { RoomType } from '../types/Room';
 import RoomForm from './RoomForm';
+import { roomsService, galleryService } from '../utils/api';
+import { RoomType } from '../types/Room';
 import { toast } from 'react-toastify';
+import ConfirmModal from './ui/ConfirmModal';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface RoomsAdminPanelProps {
   onLogout: () => void;
 }
 
 const AdminPanelContainer = styled.div`
-  padding: 2rem;
-  background-color: white;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  margin-bottom: 3rem;
+  /* Стили фона, рамки и т.д. убираем, т.к. они теперь в AdminLayout */
 `;
 
-const PanelHeader = styled.div`
+const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-color); /* Темная граница */
   padding-bottom: 1rem;
-  
-  h2 {
-    color: var(--dark-color);
-    font-family: 'Playfair Display', serif;
-    margin: 0;
-  }
 `;
 
-const ActionButtonsContainer = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
+const Title = styled.h2`
+  color: var(--text-primary); /* Светлый заголовок */
+  font-family: 'Playfair Display', serif;
+  margin: 0;
+  font-size: 1.6rem; /* Сделаем заголовок чуть меньше */
 `;
 
-const ActionButton = styled.button`
+const Button = styled.button`
   padding: 0.7rem 1.5rem;
   border: none;
   border-radius: var(--radius-sm);
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
+  font-size: 0.9rem;
   
   &.primary {
     background-color: var(--primary-color);
-    color: white;
+    color: var(--text-on-primary-bg);
     
-    &:hover {
-      background-color: var(--dark-color);
+    &:hover:not(:disabled) {
+      background-color: var(--secondary-color);
     }
   }
   
-  &.danger {
-    background-color: #e53935;
-    color: white;
-    
-    &:hover {
-      background-color: #c62828;
-    }
-  }
-  
-  &.outline {
-    background: none;
-    border: 2px solid var(--primary-color);
-    color: var(--primary-color);
-    
-    &:hover {
-      background-color: rgba(33, 113, 72, 0.1);
-    }
+  &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
   }
 `;
 
-const RoomsList = styled.div`
+const TableContainer = styled.div`
   margin-top: 2rem;
-`;
-
-const RoomCard = styled.div`
-  display: grid;
-  grid-template-columns: 120px 1fr auto;
-  gap: 1.5rem;
-  background-color: white;
+  overflow-x: auto;
+  width: 100%;
+  background-color: var(--bg-secondary); /* Фон для таблицы */
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 1.5rem;
-  box-shadow: var(--shadow-sm);
-  margin-bottom: 1.5rem;
-  transition: var(--transition);
-  
+`;
+
+const StyledTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+`;
+
+const TableHeader = styled.th`
+  padding: 1rem 1.2rem; /* Скорректируем padding */
+  text-align: left;
+  border-bottom: 1px solid var(--border-color); /* Темная граница */
+  color: var(--text-secondary); /* Вторичный цвет для заголовков */
+  white-space: nowrap;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-transform: uppercase; /* Заголовки капсом */
+  letter-spacing: 0.5px;
+`;
+
+const TableRow = styled.tr`
   &:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-3px);
-  }
-  
-  .room-image {
-    width: 120px;
-    height: 80px;
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-  }
-  
-  .room-info {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    
-    h3 {
-      margin: 0 0 0.5rem;
-      color: var(--dark-color);
-      font-size: 1.3rem;
-    }
-    
-    .room-details {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      margin-bottom: 0.5rem;
-      
-      span {
-        display: inline-flex;
-        align-items: center;
-        font-size: 0.9rem;
-        color: var(--text-color);
-        
-        i {
-          color: var(--primary-color);
-          margin-right: 0.3rem;
-        }
-      }
-    }
-    
-    .room-price {
-      font-weight: 600;
-      color: var(--primary-color);
-    }
-  }
-  
-  .room-actions {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.5rem;
-    
-    button {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: var(--transition);
-      
-      &.edit {
-        background-color: #f0f0f0;
-        color: var(--dark-color);
-        
-        &:hover {
-          background-color: #e0e0e0;
-        }
-      }
-      
-      &.delete {
-        background-color: #ffebee;
-        color: #c62828;
-        
-        &:hover {
-          background-color: #ffcdd2;
-        }
-      }
-    }
-  }
-  
-  @media screen and (max-width: 768px) {
-    grid-template-columns: 80px 1fr;
-    
-    .room-image {
-      width: 80px;
-      height: 60px;
-    }
-    
-    .room-actions {
-      grid-column: 1 / 3;
-      flex-direction: row;
-      justify-content: flex-end;
-      margin-top: 1rem;
-    }
+    background-color: var(--bg-tertiary); /* Фон при наведении */
   }
 `;
 
-const EmptyState = styled.div`
+const TableCell = styled.td`
+  padding: 1rem 1.2rem;
+  vertical-align: middle;
+  color: var(--text-primary); /* Основной цвет текста */
+  border-bottom: 1px solid var(--border-color); /* Темная граница */
+  white-space: normal;
+  font-size: 0.95rem;
+
+  &:last-child {
+     white-space: nowrap;
+  }
+`;
+
+const RoomImagePreview = styled.div` /* Оборачиваем img в div для стилизации */
+  width: 100px; /* Уменьшим превью */
+  height: 65px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background-color: var(--bg-primary); /* Фон-заглушка */
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+`;
+
+const ActionButtonsContainer = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+`;
+
+const IconButton = styled.button` // Наследуемся от button, не ActionButton
+    padding: 0.5rem;
+    min-width: auto;
+    line-height: 1;
+    font-size: 1rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary); /* Вторичный цвет по умолчанию */
+    border-radius: 50%; /* Сделаем круглыми */
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, color 0.2s ease;
+
+    &:hover:not(:disabled) {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+
+    &.edit {
+       &:hover:not(:disabled) {
+           color: var(--primary-color);
+           background-color: rgba(42, 167, 110, 0.1);
+       }
+    }
+
+    &.delete {
+        &:hover:not(:disabled) {
+            color: var(--danger-color);
+            background-color: rgba(229, 115, 115, 0.1);
+        }
+    }
+
+    i {
+        margin: 0;
+        font-size: 0.9rem; /* Уменьшим иконки */
+    }
+    
+    &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+`;
+
+const ErrorMessage = styled.p`
+  text-align: center;
+  padding: 1rem 1.5rem;
+  color: var(--danger-color);
+  background-color: rgba(229, 115, 115, 0.1);
+  border: 1px solid rgba(229, 115, 115, 0.3);
+  border-radius: var(--radius-sm);
+  margin: 1.5rem 0;
+`;
+
+const NoRoomsMessage = styled.div`
   text-align: center;
   padding: 3rem 2rem;
-  background-color: #f9f9f9;
+  background-color: var(--bg-secondary);
   border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  margin-top: 2rem;
   
   h3 {
     margin-bottom: 1rem;
-    color: var(--dark-color);
+    color: var(--text-primary);
+    font-size: 1.3rem;
   }
   
   p {
     margin-bottom: 1.5rem;
-    color: var(--text-color);
+    color: var(--text-secondary);
   }
-`;
-
-const ConfirmDialog = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0,0,0,0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-  
-  .dialog-content {
-    background: white;
-    padding: 2rem;
-    border-radius: var(--radius-md);
-    max-width: 500px;
-    width: 100%;
-    
-    h3 {
-      margin-bottom: 1rem;
-      color: var(--dark-color);
-    }
-    
-    p {
-      margin-bottom: 2rem;
-      color: var(--text-color);
-    }
-    
-    .dialog-buttons {
-      display: flex;
-      justify-content: flex-end;
-      gap: 1rem;
-    }
-  }
-`;
-
-const LoadingIndicator = styled.div`
-  text-align: center;
-  padding: 2rem;
-  font-style: italic;
-  color: var(--text-color);
-`;
-
-const ErrorMessage = styled.div`
-  text-align: center;
-  padding: 2rem;
-  color: #e53935;
-  background-color: #ffebee;
-  border: 1px solid #e53935;
-  border-radius: var(--radius-sm);
 `;
 
 const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
@@ -275,6 +206,7 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
   const [deletingRoomId, setDeletingRoomId] = useState<string | null>(null);
   const [rooms, setRooms] = useState<RoomType[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isProcessingDelete, setIsProcessingDelete] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchRooms = useCallback(async () => {
@@ -282,10 +214,12 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
     setError(null);
     try {
       const data = await roomsService.getAllRooms();
-      setRooms(data || []);
+      setRooms(Array.isArray(data) ? data : []);
     } catch (err: any) {
       console.error("Ошибка при загрузке номеров:", err);
-      setError(err.message || 'Не удалось загрузить список номеров.');
+      const errorMsg = err.message || 'Не удалось загрузить список номеров.';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -310,179 +244,246 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
     setShowDeleteConfirm(true);
   };
 
-  const confirmDeleteRoom = async () => {
-    if (!deletingRoomId) return;
-
-    setIsLoading(true);
-    setError(null);
-    setShowDeleteConfirm(false);
-
-    try {
-      console.log(`Удаление номера с ID: ${deletingRoomId}...`);
-      await roomsService.deleteRoom(deletingRoomId);
-      toast.success('Номер успешно удален!');
-      await fetchRooms();
-    } catch (err: any) {
-      console.error("Ошибка при удалении номера:", err);
-      const errorMessage = err.response?.data?.message || err.message || 'Не удалось удалить номер.';
-      setError(errorMessage);
-      toast.error(`Ошибка: ${errorMessage}`);
-    } finally {
-      setIsLoading(false);
-      setDeletingRoomId(null);
-    }
-  };
-
-  const cancelDeleteRoom = () => {
-    setShowDeleteConfirm(false);
-    setDeletingRoomId(null);
-  };
-
-  const handleFormSave = async (roomData: RoomType, imageFile: File | null) => {
-    const isEditing = !!editingRoom?._id;
-    const roomId = editingRoom?._id;
-
-    setIsLoading(true);
-    setError(null);
-    
-    const formData = new FormData();
-    formData.append('title', roomData.title);
-    formData.append('price', roomData.price);
-    formData.append('priceValue', roomData.priceValue.toString());
-    formData.append('capacity', roomData.capacity.toString());
-    formData.append('features', JSON.stringify(roomData.features));
-    
-    if (imageFile) {
-      formData.append('image', imageFile);
-    }
-    
-    try {
-      let savedRoom;
-      if (isEditing && roomId) {
-        console.log(`Обновление номера с ID: ${roomId}...`);
-        savedRoom = await roomsService.updateRoom(roomId, formData);
-        toast.success('Номер успешно обновлен!');
-      } else {
-        console.log("Добавление нового номера...");
-        savedRoom = await roomsService.createRoom(formData);
-        toast.success('Номер успешно добавлен!');
-      }
-      
-      await fetchRooms(); 
-      setShowForm(false);
-      setEditingRoom(null);
-      
-    } catch (err: any) {
-      console.error("Ошибка при сохранении номера:", err);
-      const errorMessage = err.response?.data?.message || err.message || 'Не удалось сохранить номер.';
-      setError(errorMessage);
-      toast.error(`Ошибка: ${errorMessage}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleFormCancel = () => {
     setShowForm(false);
     setEditingRoom(null);
   };
 
-  const roomToDelete = deletingRoomId ? rooms.find(room => room._id === deletingRoomId) : null;
-  const roomToDeleteTitle = roomToDelete ? roomToDelete.title : 'этот номер';
+  const handleSaveFromForm = async (
+      roomData: Omit<RoomType, '_id' | 'imageUrls' | 'cloudinaryPublicIds'>, 
+      newFiles: File[], 
+      deletedPublicIds: string[]
+  ) => {
+    setIsLoading(true);
+    let finalImageUrls: string[] = editingRoom?.imageUrls?.filter((url, index) => 
+        !deletedPublicIds.includes(editingRoom?.cloudinaryPublicIds?.[index] || '')
+    ) || [];
+    let finalCloudinaryIds: string[] = editingRoom?.cloudinaryPublicIds?.filter(id => !deletedPublicIds.includes(id)) || [];
+
+    try {
+        if (newFiles.length > 0) {
+            console.log(`Загрузка ${newFiles.length} новых изображений...`);
+            const uploadPromises = newFiles.map(file => {
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('category', 'rooms');
+                return galleryService.uploadImage(formData);
+            });
+            const uploadedImages = await Promise.all(uploadPromises);
+            finalImageUrls = [...finalImageUrls, ...uploadedImages.map(img => img.imageUrl)];
+            finalCloudinaryIds = [
+                ...finalCloudinaryIds, 
+                ...uploadedImages.map(img => img.cloudinaryPublicId).filter((id): id is string => id !== undefined)
+            ];
+            console.log('Новые изображения загружены.');
+        }
+
+        const formData = new FormData();
+        
+        Object.entries(roomData).forEach(([key, value]) => {
+            if (key !== 'features' && value !== undefined && value !== null) {
+                 if (typeof value === 'boolean') {
+                     formData.append(key, value.toString());
+                 } else {
+                     formData.append(key, String(value));
+                 }
+            }
+        });
+
+        formData.append('features', JSON.stringify(roomData.features));
+        
+        finalImageUrls.forEach(url => formData.append('imageUrls', url));
+        finalCloudinaryIds.forEach(id => formData.append('cloudinaryPublicIds', id));
+        
+        newFiles.forEach((file) => {
+            formData.append('images', file, file.name); 
+        });
+        
+        deletedPublicIds.forEach(id => formData.append('deletedPublicIds', id));
+        
+        if (editingRoom) {
+            console.log('Обновление номера (FormData):', editingRoom._id);
+            await roomsService.updateRoom(editingRoom._id, formData);
+            toast.success(`Номер "${roomData.title}" обновлен.`);
+        } else {
+            console.log('Создание нового номера (FormData)...');
+            await roomsService.createRoom(formData);
+            toast.success(`Номер "${roomData.title}" создан.`);
+        }
+
+        if (deletedPublicIds.length > 0) {
+            console.log(`Удаление ${deletedPublicIds.length} старых изображений из Cloudinary...`);
+            console.warn('API для удаления изображений из Cloudinary не реализовано!');
+            toast.warn('Старые изображения не были удалены из хранилища.');
+        }
+
+        fetchRooms();
+        handleFormCancel();
+
+    } catch (err) {
+        console.error('Ошибка при сохранении номера:', err);
+        const message = err instanceof Error ? err.message : 'Неизвестная ошибка сервера';
+        toast.error(`Ошибка сохранения: ${message}`);
+    } finally {
+        setIsLoading(false);
+    }
+  };
   
+  const confirmDelete = async () => {
+    if (!deletingRoomId) return;
+    setIsProcessingDelete(true);
+    try {
+      await roomsService.deleteRoom(deletingRoomId);
+      toast.success('Номер успешно удален');
+      setShowDeleteConfirm(false);
+      setDeletingRoomId(null);
+      fetchRooms();
+    } catch (err: any) {
+      console.error("Ошибка удаления номера:", err);
+      toast.error(`Ошибка удаления: ${err.message || 'Неизвестная ошибка'}`);
+    } finally {
+      setIsProcessingDelete(false);
+    }
+  };
+  
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setDeletingRoomId(null);
+  };
+
+  const renderRoomsTable = () => {
+    if (error && rooms.length === 0) {
+      return <ErrorMessage>{error}</ErrorMessage>;
+    }
+    if (!isLoading && rooms.length === 0) {
+       return (
+            <NoRoomsMessage>
+              <h3>Номеров пока нет</h3>
+              <p>Нажмите "Добавить номер", чтобы создать первый.</p>
+              <Button onClick={handleAddRoomClick} className="primary">
+                  <i className="fas fa-plus" style={{ marginRight: '8px' }}></i>
+                  Добавить номер
+              </Button>
+            </NoRoomsMessage>
+       );
+    }
+    
+    return (
+      <TableContainer>
+        <StyledTable>
+          <thead>
+            <tr>
+              <TableHeader>Фото</TableHeader>
+              <TableHeader>Название</TableHeader>
+              <TableHeader>Цена (₽/ночь)</TableHeader>
+              <TableHeader>Вместимость</TableHeader>
+              <TableHeader>Действия</TableHeader>
+            </tr>
+          </thead>
+          <tbody>
+            {rooms.map((room) => (
+              <TableRow key={room._id}>
+                <TableCell>
+                    <RoomImagePreview>
+                        {room.imageUrls && room.imageUrls.length > 0 ? (
+                            <img src={room.imageUrls[0]} alt={room.title} loading="lazy" />
+                        ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Нет фото</div>
+                        )}
+                     </RoomImagePreview>
+                </TableCell>
+                <TableCell>{room.title}</TableCell>
+                <TableCell>{room.price ? `${room.price} ₽` : '--'}</TableCell>
+                <TableCell>{room.capacity ? `${room.capacity} чел.` : '--'}</TableCell>
+                <TableCell>
+                  <ActionButtonsContainer>
+                    <IconButton 
+                        className="edit" 
+                        onClick={() => handleEditRoomClick(room)} 
+                        title="Редактировать"
+                        disabled={showForm}
+                    >
+                      <i className="fas fa-pencil-alt"></i>
+                    </IconButton>
+                    <IconButton 
+                        className="delete" 
+                        onClick={() => handleDeleteRoomClick(room._id!)} 
+                        title="Удалить"
+                        disabled={showForm}
+                    >
+                      <i className="fas fa-trash-alt"></i>
+                    </IconButton>
+                  </ActionButtonsContainer>
+                </TableCell>
+              </TableRow>
+            ))}
+          </tbody>
+        </StyledTable>
+      </TableContainer>
+    );
+  };
+
   return (
     <AdminPanelContainer>
-      <PanelHeader>
-        <h2>Управление номерами</h2>
-      </PanelHeader>
-      
-      <ActionButtonsContainer>
-        <ActionButton 
-          className="primary"
-          onClick={handleAddRoomClick} 
-          disabled={isLoading}
-        >
-          <i className="fas fa-plus" style={{ marginRight: '0.5rem' }}></i> Добавить номер
-        </ActionButton>
-      </ActionButtonsContainer>
-      
-      {showForm && (
-        <RoomForm 
-          initialData={editingRoom ?? undefined}
-          onSave={handleFormSave}
-          onCancel={handleFormCancel}
-          isLoading={isLoading}
-        />
+      <Header>
+        <Title>Управление номерами</Title>
+        {!showForm && (
+          <Button onClick={handleAddRoomClick} className="primary">
+            <i className="fas fa-plus" style={{ marginRight: '8px' }}></i>
+            Добавить номер
+          </Button>
+        )}
+      </Header>
+
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <RoomForm 
+              initialData={editingRoom || undefined}
+              onSave={handleSaveFromForm}
+              onCancel={handleFormCancel}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {error && !isLoading && (
+        <ErrorMessage style={{ textAlign: 'center', marginBottom: '1rem' }}>
+          {error}
+        </ErrorMessage>
       )}
       
-      <RoomsList>
-        {isLoading && <LoadingIndicator>Загрузка номеров...</LoadingIndicator>}
-        {error && <ErrorMessage>Ошибка: {error}</ErrorMessage>}
-        {!isLoading && !error && rooms.length === 0 && <LoadingIndicator>Номера еще не добавлены.</LoadingIndicator>}
-        {!isLoading && !error && rooms.map((room) => (
-          <RoomCard key={room._id}>
-              <div className="room-image">
-              <img src={room.imageUrl || '/placeholder-image.jpg'} alt={room.title} />
-              </div>
-              <div className="room-info">
-                <h3>{room.title}</h3>
-                <div className="room-details">
-                <span><i className="fas fa-users"></i> {room.capacity} чел.</span>
-              </div>
-              <div className="room-price">{room.price}</div>
-              {room.features && room.features.length > 0 && (
-                <div style={{fontSize: '0.8em', color: '#666', marginTop: '0.5rem'}}>
-                  {room.features.join(', ')}
-                </div>
-                  )}
-                </div>
-              <div className="room-actions">
-                <button 
-                  className="edit"
-                onClick={() => handleEditRoomClick(room)} 
-                disabled={isLoading}
-                >
-                <i className="fas fa-pencil-alt" style={{ marginRight: '0.5rem' }}></i> Редактировать
-                </button>
-                <button 
-                  className="delete"
-                onClick={() => {
-                  if (room._id) {
-                    handleDeleteRoomClick(room._id);
-                  }
-                }}
-                disabled={isLoading}
-              >
-                <i className="fas fa-trash" style={{ marginRight: '0.5rem' }}></i> Удалить
-                </button>
-              </div>
-            </RoomCard>
-        ))}
-      </RoomsList>
+      {isLoading && <p style={{textAlign: 'center', padding: '2rem'}}>Загрузка...</p>}
+
+      {!isLoading && !showForm && rooms.length > 0 && (
+        renderRoomsTable()
+      )}
       
+      {!isLoading && !showForm && rooms.length === 0 && (
+        <NoRoomsMessage>
+          <h3>Номеров пока нет</h3>
+          <p>Нажмите "Добавить номер", чтобы создать первый.</p>
+        </NoRoomsMessage>
+      )}
+
       {showDeleteConfirm && (
-        <ConfirmDialog>
-          <div className="dialog-content">
-             <h3>Подтвердите удаление</h3>
-             <p>Вы уверены, что хотите удалить номер "{roomToDeleteTitle}"? Это действие необратимо.</p>
-            <div className="dialog-buttons">
-              <ActionButton 
-                className="outline"
-                   onClick={cancelDeleteRoom} 
-                   disabled={isLoading}
-              >
-                Отмена
-              </ActionButton>
-              <ActionButton 
-                className="danger"
-                onClick={confirmDeleteRoom}
-                   disabled={isLoading}
-                >
-                   {isLoading ? 'Удаление...' : 'Удалить'}
-              </ActionButton>
-            </div>
-          </div>
-        </ConfirmDialog>
+        <ConfirmModal
+          isOpen={showDeleteConfirm}
+          title="Подтвердите удаление"
+          message={`Вы уверены, что хотите удалить номер "${rooms.find(r => r._id === deletingRoomId)?.title}"? Это действие необратимо.`}
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+          confirmText="Удалить"
+          cancelText="Отмена"
+          isConfirming={isProcessingDelete}
+          confirmButtonClass="danger"
+        />
       )}
     </AdminPanelContainer>
   );

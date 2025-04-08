@@ -1,6 +1,10 @@
+// Тип для услуги
 export interface ServiceType {
-  _id?: string; // ID от MongoDB (присутствует у существующих услуг)
-  title: string;
-  description?: string; // Необязательное описание услуги
-  icon?: string; // URL иконки (может отсутствовать при создании)
+  _id: string;
+  name: string;
+  description: string;
+  icon: string; // Класс иконки FontAwesome или путь к SVG
+  price?: number; // Цена может быть необязательной
+  createdAt?: string;
+  updatedAt?: string;
 } 

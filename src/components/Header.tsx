@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
+import { homePageService } from '../utils/api';
+import { HomePageContent } from '../types/HomePage';
 
 const HeaderContainer = styled.header`
   background-color: white;
@@ -47,6 +49,10 @@ const HeaderContact = styled.div`
   text-align: right;
   font-size: 0.9rem;
   
+  p {
+    margin-bottom: 0.3rem;
+  }
+
   p:first-child {
     font-weight: 600;
     color: var(--primary-color);
@@ -59,6 +65,10 @@ const HeaderContact = styled.div`
         text-decoration: underline;
       }
     }
+  }
+
+  .address {
+    color: #555;
   }
   
   @media screen and (max-width: 768px) {
@@ -80,14 +90,14 @@ const Navigation = styled.nav`
   }
 `;
 
-const NavMenu = styled.ul<{ isOpen: boolean }>`
+const NavMenu = styled.ul<{ $isOpen: boolean }>`
   display: flex;
   list-style: none;
   
   @media screen and (max-width: 768px) {
     position: fixed;
     top: 0;
-    left: ${({ isOpen }) => (isOpen ? '0' : '-100%')};
+    left: ${({ $isOpen }) => ($isOpen ? '0' : '-100%')};
     width: 80%;
     height: 100vh;
     background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
@@ -169,7 +179,7 @@ const BookButton = styled(Link)`
   }
 `;
 
-const MobileMenuButton = styled.button<{ isOpen: boolean }>`
+const MobileMenuButton = styled.button<{ $isOpen: boolean }>`
   display: none;
   background: transparent;
   border: none;
@@ -216,6 +226,8 @@ const MENU_ITEMS = [
 const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [contactInfo, setContactInfo] = useState<HomePageContent['contact'] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -232,6 +244,37 @@ const Header: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const loadContent = async () => {
+      setIsLoading(true);
+      try {
+        const data = await homePageService.getHomePage();
+        if (data && data.contact) {
+          setContactInfo(data.contact);
+        } else {
+          setContactInfo({ 
+            title: 'Контакты',
+            address: 'г. Жуковский, ул. Нижегородская, д. 4',
+            phone: ['8 (498) 483 19 41'],
+            email: ''
+          }); 
+        }
+      } catch (err) {
+        console.error("Ошибка загрузки контактов для хедера:", err);
+        setContactInfo({ 
+          title: 'Контакты',
+          address: 'г. Жуковский, ул. Нижегородская, д. 4',
+          phone: ['8 (498) 483 19 41'],
+          email: ''
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadContent();
+  }, []);
+
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
     document.body.classList.toggle('menu-open');
@@ -244,34 +287,39 @@ const Header: React.FC = () => {
           <img src="/images/logo/logo.png" alt="Лесной дворик - Санаторий-профилакторий ОАО ЖМЗ" />
         </Logo>
         <HeaderContact>
-          <p><a href="tel:+74984831941">8 (498) 483 19 41</a></p>
-          <p>г. Жуковский, ул. Нижегородская, д. 4</p>
+          {isLoading ? (
+            <p>Загрузка...</p>
+          ) : contactInfo && contactInfo.phone.length > 0 ? (
+            <p><a href={`tel:+${contactInfo.phone[0].replace(/\D/g, '')}`}>{contactInfo.phone[0]}</a></p>
+          ) : (
+            <p><a href="tel:+74984831941">8 (498) 483 19 41</a></p>
+          )}
+          {isLoading ? null : contactInfo && contactInfo.address ? (
+            <p className="address">{contactInfo.address}</p>
+          ) : (
+            <p className="address">г. Жуковский, ул. Нижегородская, д. 4</p>
+          )}
         </HeaderContact>
       </LogoContainer>
       
       <Navigation>
+        <NavMenu $isOpen={isMenuOpen}>
+          {MENU_ITEMS.map((item) => (
+            <NavItem key={item.path} onClick={() => setIsMenuOpen(false)}>
+              <NavLink to={item.path}>{item.label}</NavLink>
+            </NavItem>
+          ))}
+        </NavMenu>
+        <BookButton to="/booking">Забронировать</BookButton>
         <MobileMenuButton 
           onClick={toggleMenu} 
-          aria-label="Меню"
           className={isMenuOpen ? 'open' : ''}
-          isOpen={isMenuOpen}
+          $isOpen={isMenuOpen}
         >
           <span></span>
           <span></span>
           <span></span>
         </MobileMenuButton>
-        
-        <NavMenu isOpen={isMenuOpen}>
-          {MENU_ITEMS.map((item, index) => (
-            <NavItem key={index}>
-              <NavLink to={item.path} onClick={() => setIsMenuOpen(false)}>
-                {item.label}
-              </NavLink>
-            </NavItem>
-          ))}
-        </NavMenu>
-        
-        <BookButton to="/booking">Забронировать</BookButton>
       </Navigation>
     </HeaderContainer>
   );

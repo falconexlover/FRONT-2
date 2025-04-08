@@ -12,13 +12,22 @@ const UploadManagerContainer = styled.div`
   margin-bottom: 3rem;
 `;
 
+// Создаем общий стиль для заголовков секций
+const SectionHeader = styled.h3`
+    margin-bottom: 1rem;
+    color: var(--dark-color); // Используем темный цвет темы
+    text-align: center; // Центрируем
+`;
+
 const CategorySelector = styled.div`
   margin-bottom: 2rem;
   
-  h3 {
-    margin-bottom: 1rem;
-    color: var(--dark-color);
-  }
+  // Используем SectionHeader вместо прямого h3
+  // h3 {
+  //   margin-bottom: 1rem;
+  //   color: var(--dark-color);
+  //   text-align: center;
+  // }
   
   .category-buttons {
     display: flex;
@@ -87,13 +96,14 @@ const UploadStatusItem = styled.li<{ status: 'pending' | 'uploading' | 'success'
   }
 `;
 
-const CATEGORIES = [
+// Хардкодим категории здесь, пока не передаем через пропсы
+/* const CATEGORIES = [
   { id: 'rooms', label: 'Номера' },
   { id: 'sauna', label: 'Сауна' },
   { id: 'conference', label: 'Конференц-зал' },
   { id: 'territory', label: 'Территория' },
   { id: 'party', label: 'Детские праздники' }
-];
+]; */
 
 interface FileUploadStatus {
   id: string;
@@ -102,20 +112,26 @@ interface FileUploadStatus {
   message?: string;
 }
 
+// Добавляем categories в интерфейс пропсов
 interface GalleryUploadManagerProps {
   onImageUpload: () => void;
+  categories: { id: string; label: string; }[]; // Добавляем этот проп
 }
 
-const GalleryUploadManager: React.FC<GalleryUploadManagerProps> = ({ onImageUpload }) => {
-  const [selectedCategory, setSelectedCategory] = useState('rooms');
+// Используем categories из пропсов
+const GalleryUploadManager: React.FC<GalleryUploadManagerProps> = ({ onImageUpload, categories }) => {
+  // Инициализируем выбранную категорию первой из полученного списка
+  const [selectedCategory, setSelectedCategory] = useState(categories.length > 0 ? categories[0].id : '');
   const [uploadQueue, setUploadQueue] = useState<FileUploadStatus[]>([]);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [overallError, setOverallError] = useState<string | null>(null);
 
+  // handleCategorySelect остается без изменений
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
   };
   
+  // handleUpload остается без изменений
   const handleUpload = useCallback(async (files: File[], category: string) => {
     if (files.length === 0) return;
 
@@ -196,9 +212,10 @@ const GalleryUploadManager: React.FC<GalleryUploadManagerProps> = ({ onImageUplo
   return (
     <UploadManagerContainer>
       <CategorySelector>
-        <h3>1. Выберите категорию для загрузки</h3>
+        <SectionHeader>1. Выберите категорию для загрузки</SectionHeader>
         <div className="category-buttons">
-          {CATEGORIES.map(category => (
+          {/* Используем categories из пропсов */} 
+          {categories.map(category => (
             <CategoryButton
               key={category.id}
               active={selectedCategory === category.id}
@@ -212,9 +229,10 @@ const GalleryUploadManager: React.FC<GalleryUploadManagerProps> = ({ onImageUplo
       </CategorySelector>
       
       <div>
-        <h3>2. Выберите файлы для загрузки</h3>
+        <SectionHeader>2. Выберите файлы для загрузки</SectionHeader>
         <ImageUploader
-          category={selectedCategory}
+          // Убедимся, что передаем актуальную категорию
+          category={selectedCategory} 
           onUpload={handleUpload}
           isUploading={isUploading}
           error={overallError}

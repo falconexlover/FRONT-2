@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import styled from 'styled-components';
-import { motion, AnimatePresence } from 'framer-motion';
+// import { motion, AnimatePresence } from 'framer-motion'; // Не используется
 import { galleryService } from '../utils/api';
 import { toast } from 'react-toastify';
 
@@ -87,14 +87,10 @@ const ErrorMessage = styled.div`
   font-size: 0.9rem;
 `;
 
-const StatusMessage = styled.div`
-  color: var(--dark-color);
-  margin-top: 1rem;
-  font-size: 0.9rem;
-`;
-
 const HomeImageUploader: React.FC<HomeImageUploaderProps> = ({}) => {
   const [imageType, setImageType] = useState<HomePageSectionType>('banner');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -122,62 +118,68 @@ const HomeImageUploader: React.FC<HomeImageUploaderProps> = ({}) => {
     }
   };
   
-  const uploadFile = useCallback(async (file: File | null) => {
-    if (!file) return;
-    
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
     setError(null);
-    setIsLoading(true);
-    
-    if (!file.type.startsWith('image/')) {
-      setError(`Файл "${file.name}" не является изображением.`);
-      setIsLoading(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith('image/')) {
+        setSelectedFile(file);
+        setPreviewUrl(URL.createObjectURL(file));
+      } else {
+        setError('Пожалуйста, выберите файл изображения.');
+      }
+    }
+  };
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null);
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.type.startsWith('image/')) {
+        setSelectedFile(file);
+        setPreviewUrl(URL.createObjectURL(file));
+      } else {
+        setError('Пожалуйста, выберите файл изображения.');
+        setSelectedFile(null);
+        setPreviewUrl(null);
+      }
+    }
+  };
+
+  const handleUpload = useCallback(async () => {
+    if (!selectedFile) {
+      setError('Пожалуйста, выберите файл для загрузки.');
       return;
     }
-
+    
+    setIsLoading(true);
+    setError(null);
+    
     const formData = new FormData();
-    formData.append('image', file);
-    formData.append('category', imageType);
-    formData.append('title', `${imageType} - ${file.name}`); 
-    formData.append('description', `Изображение для секции ${imageType}`);
+    formData.append('image', selectedFile);
+    formData.append('type', imageType); 
 
     try {
-      const result = await galleryService.uploadImage(formData);
-      toast.success(`Изображение "${file.name}" для секции "${imageType}" успешно загружено!`);
+      // Не присваиваем результат в result, так как он не используется
+      await galleryService.uploadImage(formData);
+      toast.success(`Изображение для секции "${imageType}" успешно загружено!`);
+      setSelectedFile(null);
+      setPreviewUrl(null);
       if (fileInputRef.current) {
-         fileInputRef.current.value = '';
+        fileInputRef.current.value = '';
       }
     } catch (err) {
-      console.error(`Ошибка загрузки изображения для ${imageType}:`, err);
-      let message = `Не удалось загрузить изображение "${file.name}".`;
-      if (err instanceof Error) {
-        message += ` (${err.message})`;
-      }
+      console.error("Ошибка загрузки изображения:", err);
+      const message = err instanceof Error ? err.message : 'Не удалось загрузить изображение.';
       setError(message);
       toast.error(message);
     } finally {
       setIsLoading(false);
     }
-  }, [imageType]);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragActive(false);
-    
-    if (isLoading) return;
-
-    const { files } = e.dataTransfer;
-    if (files && files.length > 0) {
-      uploadFile(files[0]);
-    }
-  }, [isLoading, uploadFile]);
-  
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      uploadFile(files[0]);
-    }
-  };
+  }, [selectedFile, imageType]);
 
   return (
     <UploadContainer>
@@ -218,7 +220,7 @@ const HomeImageUploader: React.FC<HomeImageUploaderProps> = ({}) => {
             type="file"
             ref={fileInputRef}
             accept="image/jpeg,image/png,image/webp"
-            onChange={handleFileSelect}
+            onChange={handleFileChange}
             disabled={isLoading}
           />
         </UploadButton>

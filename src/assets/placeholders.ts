@@ -5,10 +5,10 @@ export const IMAGES = {
   // Баннер и общие изображения
   BANNER: 'https://via.placeholder.com/1600x900/217148/FFFFFF?text=Лесной+дворик',
   ABOUT: 'https://via.placeholder.com/600x400/217148/FFFFFF?text=О+гостинице',
-  PATTERN: 'https://via.placeholder.com/400x400/EEEEEE/FFFFFF?text=Pattern',
+  PATTERN: '',
   
   // Номера 
-  ROOM_ECONOMY: '/images/gallery/rooms/economy/room_economy_beds.jpg',
+  ROOM_ECONOMY: 'https://via.placeholder.com/400x300/217148/FFFFFF?text=2-местный+эконом',
   ROOM_FAMILY: 'https://via.placeholder.com/400x300/217148/FFFFFF?text=2-местный+семейный',
   ROOM_MULTIPLE: 'https://via.placeholder.com/400x300/217148/FFFFFF?text=4-местный+эконом',
   

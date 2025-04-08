@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import YandexMap from '../components/YandexMap';
+import { homePageService } from '../utils/api';
+import { HomePageContent } from '../types/HomePage';
 
 const ContactSection = styled.section`
   padding: 6rem 2rem;
@@ -106,6 +108,10 @@ const ContactItem = styled.div`
 
 const MapContainer = styled.div`
   margin-top: 2rem;
+  min-height: 400px;
+  background-color: #f0f0f0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
 `;
 
 const ContactForm = styled(motion.form)`
@@ -199,6 +205,40 @@ const ContactPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   
+  const [contactInfo, setContactInfo] = useState<HomePageContent['contact'] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    const loadContent = async () => {
+      setIsLoading(true);
+      try {
+        const data = await homePageService.getHomePage();
+        if (data && data.contact) {
+          setContactInfo(data.contact);
+        } else {
+          setContactInfo({ 
+            title: 'Контакты', 
+            address: 'Московская область, г. Жуковский, ул. Нижегородская, д. 4', 
+            phone: ['8 (498) 483 19 41', '8 (915) 120 17 44'], 
+            email: '' 
+          });
+        }
+      } catch (err) {
+        console.error("Ошибка загрузки контактов для страницы Контакты:", err);
+        setContactInfo({ 
+          title: 'Контакты', 
+          address: 'Московская область, г. Жуковский, ул. Нижегородская, д. 4', 
+          phone: ['8 (498) 483 19 41', '8 (915) 120 17 44'], 
+          email: '' 
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadContent();
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -211,7 +251,6 @@ const ContactPage: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Имитация отправки формы
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSubmitted(true);
@@ -222,21 +261,18 @@ const ContactPage: React.FC = () => {
         message: ''
       });
       
-      // Сбросить сообщение об успешной отправке через 5 секунд
       setTimeout(() => {
         setIsSubmitted(false);
       }, 5000);
     }, 1500);
   };
   
-  // Координаты отеля [широта, долгота] - компонент YandexMap ожидает именно такой порядок
   const hotelCoordinates: [number, number] = [55.591259, 38.141982];
-  const hotelAddress = 'Московская область, г. Жуковский, ул. Нижегородская, д. 4';
   
   return (
     <ContactSection id="contact">
       <SectionTitle>
-        <h1>Контакты</h1>
+        <h1>{contactInfo?.title || 'Контакты'}</h1>
       </SectionTitle>
       
       <ContactContainer>
@@ -244,39 +280,50 @@ const ContactPage: React.FC = () => {
           <h3>Как с нами связаться</h3>
           <p>Мы всегда рады ответить на ваши вопросы и помочь с бронированием. Свяжитесь с нами любым удобным способом.</p>
           
-          <ContactItem>
-            <i className="fas fa-map-marker-alt"></i>
-            <div className="contact-info">
-              <h4>Адрес</h4>
-              <p>Московская область, г. Жуковский, ул. Нижегородская, д. 4</p>
-            </div>
-          </ContactItem>
-          
-          <ContactItem>
-            <i className="fas fa-phone-alt"></i>
-            <div className="contact-info">
-              <h4>Телефоны</h4>
-              <p>Гостиница: <a href="tel:+74984831941">8 (498) 483 19 41</a>, <a href="tel:+79151201744">8 (915) 120 17 44</a></p>
-              <p>Сауна: <a href="tel:+79151201744">8 (915) 120 17 44</a></p>
-              <p>Конференц-зал: <a href="tel:+79169266514">8 (916) 926 65 14</a></p>
-            </div>
-          </ContactItem>
-          
-          <ContactItem>
-            <i className="fas fa-clock"></i>
-            <div className="contact-info">
-              <h4>Время работы</h4>
-              <p>Ежедневно, круглосуточно</p>
-            </div>
-          </ContactItem>
+          {isLoading ? (
+            <p>Загрузка контактов...</p>
+          ) : contactInfo ? (
+            <>
+              <ContactItem>
+                <i className="fas fa-map-marker-alt"></i>
+                <div className="contact-info">
+                  <h4>Адрес</h4>
+                  <p>{contactInfo.address}</p>
+                </div>
+              </ContactItem>
+              
+              <ContactItem>
+                <i className="fas fa-phone"></i>
+                <div className="contact-info">
+                  <h4>Телефон</h4>
+                  {contactInfo.phone.map((phone, index) => (
+                     <p key={index}><a href={`tel:+${phone.replace(/\D/g, '')}`}>{phone}</a></p>
+                  ))}
+                </div>
+              </ContactItem>
+              
+              <ContactItem>
+                <i className="fas fa-envelope"></i>
+                <div className="contact-info">
+                  <h4>Email</h4>
+                  <p>{contactInfo.email}</p>
+                </div>
+              </ContactItem>
+            </>
+          ) : (
+            <p>Не удалось загрузить контактную информацию.</p>
+          )}
           
           <MapContainer>
-            <YandexMap 
-              address={hotelAddress}
-              coordinates={hotelCoordinates}
-              zoom={16}
-              height="400px"
-            />
+            {!isLoading && contactInfo && (
+               <YandexMap 
+                address={contactInfo.address}
+                coordinates={hotelCoordinates}
+                zoom={16}
+                height="400px"
+              />
+            )}
+            {isLoading && <p>Загрузка карты...</p>}
           </MapContainer>
         </ContactInfo>
         
@@ -290,7 +337,7 @@ const ContactPage: React.FC = () => {
           <h3>Отправить сообщение</h3>
           
           <div className="form-group">
-            <label htmlFor="name">Ваше имя</label>
+            <label htmlFor="name">Имя</label>
             <input 
               type="text" 
               id="name" 
@@ -314,14 +361,13 @@ const ContactPage: React.FC = () => {
           </div>
           
           <div className="form-group">
-            <label htmlFor="phone">Телефон</label>
+            <label htmlFor="phone">Телефон (необязательно)</label>
             <input 
               type="tel" 
               id="phone" 
               name="phone" 
               value={formData.phone}
               onChange={handleChange}
-              required 
             />
           </div>
           
@@ -337,7 +383,7 @@ const ContactPage: React.FC = () => {
           </div>
           
           <SubmitButton type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Отправка...' : 'Отправить сообщение'}
+            {isSubmitting ? 'Отправка...' : 'Отправить'}
           </SubmitButton>
           
           {isSubmitted && (
@@ -346,7 +392,7 @@ const ContactPage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              Спасибо! Ваше сообщение успешно отправлено. Мы свяжемся с вами в ближайшее время.
+              Сообщение успешно отправлено!
             </SuccessMessage>
           )}
         </ContactForm>

@@ -1,25 +1,27 @@
 // FRONT-2/src/types/HomePage.ts
 
 // Определяем структуру для подсекций
-interface BannerContent {
+export interface BannerContent {
   title: string;
   subtitle: string;
   buttonText: string;
+  buttonLink: string;
+  image?: string; // Добавляем необязательное поле для URL изображения
 }
 
-interface AboutContent {
+export interface AboutContent {
   title: string;
   content: string;
   image?: string; // Добавляем необязательное поле для URL изображения
 }
 
-// Предполагаем структуру данных для номера (может отличаться от RoomType)
-interface RoomPreview {
-  id: string; // Используем ID или другой уникальный идентификатор
+// Экспортируем интерфейс
+export interface RoomPreview {
+  _id?: string; // Используем ID от MongoDB (может отсутствовать у новых)
   title: string;
   description: string;
   price: string;
-  // Добавьте imageUrl, если он нужен для редактора
+  // imageUrl?: string; // Раскомментируйте, если нужно для редактора
 }
 
 interface RoomsContent {
@@ -28,12 +30,12 @@ interface RoomsContent {
   roomsData: RoomPreview[];
 }
 
-// Предполагаем структуру данных для услуги
-interface ServicePreview {
-  id: string; // Используем ID или другой уникальный идентификатор
+// Экспортируем интерфейс
+export interface ServicePreview {
+  _id?: string; // Используем ID от MongoDB (может отсутствовать у новых)
   title: string;
   description: string;
-  icon: string; // Класс иконки Font Awesome
+  icon: string; // URL или класс иконки
 }
 
 interface ServicesContent {
@@ -42,7 +44,8 @@ interface ServicesContent {
   servicesData: ServicePreview[];
 }
 
-interface ContactContent {
+// Экспортируем интерфейс для контактов
+export interface ContactContent {
   title: string;
   address: string;
   phone: string[];

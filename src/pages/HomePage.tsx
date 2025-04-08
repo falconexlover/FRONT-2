@@ -6,7 +6,7 @@ import About from '../components/About';
 import Services from '../components/Services';
 import Rooms from '../components/Rooms';
 import YandexMap from '../components/YandexMap';
-import { homepageService } from '../utils/api';
+import { homePageService } from '../utils/api';
 import { HomePageContent } from '../types/HomePage';
 import { toast } from 'react-toastify';
 
@@ -23,7 +23,7 @@ const HomePage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await homepageService.getHomePage();
+      const data = await homePageService.getHomePage();
       setContent(data);
     } catch (err) {
       console.error("Ошибка загрузки контента главной страницы:", err);
@@ -72,7 +72,7 @@ const HomePage: React.FC = () => {
       <section id="contact" className="section" style={{ padding: '6rem 2rem', backgroundColor: 'white' }}>
         <div className="container">
           <SectionTitle>
-            <h2>{contact.title}</h2>
+            <h2>{contact?.title}</h2>
           </SectionTitle>
           
           <InfoContainer>
@@ -83,7 +83,7 @@ const HomePage: React.FC = () => {
                   <Icon className="fas fa-map-marker-alt" />
                   <div>
                     <h4>Адрес</h4>
-                    <p>{contact.address}</p>
+                    <p>{contact?.address}</p>
                   </div>
                 </ContactDetail>
                 
@@ -91,7 +91,7 @@ const HomePage: React.FC = () => {
                   <Icon className="fas fa-phone" />
                   <div>
                     <h4>Телефон</h4>
-                    {contact.phone.map((phone, index) => (
+                    {contact?.phone?.map((phone, index) => (
                       <p key={index}>
                         <a href={`tel:+${phone.replace(/\D/g, '')}`}>{phone}</a>
                       </p>
@@ -103,7 +103,7 @@ const HomePage: React.FC = () => {
                   <Icon className="fas fa-envelope" />
                   <div>
                     <h4>Email</h4>
-                    <p>{contact.email}</p>
+                    <p>{contact?.email}</p>
                   </div>
                 </ContactDetail>
               </ContactInfo>
@@ -111,7 +111,7 @@ const HomePage: React.FC = () => {
             
             <MapColumn>
               <YandexMap 
-                address={contact.address}
+                address={contact?.address || ''}
                 coordinates={hotelCoordinates}
                 zoom={16}
                 height="450px"

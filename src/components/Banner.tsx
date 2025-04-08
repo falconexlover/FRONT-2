@@ -13,31 +13,23 @@ interface BannerProps {
   // backgroundImage?: string; 
 }
 
-const BannerSection = styled.section<{ backgroundImage?: string }>` // Делаем backgroundImage необязательным
-  height: 85vh;
-  // Используем дефолтное изображение, если backgroundImage не передан или отсутствует
-  background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.5)), 
-              url('${props => props.backgroundImage || '/default-banner.jpg'}') center/cover no-repeat;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: white;
-  text-align: center;
-  padding: 0 1rem;
+interface BannerSectionProps {
+  backgroundImage?: string; // Оставляем проп как есть
+}
+
+// Используем transient prop `$backgroundImage` для стилизации
+const BannerSection = styled.section<{
+  $backgroundImage?: string; 
+}>`
+  min-height: 70vh;
   position: relative;
-  overflow: hidden;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(45deg, rgba(33, 113, 72, 0.7), rgba(44, 142, 94, 0.4));
-    z-index: 1;
-  }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4rem 2rem;
+  background: ${props => props.$backgroundImage ? `url(${props.$backgroundImage})` : 'var(--primary-color)'} center center/cover no-repeat;
+  color: white;
 `;
 
 const BannerContent = styled(motion.div)`
@@ -133,11 +125,11 @@ const Banner: React.FC<BannerProps> = ({ content }) => {
   // Предполагаем, что backgroundImage будет частью content.banner или передаваться отдельно
   // const backgroundImage = content?.backgroundImage || '/default-banner.jpg';
   // Если backgroundImage нет в content.banner, нужно будет передать его отдельно или изменить HomePageContent
-  const backgroundImage = '/images/banner-bg.jpg'; // Временная заглушка, если нет в content
+  const backgroundUrl = content?.image || '/images/banner-bg.jpg'; // Временная заглушка, если нет в content
 
   return (
-    // Передаем backgroundImage в BannerSection
-    <BannerSection backgroundImage={backgroundImage}> 
+    // Передаем $backgroundImage в стилизованный компонент
+    <BannerSection $backgroundImage={backgroundUrl}>
       <BannerContent
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -1,99 +1,51 @@
-import React, { useState, useRef } from 'react';
-import styled from 'styled-components';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import styled, { css } from 'styled-components';
 
 interface ImageUploaderProps {
   category: string;
   onUpload: (files: File[], category: string) => Promise<void>;
   isUploading: boolean;
-  error: string | null;
+  error?: string | null;
 }
 
 const UploaderContainer = styled.div`
-  border: 2px dashed var(--primary-color);
+  /* Добавляем стили, если нужно */
+`;
+
+const DropZone = styled.div<{ isDragging: boolean }>`
+  border: 2px dashed var(--border-color); /* Темная граница */
   border-radius: var(--radius-md);
   padding: 2rem;
   text-align: center;
-  background-color: rgba(33, 113, 72, 0.05);
-  transition: var(--transition);
-  margin-bottom: 2rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  background-color: var(--bg-secondary); /* Фон зоны */
+  color: var(--text-secondary); /* Цвет текста */
+
+  ${props => props.isDragging && css`
+    border-color: var(--primary-color);
+    background-color: rgba(42, 167, 110, 0.05); /* Легкий зеленый фон при перетаскивании */
+  `}
   
   &:hover {
-    background-color: rgba(33, 113, 72, 0.1);
-  }
-`;
-
-const UploadZone = styled.div`
-  cursor: pointer;
-  padding: 2rem;
-  
-  svg {
-    color: var(--primary-color);
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-  }
-  
-  h3 {
-    margin-bottom: 0.5rem;
-    color: var(--dark-color);
+     border-color: var(--primary-color);
   }
   
   p {
-    color: var(--text-color);
+    margin: 0.5rem 0;
+    font-size: 0.95rem;
+  }
+  
+  span {
+    font-weight: 600;
+    color: var(--primary-color);
+  }
+  
+  i {
+    font-size: 2.5rem;
+    color: var(--primary-color);
     margin-bottom: 1rem;
-  }
-`;
-
-const FormatInfo = styled.div`
-  font-size: 0.85rem;
-  color: #666;
-  background-color: rgba(33, 113, 72, 0.05);
-  padding: 0.8rem;
-  border-radius: var(--radius-sm);
-  margin: 1rem auto;
-  max-width: 90%;
-  
-  ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0.5rem 0 0;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1rem;
-  }
-  
-  li {
-    display: inline-flex;
-    align-items: center;
-    
-    i {
-      margin-right: 0.3rem;
-      color: var(--primary-color);
-    }
-  }
-`;
-
-const UploadButton = styled.button`
-  background-color: var(--primary-color);
-  color: white;
-  padding: 0.7rem 1.5rem;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  transition: var(--transition);
-  cursor: pointer;
-  
-  &:hover {
-    background-color: var(--dark-color);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-sm);
-  }
-  
-  &:disabled {
-    background-color: var(--gray-color);
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
+    display: block;
   }
 `;
 
@@ -101,109 +53,208 @@ const FileInput = styled.input`
   display: none;
 `;
 
-const ErrorMessage = styled.div`
-  color: red;
-  margin-top: 1rem;
-  font-size: 0.9rem;
+const PreviewContainer = styled.div`
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 1rem;
 `;
 
-const ImageUploader: React.FC<ImageUploaderProps> = ({ 
-  category, 
-  onUpload, 
-  isUploading, 
-  error 
-}) => {
+const PreviewItem = styled.div`
+  position: relative;
+  width: 100%;
+  padding-top: 100%; /* Соотношение сторон 1:1 */
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-primary); /* Фон для превью */
+
+  img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
+const RemoveButton = styled.button`
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background-color: rgba(0, 0, 0, 0.6); /* Полупрозрачный фон */
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 0.8rem;
+  line-height: 22px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  padding: 0;
+
+  &:hover {
+    background-color: var(--danger-color);
+  }
+`;
+
+const UploadButton = styled.button`
+  display: block; /* Делаем блочным */
+  width: 100%; /* Растягиваем на всю ширину */
+  margin-top: 1.5rem;
+  padding: 0.9rem 1.5rem;
+  background-color: var(--primary-color);
+  color: var(--text-on-primary-bg);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 1rem;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: var(--secondary-color);
+  }
+  
+  i {
+    margin-right: 0.5rem;
+  }
+`;
+
+const ErrorMessage = styled.p`
+  color: var(--danger-color);
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  text-align: center;
+`;
+
+const ImageUploader: React.FC<ImageUploaderProps> = ({ category, onUpload, isUploading, error }) => {
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
-  const [dragActive, setDragActive] = useState(false);
-  
+
+  const handleFiles = useCallback((files: FileList | null) => {
+    if (files) {
+      const newFiles = Array.from(files);
+      const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+      setSelectedFiles(prev => [...prev, ...newFiles]);
+      setPreviews(prev => [...prev, ...newPreviews]);
+    }
+  }, []);
+
+  const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation(); // Необходимо для срабатывания onDrop
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    handleFiles(e.dataTransfer.files);
+  }, [handleFiles]);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setSelectedFiles(e.target.files);
+    handleFiles(e.target.files);
+    // Очищаем инпут, чтобы можно было выбрать тот же файл повторно
+    if (fileInputRef.current) {
+        fileInputRef.current.value = "";
     }
   };
-  
-  const handleUploadClick = async () => {
-    if (selectedFiles && selectedFiles.length > 0) {
-      await onUpload(Array.from(selectedFiles), category);
-      setSelectedFiles(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+
+  const handleRemovePreview = (index: number) => {
+    URL.revokeObjectURL(previews[index]); // Освобождаем память
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUploadClick = () => {
+    if (selectedFiles.length > 0) {
+      onUpload(selectedFiles, category).finally(() => {
+        // Очищаем превью и файлы после попытки загрузки (успешной или нет)
+        previews.forEach(url => URL.revokeObjectURL(url));
+        setSelectedFiles([]);
+        setPreviews([]);
+      });
     }
   };
-  
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(true);
-  };
-  
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-  };
-  
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setSelectedFiles(e.dataTransfer.files);
-    }
-  };
-  
+
+  // Очистка Object URLs при размонтировании
+  useEffect(() => {
+    return () => {
+      previews.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [previews]);
+
   return (
-    <UploaderContainer 
-      style={{ borderColor: dragActive ? 'var(--accent-color)' : 'var(--primary-color)' }}
-    >
-      <UploadZone
+    <UploaderContainer>
+      <DropZone 
         onClick={() => fileInputRef.current?.click()}
-        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
         onDrop={handleDrop}
+        isDragging={isDragging}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383z"/>
-          <path d="M7.646 4.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V14.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708l3-3z"/>
-        </svg>
-        <h3>Загрузите изображения для галереи</h3>
-        <p>Перетащите файлы или нажмите для выбора</p>
-        
-        <FormatInfo>
-          <strong>Рекомендуемые параметры изображений:</strong>
-          <ul>
-            <li><i className="fas fa-check-circle"></i> Форматы: JPG, PNG, WEBP</li>
-            <li><i className="fas fa-check-circle"></i> Разрешение: от 1000×600px</li>
-            <li><i className="fas fa-check-circle"></i> Максимальный размер: 10MB</li>
-          </ul>
-        </FormatInfo>
-        
-        {selectedFiles && (
-          <p>Выбрано файлов: {selectedFiles.length}</p>
-        )}
-        
         <FileInput 
-          type="file" 
           ref={fileInputRef}
-          multiple
-          accept="image/jpeg,image/png,image/webp"
+          type="file" 
+          multiple 
+          accept="image/png, image/jpeg, image/webp"
           onChange={handleFileSelect}
+          disabled={isUploading}
         />
-        
-        {selectedFiles && selectedFiles.length > 0 && (
-          <UploadButton 
-            onClick={handleUploadClick}
-            disabled={isUploading}
-          >
-            {isUploading ? 'Загрузка...' : 'Загрузить'}
-          </UploadButton>
+        <i className="fas fa-cloud-upload-alt"></i>
+        {isDragging ? (
+          <p>Отпустите файлы здесь...</p>
+        ) : (
+          <p>Перетащите файлы сюда или <span>нажмите для выбора</span></p>
         )}
+        <p style={{fontSize: '0.8rem'}}>Поддерживаются PNG, JPG, WEBP</p>
+      </DropZone>
+
+      {previews.length > 0 && (
+        <PreviewContainer>
+          {previews.map((src, index) => (
+            <PreviewItem key={index}>
+              <img src={src} alt={`Превью ${index + 1}`} />
+              <RemoveButton onClick={(e) => { e.stopPropagation(); handleRemovePreview(index); }} disabled={isUploading}>
+                ×
+              </RemoveButton>
+            </PreviewItem>
+          ))}
+        </PreviewContainer>
+      )}
+
+      {selectedFiles.length > 0 && (
+        <UploadButton onClick={handleUploadClick} disabled={isUploading || selectedFiles.length === 0}>
+          {isUploading ? 'Загрузка...' : `Загрузить ${selectedFiles.length} фото`}
+        </UploadButton>
+      )}
       
       {error && <ErrorMessage>{error}</ErrorMessage>}
-      </UploadZone>
+
     </UploaderContainer>
   );
 };

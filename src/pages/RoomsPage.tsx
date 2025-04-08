@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { RoomType, loadRoomsFromStorage } from '../utils/roomsData';
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+// import { RoomType, loadRoomsFromStorage } from '../utils/roomsData'; // Комментируем или удаляем эту строку
+import { RoomType } from '../types/Room'; // Убедимся, что эта строка есть
+import { roomsService } from '../utils/api'; // Новый импорт
+import { toast } from 'react-toastify'; // Убедимся, что эта строка есть
+import { Link } from 'react-router-dom';
 
 /**
  * Стили для секции номеров
@@ -12,7 +19,7 @@ const RoomsSection = styled.section`
 `;
 
 const RoomsContainer = styled.div`
-  max-width: var(--max-width);
+  max-width: 1100px;
   margin: 0 auto;
   padding: 2rem 1rem;
 `;
@@ -47,31 +54,29 @@ const RoomCard = styled(motion.div)`
   }
 `;
 
-const RoomImage = styled.div`
-  position: relative;
-  height: 100%;
-  
-  img {
+const SliderWrapper = styled.div`
+  .slick-slide img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-  
+  .slick-dots {
+    bottom: 10px;
+  }
+  .slick-dots li button:before {
+    color: white;
+    opacity: 0.75;
+  }
+  .slick-dots li.slick-active button:before {
+    opacity: 1;
+  }
+
   @media (max-width: 992px) {
     height: 300px;
+    .slick-slide img {
+      height: 300px;
+    }
   }
-`;
-
-const RoomTag = styled.div`
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  background-color: var(--primary-color);
-  color: white;
-  padding: 0.3rem 0.8rem;
-  border-radius: var(--radius-full);
-  font-size: 0.9rem;
-  font-weight: 600;
 `;
 
 const RoomContent = styled.div`
@@ -91,23 +96,17 @@ const RoomContent = styled.div`
   }
 `;
 
-const RoomFeatures = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 0.8rem;
-  margin-bottom: 1.5rem;
+const RoomTitle = styled.h3`
+  color: var(--dark-color);
+  font-family: 'Playfair Display', serif;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
 `;
 
-const RoomFeature = styled.div`
-  display: flex;
-  align-items: center;
+const RoomDescription = styled.p`
   color: var(--text-color);
-  font-size: 0.95rem;
-  
-  i {
-    color: var(--primary-color);
-    margin-right: 0.5rem;
-  }
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
 `;
 
 const RoomPrice = styled.div`
@@ -124,7 +123,14 @@ const RoomPrice = styled.div`
   }
 `;
 
-const RoomButton = styled.a`
+const RoomActions = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+`;
+
+const BookingButton = styled(Link)`
   display: inline-block;
   padding: 0.8rem 2rem;
   background-color: var(--primary-color);
@@ -135,7 +141,6 @@ const RoomButton = styled.a`
   cursor: pointer;
   text-decoration: none;
   transition: var(--transition);
-  margin-top: 1rem;
   
   &:hover {
     background-color: var(--dark-color);
@@ -144,69 +149,159 @@ const RoomButton = styled.a`
 `;
 
 /**
+ * Стили для плейсхолдеров загрузки и ошибок
+ */
+/* Удаляем неиспользуемый PlaceholderContainer
+const PlaceholderContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px; 
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+`;
+*/
+
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  padding: 2rem;
+`;
+
+const LoadingSpinner = styled.div`
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-top: 4px solid var(--primary-color);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: var(--error-color);
+  text-align: center;
+  margin-top: 1rem;
+`;
+
+/**
  * Компонент страницы с номерами
  */
 const RoomsPage: React.FC = () => {
-  // Состояния для управления данными
+  // Состояния для управления данными, загрузкой и ошибками
   const [rooms, setRooms] = useState<RoomType[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Загрузка номеров при монтировании
   useEffect(() => {
-    loadRooms();
+    const fetchRooms = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Используем импортированный roomsService из api.ts
+        const data = await roomsService.getAllRooms();
+        // Уточнение: roomsService.getAllRooms из api.ts возвращает Promise<any>
+        // Нужно будет типизировать его позже, пока используем Array.isArray
+        setRooms(Array.isArray(data) ? data : []); 
+      } catch (err: any) {
+        console.error("Ошибка загрузки номеров:", err);
+        const message = err.message || 'Не удалось загрузить информацию о номерах.';
+        setError(message);
+        toast.error(message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchRooms();
   }, []);
   
-  /**
-   * Функция для загрузки номеров из хранилища
-   */
-  const loadRooms = () => {
-    const loadedRooms = loadRoomsFromStorage();
-    setRooms(loadedRooms);
+  // Настройки для react-slick
+  const settings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 3000,
+    pauseOnHover: true
   };
-  
+
   return (
     <RoomsSection id="rooms">
       <RoomsContainer>
         <SectionTitle>
-          <h1>Номера и цены</h1>
+          <h1>Наши Номера</h1>
+          <p>Выберите идеальный вариант для вашего комфортного отдыха</p>
         </SectionTitle>
         
-        <RoomsList>
-          {rooms.map((room) => (
-            <RoomCard
-              key={room.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.5 }}
-            >
-              <RoomImage>
-                <img src={room.image} alt={room.title} />
-                {room.tag && <RoomTag>{room.tag}</RoomTag>}
-              </RoomImage>
-              <RoomContent>
-                <h3>{room.title}</h3>
-                <p>{room.description}</p>
-                <RoomFeatures>
-                  {room.features.map((feature, index) => (
-                    <RoomFeature key={index}>
-                      <i className="fas fa-check"></i>
-                      {feature}
-                    </RoomFeature>
-                  ))}
-                </RoomFeatures>
-                <RoomPrice>
-                  {room.price}<small>{room.priceNote}</small>
-                </RoomPrice>
-                {room.additionalPrice && (
+        {isLoading && (
+          <LoadingContainer>
+            <LoadingSpinner />
+          </LoadingContainer>
+        )}
+        
+        {error && (
+          <ErrorMessage>Ошибка загрузки: {error}</ErrorMessage>
+        )}
+        
+        {!isLoading && !error && (
+          <RoomsList>
+            {rooms.map((room) => (
+              <RoomCard
+                key={room._id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.5 }}
+              >
+                <SliderWrapper>
+                  {room.imageUrls && room.imageUrls.length > 0 ? (
+                    <Slider {...settings}>
+                      {room.imageUrls.map((url, index) => (
+                        <div key={index}>
+                          <img 
+                            src={url}
+                            alt={`${room.title} - изображение ${index + 1}`}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null;
+                              target.src = './placeholder-image.jpg';
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </Slider>
+                  ) : (
+                    <img 
+                      src={'./placeholder-image.jpg'}
+                      alt={`${room.title} - плейсхолдер`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  )}
+                </SliderWrapper>
+                <RoomContent>
+                  <RoomTitle>{room.title}</RoomTitle>
+                  <RoomDescription>{room.description || 'Описание номера скоро появится.'}</RoomDescription>
                   <RoomPrice>
-                    {room.additionalPrice}<small>{room.additionalPriceNote}</small>
+                    {room.price}
                   </RoomPrice>
-                )}
-                <RoomButton href="#booking" data-room={room.id}>Забронировать</RoomButton>
-              </RoomContent>
-            </RoomCard>
-          ))}
-        </RoomsList>
+                  <RoomActions>
+                    <BookingButton to={`/booking?roomid=${room._id}`}>Забронировать</BookingButton>
+                  </RoomActions>
+                </RoomContent>
+              </RoomCard>
+            ))}
+          </RoomsList>
+        )}
       </RoomsContainer>
     </RoomsSection>
   );

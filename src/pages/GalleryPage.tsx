@@ -2,24 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { galleryService } from '../utils/api';
+import { GalleryImageItem } from '../types/GalleryImage';
 import { toast } from 'react-toastify';
 import '../assets/css/gallery.css';
-
-// Интерфейс для данных изображения от API (аналогично AdminPanel)
-interface GalleryImage {
-  _id: string;
-  imageUrl: string;
-  category: string;
-  title: string;
-  description: string;
-}
-
-// Фейковый импорт анимаций, если модуль не существует
-const fadeIn = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 }
-};
 
 // Неиспользуемый компонент
 // const GallerySection = styled.section`
@@ -173,30 +158,6 @@ const GalleryItem = styled(motion.div)`
       font-size: 0.9rem;
       opacity: 0.8;
     }
-  }
-`;
-
-const GalleryItemOverlay = styled.div`
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 1.5rem;
-  color: white;
-  z-index: 2;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: all 0.3s ease;
-  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-  
-  h3 {
-    font-size: 1.2rem;
-    margin-bottom: 0.3rem;
-  }
-  
-  p {
-    font-size: 0.9rem;
-    opacity: 0.9;
   }
 `;
 
@@ -362,24 +323,25 @@ const EmptyState = styled.div`
 `;
 
 const GalleryPage: React.FC = () => {
-  const [activeCategory, setActiveCategory] = useState<string>('all');
-  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [images, setImages] = useState<GalleryImageItem[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [filteredImages, setFilteredImages] = useState<GalleryImageItem[]>([]);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [categories, setCategories] = useState<string[]>(['all']);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
 
-  const loadGalleryImages = useCallback(async () => {
+  const loadGallery = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const galleryData = await galleryService.getAllImages();
       if (galleryData && galleryData.length > 0) {
         setImages(galleryData);
-        const uniqueCategories = Array.from(new Set(galleryData.map((image: GalleryImage) => image.category)));
+        const uniqueCategories = Array.from(new Set(galleryData.map((image: GalleryImageItem) => image.category)));
         setCategories(['all', ...uniqueCategories]);
       } else {
         setImages([]);
@@ -401,8 +363,23 @@ const GalleryPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    loadGalleryImages();
-  }, [loadGalleryImages]);
+    loadGallery();
+  }, [loadGallery]);
+
+  useEffect(() => {
+    let result = images;
+    if (selectedCategory !== 'all') {
+      result = result.filter(image => image.category === selectedCategory);
+    }
+    if (searchTerm.trim() !== '') {
+      const lowerCaseSearch = searchTerm.toLowerCase();
+      result = result.filter(image => 
+        (image.title?.toLowerCase().includes(lowerCaseSearch)) ||
+        (image.description?.toLowerCase().includes(lowerCaseSearch))
+      );
+    }
+    setFilteredImages(result);
+  }, [images, selectedCategory, searchTerm]);
 
   const openLightbox = (index: number) => {
     setCurrentImageIndex(index);
@@ -415,36 +392,26 @@ const GalleryPage: React.FC = () => {
     document.body.style.overflow = 'auto';
   };
 
-  const categoryFilteredImages = activeCategory === 'all' 
-    ? images 
-    : images.filter(img => img.category === activeCategory);
-
-  const searchFilteredImages = searchTerm.trim() === '' 
-    ? categoryFilteredImages
-    : categoryFilteredImages.filter(img => 
-        (img.title && img.title.toLowerCase().includes(searchTerm.toLowerCase())) || 
-        (img.description && img.description.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-      
-  const lightboxImages = searchFilteredImages;
-
-  const getCurrentLightboxImage = (): GalleryImage | null => {
-    return lightboxImages.length > 0 ? lightboxImages[currentImageIndex] : null;
+  const getCurrentLightboxImage = (): GalleryImageItem | null => {
+    if (currentImageIndex !== null && images[currentImageIndex]) {
+        return images[currentImageIndex];
+    }
+    return null;
   };
   
   const handlePrevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const newIndex = (currentImageIndex - 1 + lightboxImages.length) % lightboxImages.length;
+    const newIndex = (currentImageIndex - 1 + images.length) % images.length;
     setCurrentImageIndex(newIndex);
   };
 
   const handleNextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const newIndex = (currentImageIndex + 1) % lightboxImages.length;
+    const newIndex = (currentImageIndex + 1) % images.length;
     setCurrentImageIndex(newIndex);
   };
 
-  const currentLightboxImage = getCurrentLightboxImage();
+  const currentImage = getCurrentLightboxImage();
 
   return (
     <motion.div
@@ -461,8 +428,8 @@ const GalleryPage: React.FC = () => {
               {categories.map((category) => (
                 <CategoryButton 
                   key={category} 
-                  active={activeCategory === category}
-                  onClick={() => setActiveCategory(category)}
+                  active={selectedCategory === category}
+                  onClick={() => setSelectedCategory(category)}
                 >
                   {category === 'all' ? 'Все' : category.charAt(0).toUpperCase() + category.slice(1)}
                 </CategoryButton>
@@ -498,27 +465,25 @@ const GalleryPage: React.FC = () => {
           </LoadingContainer>
         ) : error ? (
            <ErrorMessage>{error}</ErrorMessage>
-        ) : searchFilteredImages.length > 0 ? (
+        ) : filteredImages.length > 0 ? (
           <GalleryGrid>
-            {searchFilteredImages.map((image, index) => (
+            {filteredImages.map((image, index) => (
               <GalleryItem
                 key={image._id}
-                onClick={() => openLightbox(lightboxImages.findIndex(img => img._id === image._id))}
+                onClick={() => openLightbox(index)}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
                 <img 
                   src={image.imageUrl}
-                  alt={image.title || `Изображение ${index + 1}`} 
+                  alt={image.title || image.category} 
                   loading="lazy"
                 />
-                {(image.title || image.description) && (
-                  <GalleryItemOverlay className="image-caption"> 
-                    {image.title && <h3>{image.title}</h3>}
-                    {image.description && <p>{image.description}</p>}
-                  </GalleryItemOverlay>
-                )}
+                <div className="image-caption">
+                    <h3>{image.title || '(без названия)'}</h3> 
+                    <p>{image.description || ''}</p> 
+                 </div>
               </GalleryItem>
             ))}
           </GalleryGrid>
@@ -529,31 +494,31 @@ const GalleryPage: React.FC = () => {
             <p>
               {searchTerm 
                 ? 'По вашему запросу ничего не найдено. Попробуйте изменить поисковый запрос.'
-                : activeCategory === 'all' 
+                : selectedCategory === 'all' 
                    ? 'В галерее пока нет изображений.' 
                    : 'В этой категории пока нет изображений.'}
             </p>
           </EmptyState>
         )}
         
-        <AnimatePresence>
-          {lightboxOpen && currentLightboxImage && (
-            <Lightbox
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={closeLightbox}
-            >
-              <LightboxContent 
-                 layoutId={currentLightboxImage._id}
-                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
-               >
-                <LightboxImage 
-                  src={currentLightboxImage.imageUrl} 
-                  alt={currentLightboxImage.title || `Изображение ${currentImageIndex + 1}`}
-                />
-                
-                {lightboxImages.length > 1 && (
+        <>
+          <AnimatePresence>
+            {lightboxOpen && currentImage && (
+              <Lightbox
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={closeLightbox}
+              >
+                <LightboxContent 
+                   layoutId={currentImage._id}
+                   onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                 >
+                  <LightboxImage 
+                    src={currentImage.imageUrl} 
+                    alt={currentImage.title || currentImage.category}
+                  />
+                  
                   <LightboxControls>
                     <LightboxButton onClick={handlePrevImage}>
                       <i className="fas fa-chevron-left"></i>
@@ -563,24 +528,24 @@ const GalleryPage: React.FC = () => {
                       <i className="fas fa-chevron-right"></i>
                     </LightboxButton>
                   </LightboxControls>
-                )}
-                
-                <LightboxClose onClick={closeLightbox}>
-                  <i className="fas fa-times"></i>
-                </LightboxClose>
                   
-                {(currentLightboxImage.title || currentLightboxImage.description) && (
-                  <LightboxCaption>
-                      {currentLightboxImage.title && <h3>{currentLightboxImage.title}</h3>}
-                      {currentLightboxImage.description && (
-                        <p>{currentLightboxImage.description}</p>
-                      )}
-                  </LightboxCaption>
-                )}
-              </LightboxContent>
-            </Lightbox>
-          )}
-        </AnimatePresence>
+                  <LightboxClose onClick={closeLightbox}>
+                    <i className="fas fa-times"></i>
+                  </LightboxClose>
+                    
+                  {(currentImage.title || currentImage.description) && (
+                    <LightboxCaption>
+                        {currentImage.title && <h3>{currentImage.title}</h3>}
+                        {currentImage.description && (
+                          <p>{currentImage.description}</p>
+                        )}
+                    </LightboxCaption>
+                  )}
+                </LightboxContent>
+              </Lightbox>
+            )}
+          </AnimatePresence>
+        </>
       </GalleryContainer>
     </motion.div>
   );
