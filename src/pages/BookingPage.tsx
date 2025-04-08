@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { roomsService, bookingService } from '../utils/api';
 import { RoomType } from '../types/Room';
-import { BookingData, BookingConfirmation } from '../types/Booking';
+import { BookingData } from '../types/Booking';
 import RoomSelection from '../components/Booking/RoomSelection';
 import BookingFormFields from '../components/Booking/BookingFormFields';
 import PriceSummary from '../components/Booking/PriceSummary';

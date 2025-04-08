@@ -14,13 +14,16 @@ interface BannerProps {
   // backgroundImage?: string; 
 }
 
+// Удаляем неиспользуемый интерфейс
+/*
 interface BannerSectionProps {
   backgroundImage?: string; // Оставляем проп как есть
 }
+*/
 
 // Используем transient prop `$backgroundImage` для стилизации
 const BannerSection = styled.section<{
-  $backgroundImage?: string; 
+  $backgroundImage?: string; // transient prop
 }>`
   min-height: 70vh;
   position: relative;
@@ -31,6 +34,18 @@ const BannerSection = styled.section<{
   padding: 4rem 2rem;
   background: ${props => props.$backgroundImage ? `url(${props.$backgroundImage})` : 'var(--primary-color)'} center center/cover no-repeat;
   color: white;
+
+  // Overlay для затемнения фона
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+  }
 `;
 
 const BannerContent = styled(motion.div)`
@@ -103,7 +118,7 @@ const BookButton = styled(motion.a)`
     transition: 0.5s ease;
     z-index: -1;
   }
-  
+
   &:hover {
     color: var(--primary-color);
     transform: translateY(-5px);
@@ -115,7 +130,7 @@ const BookButton = styled(motion.a)`
 `;
 
 // Принимаем props
-const Banner: React.FC<BannerProps> = ({ content }) => { 
+const Banner: React.FC<BannerProps> = ({ content }) => {
   // Удаляем загрузку из localStorage
   // const content = loadHomePageContent();
   
@@ -123,6 +138,8 @@ const Banner: React.FC<BannerProps> = ({ content }) => {
   const title = content?.title || 'Добро пожаловать!';
   const subtitle = content?.subtitle || 'Лучшее место для отдыха и оздоровления.';
   const buttonText = content?.buttonText || 'Забронировать';
+  const buttonLink = content?.buttonLink || '#booking'; // Добавляем ссылку для кнопки
+
   // Предполагаем, что backgroundImage будет частью content.banner или передаваться отдельно
   // const backgroundImage = content?.backgroundImage || '/default-banner.jpg';
   // Если backgroundImage нет в content.banner, нужно будет передать его отдельно или изменить HomePageContent
@@ -134,15 +151,16 @@ const Banner: React.FC<BannerProps> = ({ content }) => {
   return (
     // Передаем оптимизированный URL в стилизованный компонент
     <BannerSection $backgroundImage={optimizedBackgroundUrl}>
-      <BannerContent
+      <BannerContent 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1 }}
       >
         <BannerTitle>{title}</BannerTitle>
         <BannerText>{subtitle}</BannerText>
+        {/* Используем buttonLink для href */} 
         <BookButton 
-          href="#booking"
+          href={buttonLink} 
           whileHover={{ y: -5 }}
           whileTap={{ scale: 0.95 }}
         >

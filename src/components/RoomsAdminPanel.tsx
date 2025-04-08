@@ -24,6 +24,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import RoomAdminCard from './admin/RoomAdminCard';
 
 interface RoomsAdminPanelProps {
   onLogout: () => void;
@@ -87,7 +88,7 @@ const StyledTable = styled.table`
   border-collapse: collapse;
 `;
 
-const StyledTableRow = styled.tr<{ isDragging?: boolean }>`
+const StyledTableRow = styled.tr<{ $isDragging?: boolean }>`
   border-bottom: 1px solid var(--border-color);
   background-color: var(--bg-secondary);
   transition: background-color 0.2s ease, opacity 0.2s ease;
@@ -101,8 +102,8 @@ const StyledTableRow = styled.tr<{ isDragging?: boolean }>`
   }
 
   // Стили для перетаскивания
-  opacity: ${({ isDragging }) => (isDragging ? 0.5 : 1)};
-  box-shadow: ${({ isDragging }) => (isDragging ? '0 4px 12px rgba(0, 0, 0, 0.1)' : 'none')};
+  opacity: ${({ $isDragging }) => ($isDragging ? 0.5 : 1)};
+  box-shadow: ${({ $isDragging }) => ($isDragging ? '0 4px 12px rgba(0, 0, 0, 0.1)' : 'none')};
 `;
 
 const StyledTableCell = styled.td`
@@ -274,6 +275,30 @@ const NoRoomsMessage = styled.div`
   }
 `;
 
+// Контейнер для таблицы, СКРЫТЫЙ на малых экранах
+const TableWrapper = styled.div`
+  display: block;
+  @media (max-width: 992px) {
+    display: none;
+  }
+`;
+
+// Контейнер для карточек, ВИДИМЫЙ ТОЛЬКО на малых экранах
+const CardsContainer = styled.div`
+  display: none; // Скрыт по умолчанию
+  margin-top: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+
+  @media (max-width: 992px) {
+    display: grid; // Показываем как grid только на малых экранах
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
 interface SortableRoomRowProps {
   room: RoomType;
   onEdit: (room: RoomType) => void;
@@ -296,7 +321,7 @@ function SortableRoomRow({ room, onEdit, onDelete }: SortableRoomRowProps) {
   };
 
   return (
-    <StyledTableRow ref={setNodeRef} style={style} isDragging={isDragging}>
+    <StyledTableRow ref={setNodeRef} style={style} $isDragging={isDragging}>
       <StyledTableCell className="drag-handle" {...listeners} {...attributes}>
          <i className="fas fa-grip-vertical"></i>
       </StyledTableCell>
@@ -545,42 +570,59 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
       {isLoading && <p style={{textAlign: 'center', padding: '2rem'}}>Загрузка...</p>}
 
       {!isLoading && !showForm && rooms.length > 0 && (
-        <TableContainer>
-          <StyledTable>
-            <thead>
-              <tr>
-                <TableHeader style={{ width: '40px' }}></TableHeader>
-                <TableHeader>Фото</TableHeader>
-                <TableHeader>Название</TableHeader>
-                <TableHeader>Цена</TableHeader>
-                <TableHeader className="hide-mobile">Вмест.</TableHeader>
-                <TableHeader className="hide-mobile">Особенности</TableHeader>
-                <TableHeader>Действия</TableHeader>
-              </tr>
-            </thead>
-            <DndContext 
+        <>
+          {/* Оборачиваем таблицу и DndContext в TableWrapper */} 
+          <TableWrapper>
+            <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
+              onDragEnd={handleDragEnd} // Перетаскивание только для таблицы
             >
-              <SortableContext 
-                items={rooms.map(r => r._id!)}
-                strategy={verticalListSortingStrategy}
-              >
-                <tbody>
-                  {rooms.map(room => (
-                    <SortableRoomRow 
-                      key={room._id} 
-                      room={room} 
-                      onEdit={handleEditRoomClick} 
-                      onDelete={handleDeleteRoomClick} 
-                    />
-                  ))}
-                </tbody>
-              </SortableContext>
+              <TableContainer>
+                <StyledTable>
+                  <thead>
+                    <tr>
+                      <TableHeader style={{ width: '40px' }}></TableHeader>
+                      <TableHeader>Фото</TableHeader>
+                      <TableHeader>Название</TableHeader>
+                      <TableHeader>Цена</TableHeader>
+                      <TableHeader className="hide-mobile">Вмест.</TableHeader>
+                      <TableHeader className="hide-mobile">Особенности</TableHeader>
+                      <TableHeader>Действия</TableHeader>
+                    </tr>
+                  </thead>
+                  <SortableContext
+                    items={rooms.map(room => room._id!)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <tbody>
+                      {rooms.map(room => (
+                        <SortableRoomRow 
+                          key={room._id} 
+                          room={room} 
+                          onEdit={handleEditRoomClick} 
+                          onDelete={handleDeleteRoomClick} 
+                        />
+                      ))}
+                    </tbody>
+                  </SortableContext>
+                </StyledTable>
+              </TableContainer>
             </DndContext>
-          </StyledTable>
-        </TableContainer>
+          </TableWrapper>
+
+          {/* Контейнер с карточками, видимый только на малых экранах */} 
+          <CardsContainer>
+            {rooms.map((room) => (
+              <RoomAdminCard 
+                key={room._id} 
+                room={room} 
+                onEdit={handleEditRoomClick} 
+                onDelete={handleDeleteRoomClick} 
+              />
+            ))}
+          </CardsContainer>
+        </>
       )}
       
       {!isLoading && !showForm && rooms.length === 0 && (

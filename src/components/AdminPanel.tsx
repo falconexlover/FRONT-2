@@ -250,98 +250,56 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
     }
   };
 
-  const panelVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } };
-  const formVariants = { collapsed: { opacity: 0, height: 0, y: -20, marginBottom: 0 }, expanded: { opacity: 1, height: 'auto', y: 0, marginBottom: '2rem' } };
-
-  const renderActivePanel = () => {
+  const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return (
-          <Panel key="dashboard" variants={panelVariants} initial="hidden" animate="visible" exit="hidden">
-            <Dashboard />
-          </Panel>
-        );
+        return <Dashboard setActiveTab={setActiveTab} />;
       case 'homepage':
+        return <HomePageEditor />;
+      case 'rooms':
+        return <RoomsAdminPanel onLogout={onLogout} />;
+      case 'services':
+        if (isLoading) return <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка услуг...</LoadingSpinner>;
+        if (error && activeTab === 'services') return <p style={{ color: 'var(--danger-color)', textAlign: 'center' }}>{error}</p>; 
         return (
-          <Panel key="homepage" variants={panelVariants} initial="hidden" animate="visible" exit="hidden">
-            <HomePageEditor />
-          </Panel>
+          <EditServicesForm 
+            services={services} 
+            onSave={handleSaveService} 
+            onDelete={handleDeleteService} 
+            isSaving={isSaving}
+            isDeleting={isDeletingService}
+          />
         );
       case 'gallery':
+        if (editingImage) {
+          return (
+            <ImageEditForm
+              image={editingImage}
+              editedData={editedData}
+              onFormChange={handleEditFormChange}
+              onSave={saveImageChanges}
+              onCancel={cancelEdit}
+              isSaving={isSaving}
+              categories={CATEGORIES}
+            />
+          );
+        }
+        if (isLoading) return <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка галереи...</LoadingSpinner>;
+        if (error && activeTab === 'gallery') return <p style={{ color: 'var(--danger-color)', textAlign: 'center' }}>{error}</p>;
         return (
-          <Panel key="gallery" variants={panelVariants} initial="hidden" animate="visible" exit="hidden">
-            <AnimatePresence>
-              {editingImage && (
-                <ImageEditForm
-                    key="edit-form"
-                    image={editingImage}
-                    editedData={editedData}
-                    onFormChange={handleEditFormChange}
-                    onSave={saveImageChanges}
-                    onCancel={cancelEdit}
-                    categories={CATEGORIES}
-                    isSaving={isSaving}
-                    variants={formVariants}
-                    initial="collapsed"
-                    animate="expanded"
-                    exit="collapsed"
-                    transition={{ duration: 0.3 }}
-                />
-              )}
-            </AnimatePresence>
-            {isLoading ? (
-              <LoadingSpinner>
-                <i className="fas fa-spinner"></i>
-                Загрузка галереи...
-              </LoadingSpinner>
-            ) : error ? (
-              <p style={{ color: 'var(--danger-color)' }}>{error}</p>
-            ) : (
-              <ExistingImagesList
-                key={galleryKey}
-                images={galleryItems}
-                onEditClick={handleEditClick}
-                onDeleteClick={handleDeleteClick}
-              />
-            )}
-          </Panel>
+          <ExistingImagesList
+            key={galleryKey}
+            images={galleryItems}
+            onEditClick={handleEditClick}
+            onDeleteClick={handleDeleteClick}
+          />
         );
       case 'upload':
-        return (
-          <Panel key="upload" variants={panelVariants} initial="hidden" animate="visible" exit="hidden">
-            <GalleryUploadManager onImageUpload={handleImageUpload} categories={CATEGORIES} />
-          </Panel>
-        );
-      case 'rooms':
-        return (
-          <Panel key="rooms" variants={panelVariants} initial="hidden" animate="visible" exit="hidden">
-            <RoomsAdminPanel onLogout={onLogout} />
-          </Panel>
-        );
-      case 'services':
-        return (
-          <Panel key="services" variants={panelVariants} initial="hidden" animate="visible" exit="hidden">
-            {isLoading && <LoadingSpinner><i></i> Загрузка услуг...</LoadingSpinner>}
-            {error && <p style={{color: 'red', textAlign: 'center'}}>{error}</p>}
-            {!isLoading && !error && (
-              <EditServicesForm
-                services={services}
-                onSave={handleSaveService}
-                onDelete={handleDeleteService}
-                isSaving={isSaving}
-                isDeleting={isDeletingService}
-              />
-            )}
-          </Panel>
-        );
+        return <GalleryUploadManager onImageUpload={handleImageUpload} categories={CATEGORIES} />;
       case 'promotions':
-        return (
-          <Panel key="promotions" variants={panelVariants} initial="hidden" animate="visible" exit="hidden">
-            <PromotionsAdminPanel />
-          </Panel>
-        );
+        return <PromotionsAdminPanel />;
       default:
-        return null;
+        return <div>Выберите раздел</div>;
     }
   };
 
@@ -357,7 +315,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
       )}
     >
       <AnimatePresence mode="wait">
-        {renderActivePanel()} 
+        <Panel
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+        >
+          {renderContent()}
+        </Panel>
       </AnimatePresence>
       
       <AnimatePresence>

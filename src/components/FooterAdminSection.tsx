@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 // import { Link } from 'react-router-dom'; // Link больше не нужен
 import AdminLoginForm from './AdminLoginForm';
 import AdminPanel from './AdminPanel'; // Импортируем AdminPanel
@@ -36,24 +36,25 @@ const FooterAdminSection: React.FC = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false); // Состояние для модалки админ-панели
 
-  // useEffect для проверки auth остается
-  useEffect(() => {
-    const interval = setInterval(() => {
-      checkAuth();
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const checkAuth = () => {
+  // Добавляем checkAuth в зависимости useEffect
+  const checkAuth = useCallback(() => {
     const currentAuthStatus = apiUtils.authService.isAuthenticated();
     if (currentAuthStatus !== isAuthenticated) {
       setIsAuthenticated(currentAuthStatus);
       if (!currentAuthStatus) {
         setShowLoginModal(false);
-        setShowAdminModal(false); // Закрываем и админ-панель при выходе
+        setShowAdminModal(false);
       }
     }
-  };
+  }, [isAuthenticated]); // Добавляем isAuthenticated в зависимости useCallback
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkAuth();
+    }, 60000);
+    checkAuth(); // Проверяем сразу при монтировании
+    return () => clearInterval(interval);
+  }, [checkAuth]); // Теперь зависимость указана верно
 
   // handleLogout теперь закрывает модальное окно админ-панели
   const handleLogout = () => {

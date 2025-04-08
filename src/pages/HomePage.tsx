@@ -6,243 +6,183 @@ import About from '../components/About';
 import Services from '../components/Services';
 import Rooms from '../components/Rooms';
 import YandexMap from '../components/YandexMap';
-import { homePageService } from '../utils/api';
+import { homePageService, promotionsService } from '../utils/api';
 import { HomePageContent } from '../types/HomePage';
 import { toast } from 'react-toastify';
+import PromotionBadge from '../components/ui/PromotionBadge';
+import { PromotionType } from '../types/Promotion';
+import PromoModal from '../components/ui/PromoModal';
 
-// Начальное состояние (может быть null до загрузки)
-const initialContent: HomePageContent | null = null;
-
-const HomePage: React.FC = () => {
-  const [content, setContent] = useState<HomePageContent | null>(initialContent);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Загрузка контента с API
-  const loadContent = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await homePageService.getHomePage();
-      setContent(data);
-    } catch (err) {
-      console.error("Ошибка загрузки контента главной страницы:", err);
-      let message = 'Не удалось загрузить данные страницы.';
-      if (err instanceof Error) {
-        message = err.message;
-      }
-      setError(message);
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadContent();
-  }, [loadContent]);
-  
-  // Координаты отеля
-  const hotelCoordinates: [number, number] = [55.591259, 38.141982]; 
-  
-  // Отображение загрузки
-  if (isLoading) {
-    return <LoadingPlaceholder>Загрузка страницы...</LoadingPlaceholder>;
-  }
-
-  // Отображение ошибки
-  if (error) {
-    return <ErrorPlaceholder>Ошибка загрузки: {error}</ErrorPlaceholder>;
-  }
-
-  // Если контент не загрузился (null)
-  if (!content) {
-    return <ErrorPlaceholder>Не удалось загрузить контент страницы.</ErrorPlaceholder>;
-  }
-  
-  // Извлекаем нужные части контента для передачи
-  const { banner, about, rooms, services, contact } = content;
-  
-  return (
-    <>
-      <Banner content={banner} />
-      <About content={about} />
-      <Rooms title={rooms?.title} subtitle={rooms?.subtitle} />
-      <Services title={services?.title} subtitle={services?.subtitle} />
-      <section id="contact" className="section" style={{ padding: '6rem 2rem', backgroundColor: 'white' }}>
-        <div className="container">
-          <SectionTitle>
-            <h2>{contact?.title}</h2>
-          </SectionTitle>
-          
-          <InfoContainer>
-            <InfoColumn>
-              <h3>Контактная информация</h3>
-              <ContactInfo>
-                <ContactDetail>
-                  <Icon className="fas fa-map-marker-alt" />
-                  <div>
-                    <h4>Адрес</h4>
-                    <p>{contact?.address}</p>
-                  </div>
-                </ContactDetail>
-                
-                <ContactDetail>
-                  <Icon className="fas fa-phone" />
-                  <div>
-                    <h4>Телефон</h4>
-                    {contact?.phone?.map((phone, index) => (
-                      <p key={index}>
-                        <a href={`tel:+${phone.replace(/\D/g, '')}`}>{phone}</a>
-                      </p>
-                    ))}
-                  </div>
-                </ContactDetail>
-                
-                <ContactDetail>
-                  <Icon className="fas fa-envelope" />
-                  <div>
-                    <h4>Email</h4>
-                    <p>{contact?.email}</p>
-                  </div>
-                </ContactDetail>
-              </ContactInfo>
-            </InfoColumn>
-            
-            <MapColumn>
-              <YandexMap 
-                address={contact?.address || ''}
-                coordinates={hotelCoordinates}
-                zoom={16}
-                height="450px"
-              />
-            </MapColumn>
-          </InfoContainer>
-        </div>
-      </section>
-    </>
-  );
-};
-
-const SectionTitle = styled.div`
-  text-align: center;
-  margin-bottom: 3rem;
-  position: relative;
-  
-  h2 {
-    font-size: 2.5rem;
-    color: var(--dark-color);
-    display: inline-block;
-    font-family: 'Playfair Display', serif;
-    font-weight: 600;
-    position: relative;
-    
-    &::before {
-      content: '';
-      position: absolute;
-      width: 60px;
-      height: 3px;
-      background-color: var(--accent-color);
-      bottom: -15px;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-    
-    &::after {
-      content: '';
-      position: absolute;
-      width: 20px;
-      height: 3px;
-      background-color: var(--primary-color);
-      bottom: -15px;
-      left: calc(50% + 35px);
-      transform: translateX(-50%);
-    }
-  }
-`;
-
-const InfoContainer = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const InfoColumn = styled.div`
-  h3 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.8rem;
-    margin-bottom: 2rem;
-    color: var(--dark-color);
-  }
-`;
-
-const MapColumn = styled.div`
-  overflow: hidden;
-  border-radius: var(--radius-md);
-`;
-
-const ContactInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-`;
-
-const ContactDetail = styled.div`
-  display: flex;
-  align-items: flex-start;
-  
-  div {
-    h4 {
-      font-size: 1.1rem;
-      margin-bottom: 0.5rem;
-      color: var(--primary-color);
-    }
-    
-    p {
-      color: #666;
-      margin-bottom: 0.3rem;
-      line-height: 1.5;
-    }
-  }
-`;
-
-const Icon = styled.i`
-  color: white;
-  background-color: var(--primary-color);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 1rem;
-  flex-shrink: 0;
-`;
-
+// Контейнер для плейсхолдера загрузки
 const LoadingPlaceholder = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 80vh;
-  font-size: 1.5rem;
-  color: var(--text-color);
+    // ... стили ...
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
 `;
 
 const ErrorPlaceholder = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 80vh;
-  font-size: 1.2rem;
-  color: #e53935;
-  padding: 2rem;
-  text-align: center;
+    // ... стили ...
+    min-height: 60vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    color: var(--danger-color);
+    padding: 2rem;
+    text-align: center;
+`;
+
+const HomePage: React.FC = () => {
+    const [content, setContent] = useState<HomePageContent | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [activePromotions, setActivePromotions] = useState<PromotionType[]>([]);
+    const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
+
+    const loadContent = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const [homeData, promotionsData] = await Promise.all([
+                homePageService.getHomePage(),
+                promotionsService.getAllPromotions()
+            ]);
+            
+            setContent(homeData);
+            const activePromos = promotionsData?.filter(promo => promo.isActive) ?? [];
+            setActivePromotions(activePromos);
+
+        } catch (err) {
+            console.error("Ошибка загрузки контента главной страницы:", err);
+            let message = 'Не удалось загрузить данные страницы.';
+            if (err instanceof Error) {
+                message = err.message;
+            }
+            setError(message);
+            toast.error(message);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadContent();
+    }, [loadContent]);
+
+    if (isLoading) {
+        return <LoadingPlaceholder>Загрузка страницы...</LoadingPlaceholder>;
+    }
+
+    if (error) {
+        return <ErrorPlaceholder>Ошибка загрузки: {error}</ErrorPlaceholder>;
+    }
+
+    if (!content) {
+        return <ErrorPlaceholder>Не удалось загрузить контент страницы.</ErrorPlaceholder>;
+    }
+
+    const { banner, about, rooms, services, contact } = content;
+
+    const hotelCoordinates: [number, number] = [55.591259, 38.141982];
+
+    const openPromoModal = () => setIsPromoModalOpen(true);
+    const closePromoModal = () => setIsPromoModalOpen(false);
+
+    return (
+        <>
+            {activePromotions.length > 0 && (
+                <PromotionBadge onClick={openPromoModal} />
+            )}
+
+            <Banner content={banner} />
+            <About content={about} />
+            <Rooms title={rooms?.title} subtitle={rooms?.subtitle} />
+            <Services title={services?.title} subtitle={services?.subtitle} />
+            <section id="contact" className="section" style={{ padding: '6rem 2rem', backgroundColor: 'white' }}>
+                <div className="container">
+                    <SectionTitle>
+                        <h2>{contact?.title}</h2>
+                    </SectionTitle>
+                    
+                    <InfoContainer>
+                        <InfoColumn>
+                            <h3>Контактная информация</h3>
+                            <ContactInfo>
+                                <ContactDetail>
+                                    <Icon className="fas fa-map-marker-alt" />
+                                    <div>
+                                        <h4>Адрес</h4>
+                                        <p>{contact?.address}</p>
+                                    </div>
+                                </ContactDetail>
+                                
+                                <ContactDetail>
+                                    <Icon className="fas fa-phone" />
+                                    <div>
+                                        <h4>Телефон</h4>
+                                        {contact?.phone?.map((phone, index) => (
+                                            <p key={index}>
+                                                <a href={`tel:+${phone.replace(/\D/g, '')}`}>{phone}</a>
+                                            </p>
+                                        ))}
+                                    </div>
+                                </ContactDetail>
+                                
+                                <ContactDetail>
+                                    <Icon className="fas fa-envelope" />
+                                    <div>
+                                        <h4>Email</h4>
+                                        <p>{contact?.email}</p>
+                                    </div>
+                                </ContactDetail>
+                            </ContactInfo>
+                        </InfoColumn>
+                        
+                        <MapColumn>
+                            <YandexMap 
+                                address={contact?.address || ''}
+                                coordinates={hotelCoordinates}
+                                zoom={16}
+                                height="450px"
+                            />
+                        </MapColumn>
+                    </InfoContainer>
+                </div>
+            </section>
+
+            <PromoModal 
+                isOpen={isPromoModalOpen} 
+                onClose={closePromoModal} 
+                promotions={activePromotions}
+            />
+        </>
+    );
+};
+
+const SectionTitle = styled.div`
+    // ... стили ...
+`;
+const InfoContainer = styled.div`
+    // ... стили ...
+`;
+const InfoColumn = styled.div`
+    // ... стили ...
+`;
+const MapColumn = styled.div`
+    // ... стили ...
+`;
+const ContactInfo = styled.div`
+    // ... стили ...
+`;
+const ContactDetail = styled.div`
+    // ... стили ...
+`;
+const Icon = styled.i`
+    // ... стили ...
 `;
 
 export default HomePage; 

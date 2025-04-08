@@ -8,6 +8,7 @@ import ActionButton from './ui/ActionButton'; // Импортируем общу
 import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils'; // Импортируем оптимизатор
 // import { roomsService } from '../utils/api';
 // import { toast } from 'react-toastify';
+import ConfirmModal from './ui/ConfirmModal';
 
 // Удаляем локальное определение интерфейса RoomType
 /*
@@ -306,10 +307,6 @@ const ImagePreviewContainer = styled.div`
   }
 `;
 
-const FileInputLabel = styled(Label)`
-  /* Можно добавить стили для кастомной кнопки выбора файла, если нужно */
-`;
-
 const FileInput = styled.input`
   display: block; /* Или скрыть и стилизовать label как кнопку */
   margin-top: 0.5rem;
@@ -351,8 +348,6 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
   });
   
   const [newFeature, setNewFeature] = useState("");
-  // Состояние для НОВЫХ файлов, выбранных в MultiImageDropzone
-  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   // Состояние для ID СУЩЕСТВУЮЩИХ изображений, помеченных на удаление
   const [deletedPublicIds, setDeletedPublicIds] = useState<string[]>([]);
   // Убираем imageUrl из ключей ошибок
@@ -363,6 +358,9 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
   const [newFilePreviews, setNewFilePreviews] = useState<string[]>([]);
   // Состояние для отслеживания видимости существующих изображений
   const [existingImages, setExistingImages] = useState<{ url: string; publicId: string }[]>([]);
+  const [imageToRemove, setImageToRemove] = useState<{ index: number, url: string } | null>(null);
+  const [isRemovingExisting, setIsRemovingExisting] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     // Обновляем форму при изменении initialData
@@ -494,20 +492,52 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
   };
 
   // Удаление существующего изображения (помечаем ID и скрываем превью)
-  const handleDeleteExistingImage = (publicIdToDelete: string) => {
-    if (!publicIdToDelete) return; // Не удаляем, если нет ID
-    setDeletedPublicIds(prev => [...prev, publicIdToDelete]);
-    // Убираем из видимых существующих изображений
-    setExistingImages(prev => prev.filter(img => img.publicId !== publicIdToDelete));
+  const handleDeleteExistingImageClick = (publicId: string) => {
+    setImageToRemove({ index: -1, url: publicId });
+    setIsRemovingExisting(true);
+    setShowConfirmModal(true);
   };
 
   // Удаление нового (еще не загруженного) файла
-  const handleRemoveNewFile = (indexToRemove: number) => {
-    // Освобождаем Object URL перед удалением из состояния
-    URL.revokeObjectURL(newFilePreviews[indexToRemove]);
+  const handleRemoveNewFileClick = (index: number) => {
+    // Сохраняем индекс как строку, чтобы поместиться в imageToRemove
+    setImageToRemove({ index, url: newFilePreviews[index] }); 
+    setIsRemovingExisting(false);
+    setShowConfirmModal(true);
+  };
 
-    setNewFiles(prev => prev.filter((_, index) => index !== indexToRemove));
-    setNewFilePreviews(prev => prev.filter((_, index) => index !== indexToRemove));
+  // Выполняется при подтверждении в модальном окне
+  const confirmImageRemoval = () => {
+    if (imageToRemove === null) return;
+
+    if (isRemovingExisting) {
+      // Удаление существующего (помечаем ID)
+      const publicIdToDelete = imageToRemove.url;
+      setDeletedPublicIds(prev => [...prev, publicIdToDelete]);
+      setExistingImages(prev => prev.filter(img => img.publicId !== publicIdToDelete));
+    } else {
+      // Удаление нового (по индексу)
+      const indexToRemove = imageToRemove.index;
+      if (!isNaN(indexToRemove)) {
+          // Освобождаем Object URL перед удалением из состояния
+          if (newFilePreviews[indexToRemove]) {
+              URL.revokeObjectURL(newFilePreviews[indexToRemove]);
+          }
+          setNewFiles(prev => prev.filter((_, index) => index !== indexToRemove));
+          setNewFilePreviews(prev => prev.filter((_, index) => index !== indexToRemove));
+      }
+    }
+    // Закрываем модалку и сбрасываем состояния
+    setShowConfirmModal(false);
+    setImageToRemove(null);
+    setIsRemovingExisting(false);
+  };
+
+  // Выполняется при отмене в модальном окне
+  const cancelImageRemoval = () => {
+    setShowConfirmModal(false);
+    setImageToRemove(null);
+    setIsRemovingExisting(false);
   };
 
   // --- Валидация и Сохранение ---
@@ -580,7 +610,7 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
                       type="button"
                       className="delete-btn"
                       title="Удалить это изображение"
-                      onClick={() => handleDeleteExistingImage(image.publicId)}
+                      onClick={() => handleDeleteExistingImageClick(image.publicId)}
                     >
                       &times; {/* Крестик */}
                     </button>
@@ -599,7 +629,7 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
                     type="button"
                     className="delete-btn"
                     title="Убрать этот файл"
-                    onClick={() => handleRemoveNewFile(index)}
+                    onClick={() => handleRemoveNewFileClick(index)}
                   >
                     &times;
                   </button>
@@ -735,6 +765,20 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
           </ActionButton>
         </FormActions>
       </form>
+
+      {/* Модальное окно подтверждения удаления изображения */}
+      <ConfirmModal
+          isOpen={showConfirmModal}
+          onConfirm={confirmImageRemoval}
+          onCancel={cancelImageRemoval}
+          title="Подтвердить удаление"
+          message={isRemovingExisting 
+                      ? "Вы уверены, что хотите удалить это изображение? Оно будет удалено после сохранения номера."
+                      : "Вы уверены, что хотите убрать этот файл? Он не будет загружен."
+                  }
+          confirmText="Удалить"
+          cancelText="Отмена"
+      />
     </FormWrapper>
   );
 };

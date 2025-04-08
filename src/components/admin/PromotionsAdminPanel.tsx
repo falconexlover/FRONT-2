@@ -6,8 +6,8 @@ import { PromotionType } from '../../types/Promotion';
 import { toast } from 'react-toastify';
 import ActionButton from '../ui/ActionButton';
 import ConfirmModal from '../ui/ConfirmModal';
-// import PromotionForm from './PromotionForm'; // Раскомментируем позже
-import { LoadingSpinner } from '../AdminPanel'; // Используем общий спиннер
+import PromotionForm from './PromotionForm';
+import { LoadingSpinner } from '../AdminPanel';
 
 // Стили (можно вынести или оставить здесь для начала)
 const PanelContainer = styled.div``; // Пока пустой, общие стили в AdminLayout
@@ -127,6 +127,7 @@ const PromotionsAdminPanel: React.FC = () => {
   
   const [showForm, setShowForm] = useState(false);
   const [editingPromotion, setEditingPromotion] = useState<PromotionType | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingPromotionId, setDeletingPromotionId] = useState<string | null>(null);
@@ -137,9 +138,8 @@ const PromotionsAdminPanel: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Используем any, пока не исправим api.ts
-      const data: any[] = await promotionsService.getAllPromotions(); 
-      setPromotions(data as PromotionType[]); // Приводим к типу, надеясь на соответствие
+      const data: PromotionType[] = await promotionsService.getAllPromotions(); 
+      setPromotions(data);
     } catch (err) {
       console.error("Ошибка загрузки акций:", err);
       const message = err instanceof Error ? err.message : 'Не удалось загрузить акции';
@@ -170,13 +170,26 @@ const PromotionsAdminPanel: React.FC = () => {
     setEditingPromotion(null);
   };
 
-  const handleSave = async (/* formData: PromotionFormData */) => {
-    // Логика сохранения (будет добавлена с PromotionForm)
-    console.log('Saving promotion...', /* formData */);
-    // После сохранения:
-    // fetchPromotions();
-    // handleFormCancel(); 
-    toast.info('Функционал сохранения акции в разработке');
+  const handleSave = async (formData: Omit<PromotionType, '_id' | 'createdAt' | 'updatedAt'> | Partial<PromotionType>) => {
+    setIsSaving(true);
+    try {
+      let savedPromotion: PromotionType;
+      if (editingPromotion && editingPromotion._id) {
+        savedPromotion = await promotionsService.updatePromotion(editingPromotion._id, formData as Partial<PromotionType>); 
+        toast.success(`Акция "${savedPromotion.title}" успешно обновлена!`);
+      } else {
+        savedPromotion = await promotionsService.createPromotion(formData as Omit<PromotionType, '_id' | 'createdAt' | 'updatedAt'>);
+        toast.success(`Акция "${savedPromotion.title}" успешно создана!`);
+      }
+      fetchPromotions();
+      handleFormCancel();
+    } catch (err) {
+      console.error("Ошибка сохранения акции:", err);
+      const message = err instanceof Error ? err.message : 'Не удалось сохранить акцию';
+      toast.error(`Ошибка сохранения: ${message}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Обработчики удаления
@@ -198,7 +211,7 @@ const PromotionsAdminPanel: React.FC = () => {
       toast.success('Акция успешно удалена');
       setShowDeleteConfirm(false);
       setDeletingPromotionId(null);
-      fetchPromotions(); // Обновляем список
+      fetchPromotions();
     } catch (err: any) {
       console.error("Ошибка удаления акции:", err);
       toast.error(`Ошибка удаления: ${err.message || 'Неизвестная ошибка'}`);
@@ -237,29 +250,29 @@ const PromotionsAdminPanel: React.FC = () => {
       </Header>
 
       <AnimatePresence>
-        {showForm ? (
+        {showForm && (
           <motion.div
             key="promotion-form"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: '2rem' }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
             transition={{ duration: 0.3 }}
-            style={{ overflow: 'hidden', marginBottom: '2rem' }}
+            style={{ overflow: 'hidden' }}
           >
-            {/* <PromotionForm 
+            <PromotionForm 
               initialData={editingPromotion}
               onSave={handleSave}
               onCancel={handleFormCancel}
-            /> */}
-            <p>Форма добавления/редактирования акции (Скоро)</p>
+              isSaving={isSaving}
+            />
           </motion.div>
-        ) : null}
+        )}
       </AnimatePresence>
 
       {isLoading && <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка...</LoadingSpinner>}
       {error && <p style={{ color: 'var(--danger-color)', textAlign: 'center' }}>{error}</p>}
       
-      {!isLoading && !error && !showForm && (
+      {!showForm && (
         promotions.length === 0 ? (
           <NoItemsMessage>
              <h3>Акций пока нет</h3>
@@ -319,7 +332,6 @@ const PromotionsAdminPanel: React.FC = () => {
         )
       )}
       
-      {/* Модальное окно подтверждения удаления */} 
       {showDeleteConfirm && (
         <ConfirmModal
           isOpen={showDeleteConfirm}
