@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import Slider from "react-slick";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination, Autoplay, A11y } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
+import 'swiper/css/autoplay';
 // import { RoomType, loadRoomsFromStorage } from '../utils/roomsData'; // Комментируем или удаляем эту строку
 import { RoomType } from '../types/Room'; // Убедимся, что эта строка есть
 import { roomsService } from '../utils/api'; // Новый импорт
@@ -56,25 +59,27 @@ const RoomCard = styled(motion.div)`
 `;
 
 const SliderWrapper = styled.div`
-  .slick-slide img {
+  position: relative;
+  
+  .swiper-slide img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-  .slick-dots {
-    bottom: 10px;
+  
+  .swiper-pagination-bullet {
+    background-color: white;
+    opacity: 0.7;
   }
-  .slick-dots li button:before {
-    color: white;
-    opacity: 0.75;
-  }
-  .slick-dots li.slick-active button:before {
+  .swiper-pagination-bullet-active {
+    background-color: white;
     opacity: 1;
   }
 
   @media (max-width: 992px) {
     height: 300px;
-    .slick-slide img {
+    .swiper-slide img {
       height: 300px;
     }
   }
@@ -224,16 +229,10 @@ const RoomsPage: React.FC = () => {
     fetchRooms();
   }, []);
   
-  // Настройки для react-slick
-  const settings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 3000,
-    pauseOnHover: true
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.target as HTMLImageElement;
+    target.onerror = null;
+    target.src = './placeholder-image.jpg';
   };
 
   return (
@@ -265,31 +264,45 @@ const RoomsPage: React.FC = () => {
                 transition={{ duration: 0.5 }}
               >
                 <SliderWrapper>
-                  {room.imageUrls && room.imageUrls.length > 0 ? (
-                    <Slider {...settings}>
-                      {room.imageUrls.map((url, index) => (
-                        <div key={index}>
+                  <Swiper
+                    modules={[Navigation, Pagination, Autoplay, A11y]}
+                    spaceBetween={0}
+                    slidesPerView={1}
+                    pagination={{ clickable: true }}
+                    loop={true}
+                    autoplay={{
+                      delay: 3000,
+                      disableOnInteraction: false,
+                      pauseOnMouseEnter: true,
+                    }}
+                    a11y={{
+                      prevSlideMessage: 'Предыдущий слайд',
+                      nextSlideMessage: 'Следующий слайд',
+                      paginationBulletMessage: 'Перейти к слайду {{index}}',
+                    }}
+                  >
+                    {room.imageUrls && room.imageUrls.length > 0 ? (
+                      room.imageUrls.map((url, index) => (
+                        <SwiperSlide key={index}>
                           <img 
                             src={optimizeCloudinaryImage(url, 'f_auto,q_auto,w_600')}
                             alt={`${room.title} - изображение ${index + 1}`}
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.onerror = null;
-                              target.src = './placeholder-image.jpg';
-                            }}
+                            onError={handleImageError}
                             loading="lazy"
                           />
-                        </div>
-                      ))}
-                    </Slider>
-                  ) : (
-                    <img 
-                      src={optimizeCloudinaryImage('/placeholder-room.jpg', 'f_auto,q_auto,w_600')}
-                      alt={`${room.title} - плейсхолдер`}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      loading="lazy"
-                    />
-                  )}
+                        </SwiperSlide>
+                      ))
+                    ) : (
+                      <SwiperSlide>
+                         <img 
+                           src={optimizeCloudinaryImage('/placeholder-room.jpg', 'f_auto,q_auto,w_600')}
+                           alt={`${room.title} - плейсхолдер`}
+                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                           loading="lazy"
+                         />
+                      </SwiperSlide>
+                    )}
+                  </Swiper>
                 </SliderWrapper>
                 <RoomContent>
                   <RoomTitle>{room.title}</RoomTitle>
