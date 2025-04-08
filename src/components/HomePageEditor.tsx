@@ -207,40 +207,64 @@ const HomepageEditor: React.FC = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    try {
-      let aboutImageUrl = formData.about?.image; // Сохраняем текущий URL
+    // Сохраняем ID старого изображения перед потенциальной перезаписью
+    const oldPublicId = formData.about?.imagePublicId;
+    let newImageUrl = formData.about?.image; // URL по умолчанию - текущий
+    let newPublicId = formData.about?.imagePublicId; // ID по умолчанию - текущий
 
+    try {
       // 1. Загрузка нового изображения (если выбрано)
       if (aboutImageFile) {
-          console.log('Загрузка нового изображения для "О нас"...');
-          const uploadFormData = new FormData();
-          uploadFormData.append('image', aboutImageFile);
-          // uploadFormData.append('category', 'homepage-about'); // Можно добавить категорию
+        console.log('Загрузка нового изображения для "О нас"...');
+        const uploadFormData = new FormData();
+        uploadFormData.append('image', aboutImageFile);
+        // Добавим категорию или папку для порядка в Cloudinary
+        uploadFormData.append('category', 'homepage'); 
 
-          try {
-              // Используем galleryService для загрузки, он возвращает { imageUrl, cloudinaryPublicId }
-              const uploadedImage = await galleryService.uploadImage(uploadFormData);
-              aboutImageUrl = uploadedImage.imageUrl; // Получаем URL
-              console.log('Изображение загружено:', aboutImageUrl);
-              // TODO: Удалить старое изображение из Cloudinary 
-              setAboutImageFile(null);
-              setAboutImagePreview(null);
-          } catch (uploadError) {
-              console.error("Ошибка загрузки изображения:", uploadError);
-              toast.error(`Не удалось загрузить изображение: ${uploadError instanceof Error ? uploadError.message : 'Ошибка сервера'}`);
-              return;
-          }
+        try {
+            // Используем galleryService для загрузки, он возвращает { imageUrl, cloudinaryPublicId }
+            const uploadedImage = await galleryService.uploadImage(uploadFormData);
+            newImageUrl = uploadedImage.imageUrl; // Получаем новый URL
+            newPublicId = uploadedImage.cloudinaryPublicId; // Получаем новый ID
+            console.log('Изображение загружено:', newImageUrl, newPublicId);
+            
+            // 2. Удаление старого изображения (если оно было и новое загружено успешно)
+            if (oldPublicId && oldPublicId !== newPublicId) {
+              console.log('Удаление старого изображения:', oldPublicId);
+              try {
+                await galleryService.deleteImage(oldPublicId);
+                console.log('Старое изображение удалено.');
+              } catch (deleteError) {
+                console.error("Ошибка удаления старого изображения из Cloudinary:", deleteError);
+                toast.warn('Не удалось удалить старое изображение из хранилища.');
+                // Не прерываем процесс, просто предупреждаем
+              }
+            }
+            
+            setAboutImageFile(null);
+            setAboutImagePreview(null);
+        } catch (uploadError) {
+            console.error("Ошибка загрузки изображения:", uploadError);
+            toast.error(`Не удалось загрузить изображение: ${uploadError instanceof Error ? uploadError.message : 'Ошибка сервера'}`);
+            setIsSaving(false); // Прерываем сохранение, если загрузка не удалась
+            return;
+        }
       }
 
-      // 2. Подготовка ВСЕХ данных для отправки
-      // Создаем копию formData, чтобы не мутировать состояние напрямую
+      // 3. Подготовка ВСЕХ данных для отправки
       const dataToSend: Partial<HomePageContent> = { ...formData };
       
-      // Обновляем URL изображения в секции 'about', если он изменился
+      // Обновляем URL и ID изображения в секции 'about'
       if (dataToSend.about) {
-          dataToSend.about.image = aboutImageUrl || '';
-      } else if (aboutImageUrl) { // Если секции about не было, но загрузили картинку
-           dataToSend.about = { title: '', content: '', image: aboutImageUrl };
+          dataToSend.about.image = newImageUrl || '';
+          dataToSend.about.imagePublicId = newPublicId || '';
+      } else if (newImageUrl) { // Если секции about не было, но загрузили картинку
+           dataToSend.about = { 
+             title: '', 
+             content: '', 
+             image: newImageUrl,
+             imagePublicId: newPublicId
+           };
       }
 
       // Очищаем пустые телефоны в контактах
@@ -248,19 +272,14 @@ const HomepageEditor: React.FC = () => {
             dataToSend.contact.phone = dataToSend.contact.phone.filter(p => p && p.trim() !== '');
        }
 
-      console.log('Отправка данных:', dataToSend);
-
-      // 3. Отправка ОДНОГО запроса на обновление всего контента
+      // 4. Отправка данных на бэкенд
       await homePageService.updateHomePageData(dataToSend);
-      
-      toast.success("Данные главной страницы сохранены!");
-      
-      // Перезагружаем контент после сохранения, чтобы отобразить актуальные данные
-      // Небольшая задержка может быть полезна, чтобы бэкенд успел обработать
-      setTimeout(() => loadContent(), 300); 
+      toast.success('Данные главной страницы успешно сохранены!');
+      // Обновляем formData локально, чтобы отразить сохраненные URL/ID
+      setFormData(dataToSend);
 
     } catch (err) {
-      console.error("Ошибка сохранения данных гл. страницы:", err);
+      console.error("Ошибка сохранения данных главной страницы:", err);
       toast.error(`Ошибка сохранения: ${err instanceof Error ? err.message : 'Неизвестная ошибка'}`);
     } finally {
       setIsSaving(false);

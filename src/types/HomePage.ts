@@ -13,6 +13,7 @@ export interface AboutContent {
   title: string;
   content: string;
   image?: string; // Добавляем необязательное поле для URL изображения
+  imagePublicId?: string; // Добавляем ID из Cloudinary
 }
 
 // Экспортируем интерфейс
