@@ -83,6 +83,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
 
   const [galleryKey, setGalleryKey] = useState(Date.now());
 
+  const [showServiceDeleteConfirm, setShowServiceDeleteConfirm] = useState(false);
+  const [deletingServiceId, setDeletingServiceId] = useState<string | null>(null);
+  const [isDeletingService, setIsDeletingService] = useState(false);
+
   const loadGalleryItems = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -220,9 +224,30 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
   };
   
   const handleDeleteService = async (id: string) => {
-     // TODO: Реализовать удаление услуги (добавить вызов API и ConfirmModal)
-     console.log('Delete service:', id);
-     toast.info('Функционал удаления услуги в разработке');
+    setDeletingServiceId(id);
+    setShowServiceDeleteConfirm(true);
+  };
+
+  const cancelServiceDelete = () => {
+    setShowServiceDeleteConfirm(false);
+    setDeletingServiceId(null);
+  };
+
+  const confirmServiceDelete = async () => {
+    if (!deletingServiceId) return;
+    setIsDeletingService(true);
+    try {
+      await servicesService.deleteService(deletingServiceId);
+      toast.success('Услуга успешно удалена');
+      loadServices();
+    } catch (err) {
+      console.error("Ошибка удаления услуги:", err);
+      toast.error(`Не удалось удалить услугу: ${err instanceof Error ? err.message : 'Ошибка сервера'}`);
+    } finally {
+      setShowServiceDeleteConfirm(false);
+      setDeletingServiceId(null);
+      setIsDeletingService(false);
+    }
   };
 
   const panelVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } };
@@ -299,12 +324,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
             {isLoading && <LoadingSpinner><i></i> Загрузка услуг...</LoadingSpinner>}
             {error && <p style={{color: 'red', textAlign: 'center'}}>{error}</p>}
             {!isLoading && !error && (
-              <EditServicesForm 
-                services={services} 
+              <EditServicesForm
+                services={services}
                 onSave={handleSaveService}
                 onDelete={handleDeleteService}
                 isSaving={isSaving}
-                isDeleting={isDeleting}
+                isDeleting={isDeletingService}
               />
             )}
           </Panel>
@@ -347,6 +372,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
             confirmText="Удалить"
             cancelText="Отмена"
             isConfirming={isDeleting}
+            confirmButtonClass="danger"
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showServiceDeleteConfirm && (
+          <ConfirmModal
+            key="confirm-delete-service-modal"
+            isOpen={showServiceDeleteConfirm}
+            title="Подтвердите удаление услуги"
+            message={`Вы уверены, что хотите удалить услугу "${services.find(s => s._id === deletingServiceId)?.name}"? Это действие необратимо.`}
+            onConfirm={confirmServiceDelete}
+            onCancel={cancelServiceDelete}
+            confirmText="Удалить"
+            cancelText="Отмена"
+            isConfirming={isDeletingService}
             confirmButtonClass="danger"
           />
         )}
