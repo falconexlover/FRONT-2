@@ -237,13 +237,14 @@ const PromotionsAdminPanel: React.FC = () => {
       </Header>
 
       <AnimatePresence>
-        {showForm && (
+        {showForm ? (
           <motion.div
+            key="promotion-form"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            style={{ overflow: 'hidden', marginBottom: '2rem' }} // Добавим отступ снизу
+            style={{ overflow: 'hidden', marginBottom: '2rem' }}
           >
             {/* <PromotionForm 
               initialData={editingPromotion}
@@ -252,7 +253,7 @@ const PromotionsAdminPanel: React.FC = () => {
             /> */}
             <p>Форма добавления/редактирования акции (Скоро)</p>
           </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
 
       {isLoading && <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка...</LoadingSpinner>}
@@ -296,7 +297,7 @@ const PromotionsAdminPanel: React.FC = () => {
                         <IconButton 
                             onClick={() => handleEditClick(promo)} 
                             title="Редактировать"
-                            disabled={showForm} // Блокируем во время показа формы
+                            disabled={showForm}
                         >
                           <i className="fas fa-pencil-alt"></i>
                         </IconButton>
@@ -304,7 +305,7 @@ const PromotionsAdminPanel: React.FC = () => {
                             className="delete" 
                             onClick={() => handleDeleteClick(promo._id)} 
                             title="Удалить"
-                            disabled={showForm} // Блокируем во время показа формы
+                            disabled={showForm}
                         >
                           <i className="fas fa-trash-alt"></i>
                         </IconButton>
