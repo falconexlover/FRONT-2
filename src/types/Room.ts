@@ -14,6 +14,7 @@ export interface RoomType {
   features: string[];
   description?: string; // Добавим опциональное описание
   isAvailable?: boolean; // Доступность номера
+  displayOrder?: number; // Добавляем поле для порядка
   createdAt?: string; // Дата создания (опционально)
   updatedAt?: string; // Дата обновления (опционально)
 } 

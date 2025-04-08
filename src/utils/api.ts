@@ -284,6 +284,24 @@ export const roomsService = {
     });
     // Ожидаем null или void
     await handleResponse<null>(response); // handleResponse<void> не сработает, т.к. нужен тип для JSON
+  },
+
+  // Обновить порядок комнат
+  async updateRoomsOrder(orderedIds: string[]): Promise<{ message: string }> {
+    const token = authService.getToken();
+    if (!token) {
+      return Promise.reject(new Error('Требуется аутентификация'));
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/rooms/order`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ orderedIds })
+    });
+    return handleResponse<{ message: string }>(response);
   }
 };
 
