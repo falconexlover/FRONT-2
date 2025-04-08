@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { galleryService } from '../utils/api';
 import { GalleryImageItem } from '../types/GalleryImage';
 import { toast } from 'react-toastify';
+import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
 import '../assets/css/gallery.css';
 
 // Неиспользуемый компонент
@@ -498,7 +499,7 @@ const GalleryPage: React.FC = () => {
                   style={{ cursor: 'pointer' }}
                 >
                   <img
-                    src={image.imageUrl}
+                    src={optimizeCloudinaryImage(image.imageUrl)}
                     alt={image.title || image.category}
                     loading="lazy"
                   />
@@ -538,7 +539,7 @@ const GalleryPage: React.FC = () => {
                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
                  >
                   <LightboxImage 
-                    src={currentImage.imageUrl} 
+                    src={optimizeCloudinaryImage(currentImage.imageUrl, 'f_auto,q_auto,w_1200')}
                     alt={currentImage.title || currentImage.category}
                   />
                   
