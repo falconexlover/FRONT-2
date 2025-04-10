@@ -9,7 +9,7 @@ import YandexMap from '../components/YandexMap';
 import { homePageService, promotionsService } from '../utils/api';
 import { HomePageContent } from '../types/HomePage';
 import { toast } from 'react-toastify';
-import PromotionBadge from '../components/ui/PromotionBadge';
+import SlidingPromoBanner from '../components/ui/SlidingPromoBanner';
 import { PromotionType } from '../types/Promotion';
 import PromoModal from '../components/ui/PromoModal';
 
@@ -94,14 +94,15 @@ const HomePage: React.FC = () => {
 
     return (
         <>
-            {activePromotions.length > 0 && (
-                <PromotionBadge onClick={openPromoModal} />
-            )}
+            {/* Баннер теперь отображается всегда */}
+            <SlidingPromoBanner />
 
             <Banner content={banner} />
             <About content={about} />
             <Rooms title={rooms?.title} subtitle={rooms?.subtitle} />
-            <Services title={services?.title} subtitle={services?.subtitle} />
+            <div id="services-section">
+                <Services title={services?.title} subtitle={services?.subtitle} />
+            </div>
             <section id="contact" className="section" style={{ padding: '6rem 2rem', backgroundColor: '#f8f9fa' }}>
                 <div className="container">
                     <SectionTitle>
@@ -110,7 +111,6 @@ const HomePage: React.FC = () => {
                     
                     <InfoContainer>
                         <InfoColumn>
-                            <h3>Контактная информация</h3>
                             <ContactInfo>
                                 <ContactDetail>
                                     <Icon className="fas fa-map-marker-alt" />
@@ -170,7 +170,7 @@ const InfoContainer = styled.div`
     // ... стили ...
 `;
 const InfoColumn = styled.div`
-    // ... стили ...
+    // text-align: center;
 `;
 const MapColumn = styled.div`
     // ... стили ...
@@ -179,7 +179,15 @@ const ContactInfo = styled.div`
     // ... стили ...
 `;
 const ContactDetail = styled.div`
-    // ... стили ...
+    display: flex;
+    align-items: start; 
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    // text-align: center;
+    // justify-content: center;
+    
+    h4 { margin: 0 0 0.3rem 0; }
+    p { margin: 0; color: #555; }
 `;
 const Icon = styled.i`
     // ... стили ...

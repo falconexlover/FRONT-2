@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { homePageService } from '../utils/api';
 import { HomePageContent } from '../types/HomePage';
@@ -119,7 +119,7 @@ const NavItem = styled.li`
   }
 `;
 
-const NavLink = styled(Link)`
+const NavLinkStyles = `
   display: block;
   padding: 1.2rem 1.5rem;
   text-decoration: none;
@@ -129,8 +129,9 @@ const NavLink = styled(Link)`
   letter-spacing: 0.5px;
   transition: var(--transition);
   text-transform: uppercase;
-  
-  // Применяем hover только на устройствах с мышью
+  position: relative;
+  cursor: pointer;
+
   @media (hover: hover) and (pointer: fine) {
     &:hover {
       color: white;
@@ -141,9 +142,8 @@ const NavLink = styled(Link)`
     }
   }
   
-  // Добавляем стиль для active (тап на мобильных)
   &:active {
-    background-color: rgba(255, 255, 255, 0.15); // Немного темнее для отклика
+    background-color: rgba(255, 255, 255, 0.15);
   }
 
   &::after {
@@ -164,6 +164,14 @@ const NavLink = styled(Link)`
   }
 `;
 
+const NavLink = styled(Link)`
+  ${NavLinkStyles}
+`;
+
+const NavScrollLink = styled.a`
+  ${NavLinkStyles}
+`;
+
 const BookButton = styled(Link)`
   background-color: white;
   color: var(--primary-color);
@@ -178,7 +186,6 @@ const BookButton = styled(Link)`
   font-size: 0.9rem;
   text-decoration: none;
   
-  // Применяем hover только на устройствах с мышью
   @media (hover: hover) and (pointer: fine) {
     &:hover {
       background-color: var(--accent-color);
@@ -188,12 +195,11 @@ const BookButton = styled(Link)`
     }
   }
   
-  // Добавляем стиль для active (тап на мобильных)
   &:active {
     background-color: var(--accent-color);
     color: white;
-    transform: translateY(1px); // Легкое нажатие
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); // Меньшая тень
+    transform: translateY(1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   }
 `;
 
@@ -216,17 +222,17 @@ const MobileMenuButton = styled.button<{ $isOpen: boolean }>`
     transition: all 0.3s ease;
   }
   
-  &.open span:nth-child(1) {
-    transform: rotate(45deg) translate(7px, 7px);
-  }
-  
-  &.open span:nth-child(2) {
-    opacity: 0;
-  }
-  
-  &.open span:nth-child(3) {
-    transform: rotate(-45deg) translate(7px, -7px);
-  }
+  ${({ $isOpen }) => $isOpen && `
+    span:nth-child(1) {
+      transform: rotate(45deg) translate(7px, 7px);
+    }
+    span:nth-child(2) {
+      opacity: 0;
+    }
+    span:nth-child(3) {
+      transform: rotate(-45deg) translate(7px, -7px);
+    }
+  `}
   
   @media screen and (max-width: 768px) {
     display: block;
@@ -238,7 +244,7 @@ const MENU_ITEMS = [
   { label: 'Номера', path: '/rooms' },
   { label: 'Галерея', path: '/gallery' },
   { label: 'Сауна', path: '/sauna' },
-  { label: 'Услуги', path: '/services' },
+  { label: 'Для вас', path: '/#services-section', isScrollLink: true, targetId: 'services-section' },
   { label: 'Конференц-зал', path: '/conference' },
   { label: 'Детские праздники', path: '/party' },
   { label: 'Контакты', path: '/contact' }
@@ -248,9 +254,9 @@ const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [contactInfo, setContactInfo] = useState<HomePageContent['contact'] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
   const menuRef = useRef<HTMLUListElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -269,7 +275,6 @@ const Header: React.FC = () => {
 
   useEffect(() => {
     const loadContent = async () => {
-      setIsLoading(true);
       try {
         const content = await homePageService.getHomePage();
         if (content && content.contact) {
@@ -279,8 +284,6 @@ const Header: React.FC = () => {
         }
       } catch (error) {
         console.error("Failed to load home page content:", error);
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -298,24 +301,50 @@ const Header: React.FC = () => {
     };
   }, [isMenuOpen]);
 
+  const handleScrollLinkClick = (event: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+    event.preventDefault();
+    setIsMenuOpen(false);
+
+    if (location.pathname === '/') {
+      const element = document.getElementById(targetId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else {
+      navigate('/#' + targetId);
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         isMenuOpen &&
         menuRef.current &&
-        !menuRef.current.contains(event.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target as Node)
+        !menuRef.current.contains(event.target as Node)
       ) {
-        setIsMenuOpen(false);
+        const menuButton = document.getElementById('mobile-menu-button');
+        if (!menuButton || !menuButton.contains(event.target as Node)) {
+          setIsMenuOpen(false);
+        }
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isMenuOpen]);
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
+
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   return (
     <HeaderContainer className={isScrolled ? 'scrolled' : ''}>
@@ -324,27 +353,12 @@ const Header: React.FC = () => {
           <img src="/images/logo/logo.png" alt="Логотип Лесной Дворик" />
         </Logo>
         <HeaderContact>
-          {isLoading ? (
-            <p>Загрузка...</p>
-          ) : contactInfo && contactInfo.phone && contactInfo.phone.length > 0 ? (
-            <p><a href={`tel:${contactInfo.phone[0].replace(/\D/g, '')}`}>{contactInfo.phone[0]}</a></p>
-          ) : (
-            <p><a href="tel:+74984831941">8 (498) 483 19 41</a></p>
+          {contactInfo?.phone?.[0] && (
+             <p><a href={`tel:+${contactInfo.phone[0].replace(/\D/g, '')}`}>{contactInfo.phone[0]}</a></p>
           )}
-          {isLoading ? null : contactInfo && contactInfo.address ? (
-            <p className="address">{contactInfo.address}</p>
-          ) : (
-            <p className="address">г. Жуковский, ул. Нижегородская, д. 4</p>
-          )}
+          <p className="address">{contactInfo?.address ?? 'Адрес не загружен'}</p>
         </HeaderContact>
-        <MobileMenuButton
-          ref={buttonRef}
-          $isOpen={isMenuOpen}
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className={isMenuOpen ? 'open' : ''}
-          aria-label={isMenuOpen ? 'Закрыть меню' : 'Открыть меню'}
-          aria-expanded={isMenuOpen}
-        >
+        <MobileMenuButton id="mobile-menu-button" onClick={toggleMenu} $isOpen={isMenuOpen} aria-label="Меню">
           <span></span>
           <span></span>
           <span></span>
@@ -352,14 +366,25 @@ const Header: React.FC = () => {
       </LogoContainer>
       
       <Navigation>
-        <NavMenu $isOpen={isMenuOpen} ref={menuRef}>
+        <NavMenu ref={menuRef} $isOpen={isMenuOpen}>
           {MENU_ITEMS.map((item) => (
-            <NavItem key={item.path} onClick={() => setIsMenuOpen(false)}>
-              <NavLink to={item.path}>{item.label}</NavLink>
+            <NavItem key={item.label}>
+              {item.isScrollLink ? (
+                <NavScrollLink 
+                  href={item.path}
+                  onClick={(e) => handleScrollLinkClick(e, item.targetId)}
+                >
+                  {item.label}
+                </NavScrollLink>
+              ) : (
+                <NavLink to={item.path} onClick={() => setIsMenuOpen(false)}>
+                  {item.label}
+                </NavLink>
+              )}
             </NavItem>
           ))}
         </NavMenu>
-        <BookButton to="/booking">Забронировать</BookButton>
+        <BookButton to="/rooms">Забронировать</BookButton>
       </Navigation>
     </HeaderContainer>
   );

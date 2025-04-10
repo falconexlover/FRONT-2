@@ -20,6 +20,7 @@ const ContactsPage = lazy(() => import('./pages/ContactsPage'));
 const ServicesPage = lazy(() => import('./pages/ServicesPage'));
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const SaunaPage = lazy(() => import('./pages/SaunaPage'));
+const PromotionsPage = lazy(() => import('./pages/PromotionsPage'));
 
 // Простой компонент-заглушка для Suspense
 // В реальном приложении здесь может быть спиннер или другой индикатор
@@ -45,6 +46,7 @@ const App: React.FC = () => {
           <Route path="/booking-failure" element={<BookingFailurePage />} />
           <Route path="/sauna" element={<SaunaPage />} />
           <Route path="/admin/*" element={<AdminPanel />} />
+          <Route path="/promotions" element={<PromotionsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>

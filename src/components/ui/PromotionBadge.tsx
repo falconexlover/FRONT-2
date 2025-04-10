@@ -18,23 +18,28 @@ const BadgeButton = styled.button`
   z-index: 1000;
   background-color: var(--danger-color);
   color: white;
-  border-radius: 50%;
-  width: 55px;
-  height: 55px;
+  /* Убираем круглую форму */
+  /* border-radius: 50%; */
+  /* width: 55px; */
+  /* height: 55px; */
+  border-radius: var(--radius-md); /* Делаем прямоугольным */
+  padding: 0.7rem 1.3rem; /* Добавляем отступы */
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  font-weight: bold;
+  /* Уменьшаем шрифт для текста */
+  /* font-size: 1.5rem; */
+  font-size: 1rem; 
+  font-weight: 600; /* Делаем шрифт чуть жирнее */
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   cursor: pointer;
   border: none; // Убираем границу у кнопки
-  padding: 0; // Убираем внутренний отступ кнопки
+  /* padding: 0; // Убираем внутренний отступ кнопки */
   transition: transform 0.2s ease, background-color 0.2s ease;
   animation: ${pulse} 2s infinite;
 
   &:hover {
-    transform: scale(1.1);
+    transform: scale(1.05); /* Уменьшаем hover-эффект т.к. кнопка не круглая */
     background-color: #e57373;
   }
 
@@ -48,9 +53,12 @@ const BadgeButton = styled.button`
 
 
   @media (max-width: 768px) {
-      width: 45px;
-      height: 45px;
-      font-size: 1.2rem;
+      /* Убираем размеры для мобильных */
+      /* width: 45px; */
+      /* height: 45px; */
+      /* font-size: 1.2rem; */
+      padding: 0.5rem 1rem; /* Уменьшаем отступы на мобильных */
+      font-size: 0.9rem; /* Уменьшаем шрифт на мобильных */
       bottom: 15px;
       right: 15px;
   }
@@ -64,7 +72,7 @@ const PromotionBadge: React.FC<PromotionBadgeProps> = ({ onClick }) => {
   return (
     // Меняем BadgeWrapper на BadgeButton и передаем onClick
     <BadgeButton onClick={onClick} title="Посмотреть акции">
-       %
+       Акции! {/* Заменяем % на текст */}
     </BadgeButton>
   );
 };

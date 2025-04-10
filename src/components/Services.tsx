@@ -96,6 +96,9 @@ const ServiceCard = styled(motion.div)`
   position: relative;
   z-index: 1;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   
   &::before {
     content: '';
@@ -139,12 +142,20 @@ const ServiceIcon = styled.div`
   }
 `;
 
+const ServiceTextContent = styled.div`
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+`;
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ServiceDetails = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
   margin-bottom: 1.5rem;
+  text-align: center;
+  margin-top: auto;
 `;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -161,27 +172,6 @@ const ServiceDetail = styled.div`
     width: 20px;
     text-align: center;
     font-size: 1rem;
-  }
-`;
-
-const OutlineButton = styled.a`
-  display: inline-block;
-  padding: 0.8rem 1.8rem;
-  background: transparent;
-  border: 2px solid var(--primary-color);
-  color: var(--primary-color);
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  transition: var(--transition);
-  text-align: center;
-  
-  &:hover {
-    background: var(--primary-color);
-    color: white;
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-md);
   }
 `;
 
@@ -206,7 +196,7 @@ interface ServicesProps {
 }
 
 const Services: React.FC<ServicesProps> = ({ 
-  title = "Наши Услуги",
+  title = "Для вас",
   subtitle = "Все необходимое для вашего комфорта"
 }) => {
   const [servicesData, setServicesData] = useState<ServiceType[]>([]);
@@ -254,48 +244,40 @@ const Services: React.FC<ServicesProps> = ({
         </motion.p>
       </SectionTitle>
       
-      {loading && <LoadingPlaceholder>Загрузка услуг...</LoadingPlaceholder>}
-      {error && <ErrorPlaceholder>{error}</ErrorPlaceholder>}
-      
-      {!loading && !error && (
+      {loading ? (
+        <LoadingPlaceholder>Загрузка услуг...</LoadingPlaceholder>
+      ) : error ? (
+        <ErrorPlaceholder>{error}</ErrorPlaceholder>
+      ) : servicesData.length === 0 ? (
+        <LoadingPlaceholder>Нет доступных услуг для отображения.</LoadingPlaceholder>
+      ) : (
         <ServicesGrid>
           {servicesData.map((service: ServiceType, index: number) => (
             <ServiceCard
-              key={service._id || index}
-              as={motion.div}
+              key={service._id}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true, amount: 0.3 }}
             >
               <ServiceIcon>
-                {service.icon && (service.icon.startsWith('http') || service.icon.startsWith('/')) ? (
-                  <img 
-                    src={optimizeCloudinaryImage(service.icon, 'f_auto,q_auto,w_100')}
-                    alt={service.name}
-                    loading="lazy"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      const parent = e.currentTarget.parentElement;
-                      if (parent && !parent.querySelector('.fallback-icon-text')) {
-                          const textNode = document.createElement('span');
-                          textNode.className = 'fallback-icon-text';
-                          textNode.textContent = service.name;
-                          parent.appendChild(textNode);
-                      }
-                    }} 
-                  />
-                ) : service.icon && service.icon.startsWith('fa') ? (
-                  <i className={service.icon} style={{ fontSize: '3rem' }}></i>
-                ) : (
-                  <span>{service.name}</span>
-                )}
+                {service.name.toLowerCase().includes('сауна') ? <i className="fas fa-hot-tub"></i> :
+                service.name.toLowerCase().includes('wi-fi') ? <i className="fas fa-wifi"></i> :
+                service.name.toLowerCase().includes('кухня') ? <i className="fas fa-utensils"></i> :
+                service.name.toLowerCase().includes('лесопарковая') ? <i className="fas fa-tree"></i> :
+                service.name.toLowerCase().includes('парковка') ? <i className="fas fa-parking"></i> :
+                service.name.toLowerCase().includes('транспорт') ? <i className="fas fa-bus"></i> :
+                service.icon && (service.icon.startsWith('http') || service.icon.startsWith('/')) ?
+                  <img src={optimizeCloudinaryImage(service.icon, 'f_auto,q_auto,w_400')} alt={service.name} loading="lazy" /> :
+                service.icon ? 
+                  <i className={service.icon}></i> :
+                <i className={'fas fa-concierge-bell'}></i>
+                }
               </ServiceIcon>
-              <h3>{service.name}</h3>
-              <p>{service.description || 'Описание услуги скоро появится.'}</p>
-              <OutlineButton href="/services"> 
-                Подробнее
-              </OutlineButton>
+              <ServiceTextContent>
+                <h3>{service.name}</h3>
+                <p>{service.description || 'Описание услуги скоро появится.'}</p>
+              </ServiceTextContent>
             </ServiceCard>
           ))}
         </ServicesGrid>
