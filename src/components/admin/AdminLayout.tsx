@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import styled, { css } from 'styled-components';
+import Sidebar from './Sidebar';
+import { TabItem } from '../ui/Tabs'; // Общий тип для вкладок/пунктов меню
 
 interface AdminLayoutProps {
-  sidebar: React.ReactNode;
   children: React.ReactNode;
+  menuItems: TabItem[];
+  activeMenuItemId: string;
+  onMenuItemSelect: (id: string) => void;
 }
 
 const LayoutContainer = styled.div`
@@ -17,32 +21,6 @@ const LayoutContainer = styled.div`
     flex-direction: column;
   }
   */
-`;
-
-const SidebarContainer = styled.aside<{ isOpenOnMobile: boolean }>`
-  width: 220px; /* Чуть шире для лучшего вида */
-  background-color: var(--bg-secondary); /* Фон сайдбара */
-  border-right: 1px solid var(--border-color); /* Темная граница */
-  padding: 1.5rem 0;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  transition: transform 0.3s ease-in-out;
-  z-index: 1010;
-
-  @media (max-width: 768px) {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    height: 100vh;
-    width: 250px;
-    border-right: 1px solid var(--border-color);
-    border-bottom: none;
-    padding: 1.5rem 0;
-    transform: translateX(${props => props.isOpenOnMobile ? '0' : '-100%'});
-    background-color: var(--bg-secondary); /* Убедимся, что фон и тут темный */
-  }
 `;
 
 const ContentContainer = styled.main`
@@ -89,7 +67,7 @@ const BurgerButton = styled.button`
   }
 `;
 
-const Overlay = styled.div<{ isOpen: boolean }>`
+const Overlay = styled.div<{ $isOpen: boolean }>`
   display: none;
   position: fixed;
   top: 0;
@@ -99,36 +77,77 @@ const Overlay = styled.div<{ isOpen: boolean }>`
   background-color: rgba(0, 0, 0, 0.7); /* Затемнение можно оставить или сделать чуть плотнее */
   z-index: 1000;
 
-  ${props => props.isOpen && css`
+  ${props => props.$isOpen && css`
     @media (max-width: 768px) {
       display: block;
     }
   `}
 `;
 
-const AdminLayout: React.FC<AdminLayoutProps> = ({ sidebar, children }) => {
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+// Возвращаем контейнер для сайдбара
+const SidebarWrapper = styled.aside<{ $isOpenOnMobile: boolean }>`
+  width: 220px; 
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  padding: 1.5rem 0; /* Вертикальные отступы */
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0; /* Не сжиматься */
+  transition: transform 0.3s ease-in-out;
+  z-index: 1010;
+
+  @media (max-width: 768px) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100vh;
+    width: 250px; /* Можно сделать чуть шире на мобильных */
+    border-right: 1px solid var(--border-color); 
+    padding: 1.5rem 0;
+    transform: translateX(${props => props.$isOpenOnMobile ? '0' : '-100%'});
+    background-color: var(--bg-secondary);
+  }
+`;
+
+const AdminLayout: React.FC<AdminLayoutProps> = ({ 
+  children, 
+  menuItems, 
+  activeMenuItemId, 
+  onMenuItemSelect 
+}) => {
+  const [sidebarOpenOnMobile, setSidebarOpenOnMobile] = useState(false);
+
+  const handleSelectItem = useCallback((id: string) => {
+    onMenuItemSelect(id);
+    setSidebarOpenOnMobile(false);
+  }, [onMenuItemSelect]);
 
   const toggleMobileSidebar = () => {
-    setIsMobileSidebarOpen(!isMobileSidebarOpen);
+    setSidebarOpenOnMobile(!sidebarOpenOnMobile);
   };
 
   const closeMobileSidebar = () => {
-    setIsMobileSidebarOpen(false);
+    setSidebarOpenOnMobile(false);
   };
-
-  const sidebarWithProps = React.isValidElement(sidebar)
-    ? React.cloneElement(sidebar, { isMobileOpen: isMobileSidebarOpen, closeMobileSidebar } as any)
-    : sidebar;
 
   return (
     <>
       <BurgerButton onClick={toggleMobileSidebar}>
-        <i className={`fas ${isMobileSidebarOpen ? 'fa-times' : 'fa-bars'}`}></i>
+        <i className={`fas ${sidebarOpenOnMobile ? 'fa-times' : 'fa-bars'}`}></i>
       </BurgerButton>
-      <Overlay isOpen={isMobileSidebarOpen} onClick={closeMobileSidebar} />
+      <Overlay $isOpen={sidebarOpenOnMobile} onClick={closeMobileSidebar} />
       <LayoutContainer>
-        <SidebarContainer isOpenOnMobile={isMobileSidebarOpen}>{sidebarWithProps}</SidebarContainer>
+        <SidebarWrapper $isOpenOnMobile={sidebarOpenOnMobile}>
+          <Sidebar
+            menuItems={menuItems} 
+            activeItemId={activeMenuItemId} 
+            onItemClick={handleSelectItem}
+            isMobileOpen={sidebarOpenOnMobile}
+            closeMobileSidebar={closeMobileSidebar}
+            onLogout={() => console.log('logout')}
+          />
+        </SidebarWrapper>
         <ContentContainer>{children}</ContentContainer>
       </LayoutContainer>
     </>

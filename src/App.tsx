@@ -10,8 +10,16 @@ import 'react-toastify/dist/ReactToastify.css';
 const HomePage = lazy(() => import('./pages/HomePage'));
 const GalleryPage = lazy(() => import('./pages/GalleryPage'));
 const BookingPage = lazy(() => import('./pages/BookingPage'));
-const ContactPage = lazy(() => import('./pages/ContactPage'));
 const RoomsPage = lazy(() => import('./pages/RoomsPage'));
+const ConferencePage = lazy(() => import('./pages/ConferencePage'));
+const PartyPage = lazy(() => import('./pages/PartyPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const BookingSuccessPage = lazy(() => import('./pages/BookingSuccessPage'));
+const BookingFailurePage = lazy(() => import('./pages/BookingFailurePage'));
+const ContactsPage = lazy(() => import('./pages/ContactsPage'));
+const ServicesPage = lazy(() => import('./pages/ServicesPage'));
+const AdminPanel = lazy(() => import('./components/AdminPanel'));
+const SaunaPage = lazy(() => import('./pages/SaunaPage'));
 
 // Простой компонент-заглушка для Suspense
 // В реальном приложении здесь может быть спиннер или другой индикатор
@@ -27,9 +35,17 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/gallery" element={<GalleryPage />} />
-          <Route path="/booking" element={<BookingPage />} />
-          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/booking/:roomId" element={<BookingPage />} />
           <Route path="/rooms" element={<RoomsPage />} />
+          <Route path="/conference" element={<ConferencePage />} />
+          <Route path="/party" element={<PartyPage />} />
+          <Route path="/contact" element={<ContactsPage />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/booking-success/:bookingId" element={<BookingSuccessPage />} />
+          <Route path="/booking-failure" element={<BookingFailurePage />} />
+          <Route path="/sauna" element={<SaunaPage />} />
+          <Route path="/admin/*" element={<AdminPanel />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
       <ToastContainer

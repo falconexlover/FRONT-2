@@ -16,11 +16,11 @@ export const IMAGES = {
   GALLERY: {
     ROOMS: [
       // Двухместный эконом
-      '/images/gallery/rooms/economy/room_economy_bath.jpg',
-      '/images/gallery/rooms/economy/room_economy_beds.jpg',
-      '/images/gallery/rooms/economy/room_economy_toiletries.jpg',
-      '/images/gallery/rooms/economy/room_economy_toilet.jpg',
-      '/images/gallery/rooms/economy/room_economy_single.jpg',
+      'https://via.placeholder.com/400x300/217148/FFFFFF?text=Эконом+1',
+      'https://via.placeholder.com/400x300/217148/FFFFFF?text=Эконом+2',
+      'https://via.placeholder.com/400x300/217148/FFFFFF?text=Эконом+3',
+      'https://via.placeholder.com/400x300/217148/FFFFFF?text=Эконом+4',
+      'https://via.placeholder.com/400x300/217148/FFFFFF?text=Эконом+5',
       // Плейсхолдеры для других номеров
       'https://via.placeholder.com/400x300/217148/FFFFFF?text=Номер+2',
       'https://via.placeholder.com/400x300/217148/FFFFFF?text=Номер+3'

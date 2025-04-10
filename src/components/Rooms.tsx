@@ -14,7 +14,7 @@ interface RoomsProps {
 
 const RoomsSection = styled.section`
   padding: 6rem 2rem;
-  background-color: white;
+  background-color: #f8f9fa;
   position: relative;
   
   &::before {
@@ -108,6 +108,9 @@ const RoomCard = styled(motion.div)`
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
   position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   
   &:hover {
     transform: translateY(-15px);
@@ -146,6 +149,9 @@ const RoomPrice = styled.div`
 
 const RoomDetails = styled.div`
   padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
   
   h3 {
     margin-bottom: 1rem;
@@ -168,6 +174,7 @@ const RoomDetails = styled.div`
 const RoomButtons = styled.div`
   display: flex;
   gap: 1rem;
+  margin-top: auto;
   
   @media (max-width: 576px) {
     flex-direction: column;
@@ -187,24 +194,6 @@ const BookButton = styled(Link)`
   
   &:hover {
     background-color: var(--dark-color);
-  }
-`;
-
-const DetailsButton = styled(Link)`
-  flex: 1;
-  padding: 0.8rem 1rem;
-  background-color: transparent;
-  color: var(--dark-color);
-  border: 1px solid var(--dark-color);
-  border-radius: var(--radius-sm);
-  text-align: center;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.3s;
-  
-  &:hover {
-    background-color: var(--dark-color);
-    color: white;
   }
 `;
 
@@ -331,9 +320,6 @@ const Rooms: React.FC<RoomsProps> = ({
                   <BookButton to="/booking">
                     Забронировать
                   </BookButton>
-                  <DetailsButton to="/rooms">
-                    Подробнее
-                  </DetailsButton>
                 </RoomButtons>
               </RoomDetails>
             </RoomCard>
@@ -350,4 +336,4 @@ const Rooms: React.FC<RoomsProps> = ({
   );
 };
 
-export default Rooms; 
+export default Rooms;

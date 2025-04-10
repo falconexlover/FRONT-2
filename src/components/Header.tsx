@@ -237,7 +237,10 @@ const MENU_ITEMS = [
   { label: 'Главная', path: '/' },
   { label: 'Номера', path: '/rooms' },
   { label: 'Галерея', path: '/gallery' },
-  { label: 'Бронирование', path: '/booking' },
+  { label: 'Сауна', path: '/sauna' },
+  { label: 'Услуги', path: '/services' },
+  { label: 'Конференц-зал', path: '/conference' },
+  { label: 'Детские праздники', path: '/party' },
   { label: 'Контакты', path: '/contact' }
 ];
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 // import RoomImageUploader from './RoomImageUploader'; // Убираем старый загрузчик
 // import MultiImageDropzone from './ui/MultiImageDropzone'; // Импортируем новый
@@ -17,7 +17,7 @@ interface RoomType { ... }
 
 interface RoomFormProps {
   initialData?: RoomType | null; 
-  onSave: (data: Omit<RoomType, '_id' | 'imageUrls' | 'cloudinaryPublicIds'>, newFiles: File[], deletedPublicIds: string[]) => Promise<void>; // Обновляем onSave
+  onSave: (data: Omit<RoomType, '_id' | 'imageUrls' | 'cloudinaryPublicIds'>, newFiles: File[], imagesToDelete: { url: string, publicId: string | null }[]) => Promise<void>;
   onCancel: () => void;
   // Убираем isLoading, т.к. форма сама управляет своим состоянием сохранения
   // isLoading: boolean; 
@@ -269,6 +269,7 @@ const ImageGrid = styled.div`
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
+  align-items: start;
 `;
 
 const ImagePreviewContainer = styled.div`
@@ -277,6 +278,7 @@ const ImagePreviewContainer = styled.div`
   border-radius: var(--radius-sm);
   overflow: hidden;
   background-color: var(--bg-primary);
+  min-height: 90px;
 
   img {
     display: block;
@@ -349,7 +351,7 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
   
   const [newFeature, setNewFeature] = useState("");
   // Состояние для ID СУЩЕСТВУЮЩИХ изображений, помеченных на удаление
-  const [deletedPublicIds, setDeletedPublicIds] = useState<string[]>([]);
+  const [imagesMarkedForDeletion, setImagesMarkedForDeletion] = useState<{ url: string, publicId: string | null }[]>([]);
   // Убираем imageUrl из ключей ошибок
   const [errors, setErrors] = useState<Partial<Record<keyof Omit<RoomFormData, '_id'> | 'form', string>>>({});
 
@@ -357,52 +359,87 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [newFilePreviews, setNewFilePreviews] = useState<string[]>([]);
   // Состояние для отслеживания видимости существующих изображений
-  const [existingImages, setExistingImages] = useState<{ url: string; publicId: string }[]>([]);
-  const [imageToRemove, setImageToRemove] = useState<{ index: number, url: string } | null>(null);
+  const [existingImages, setExistingImages] = useState<{ url: string; publicId: string | null }[]>([]);
+  const [imageToRemove, setImageToRemove] = useState<{ index: number; url: string; publicId: string | null } | null>(null);
   const [isRemovingExisting, setIsRemovingExisting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+  // --- Добавляем Ref для input type="file" --- 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
-    // Обновляем форму при изменении initialData
-    const data = initialData || DEFAULT_ROOM;
-    setFormData({
-       _id: initialData?._id,
-       title: data.title || '',
-       price: data.price || '',
-       pricePerNight: data.pricePerNight || 0, // Используем pricePerNight
-       capacity: data.capacity || 2,
-       features: data.features || [],
-       description: data.description || '',
-       isAvailable: data.isAvailable !== undefined ? data.isAvailable : true
-    });
-    // Устанавливаем существующие изображения для отображения
-    setExistingImages(
-      data.imageUrls?.map((url, index) => ({
-        url,
-        publicId: data.cloudinaryPublicIds?.[index] || '', // Берем ID, если есть
-      })) || []
-    );
-    // Сбрасываем новые файлы и удаленные ID при смене редактируемого номера
-    setNewFiles([]);
-    setNewFilePreviews([]);
-    setDeletedPublicIds([]);
-    setErrors({}); // Сбрасываем ошибки
-  }, [initialData]);
-  
-  // Эффект для очистки Object URL превью при размонтировании или смене файлов
-  useEffect(() => {
-    // Возвращаем функцию очистки
+    if (initialData) {
+      setFormData({
+        _id: initialData._id,
+        title: initialData.title,
+        price: initialData.price,
+        pricePerNight: initialData.pricePerNight || 0,
+        capacity: initialData.capacity || 1,
+        features: initialData.features || [],
+        description: initialData.description || '',
+        isAvailable: initialData.isAvailable !== undefined ? initialData.isAvailable : true
+      });
+
+      // --- УЛУЧШЕННАЯ ЛОГИКА ИНИЦИАЛИЗАЦИИ existingImages --- 
+      const imagesFromData = (initialData.imageUrls || []).map((url) => {
+         // Пытаемся найти соответствующий publicId по URL (менее надежно, но лучше чем индекс)
+         // или просто берем по индексу, если ничего лучше нет, но ЯВНО проверяем его наличие
+         const index = initialData.imageUrls?.indexOf(url) ?? -1;
+         const publicId = index !== -1 ? initialData.cloudinaryPublicIds?.[index] : null;
+         
+         // Возвращаем объект, гарантируя, что publicId будет null, если его нет
+         return {
+            url,
+            publicId: publicId || null 
+         };
+      });
+      console.log('Initialized existingImages:', imagesFromData); // Добавим лог
+      setExistingImages(imagesFromData);
+      // --- КОНЕЦ УЛУЧШЕННОЙ ЛОГИКИ --- 
+
+      // Сбрасываем состояния для новых/удаленных файлов И ОЧИЩАЕМ INPUT
+      setNewFiles([]);
+      setNewFilePreviews(prev => { prev.forEach(URL.revokeObjectURL); return []; });
+      setImagesMarkedForDeletion([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''; // Очищаем input
+      }
+      setErrors({});
+      setNewFeature("");
+
+    } else {
+      // Сброс формы для создания нового номера
+      setFormData({ ...DEFAULT_ROOM, _id: undefined }); // Убедимся, что _id сброшен
+      setExistingImages([]);
+      setNewFiles([]);
+      setNewFilePreviews(prev => { prev.forEach(URL.revokeObjectURL); return []; });
+      setImagesMarkedForDeletion([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''; // Очищаем input
+      }
+      setErrors({});
+      setNewFeature("");
+    }
+    // Переносим очистку превью сюда, чтобы она срабатывала и при смене initialData
+    // Это предотвратит утечки памяти, если компонент не размонтируется, а просто получит новые props
     return () => {
+      // Очищаем newFilePreviews напрямую
       newFilePreviews.forEach(URL.revokeObjectURL);
     };
-  }, [newFilePreviews]); // Зависимость от массива превью
+
+  }, [initialData, newFilePreviews]); // Добавляем newFilePreviews в зависимости
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     let processedValue: string | number | boolean = value;
 
     if (type === 'number') {
-      processedValue = parseFloat(value);
+      // Если значение - пустая строка, ставим 0, иначе парсим
+      processedValue = value === '' ? 0 : parseFloat(value);
+      // Дополнительная проверка на NaN на случай, если введено что-то непарсируемое
+      if (isNaN(processedValue as number)) {
+          processedValue = 0;
+      }
     }
     // Обработка чекбокса
     if (name === 'isAvailable' && e.target instanceof HTMLInputElement) {
@@ -487,21 +524,25 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
       const previews = filesArray.map(file => URL.createObjectURL(file));
       setNewFilePreviews(prev => [...prev, ...previews]);
     }
-    // Очищаем значение инпута, чтобы можно было выбрать тот же файл снова
-    e.target.value = '';
+    // Очищаем значение инпута ПОСЛЕ обработки, чтобы можно было выбрать тот же файл снова
+    // Используем ref для большей надежности
+    if (fileInputRef.current) {
+        fileInputRef.current.value = ''; 
+    }
+    // Старый способ очистки на всякий случай (может не работать надежно)
+    // e.target.value = ''; 
   };
 
-  // Удаление существующего изображения (помечаем ID и скрываем превью)
-  const handleDeleteExistingImageClick = (publicId: string) => {
-    setImageToRemove({ index: -1, url: publicId });
+  // Удаление существующего изображения
+  const handleDeleteExistingImageClick = (url: string, publicId: string | null) => {
+    setImageToRemove({ index: -1, url: url, publicId: publicId }); 
     setIsRemovingExisting(true);
     setShowConfirmModal(true);
   };
 
-  // Удаление нового (еще не загруженного) файла
+  // Удаление нового файла
   const handleRemoveNewFileClick = (index: number) => {
-    // Сохраняем индекс как строку, чтобы поместиться в imageToRemove
-    setImageToRemove({ index, url: newFilePreviews[index] }); 
+    setImageToRemove({ index, url: newFilePreviews[index], publicId: null }); 
     setIsRemovingExisting(false);
     setShowConfirmModal(true);
   };
@@ -511,21 +552,25 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
     if (imageToRemove === null) return;
 
     if (isRemovingExisting) {
-      // Удаление существующего (помечаем ID)
-      const publicIdToDelete = imageToRemove.url;
-      setDeletedPublicIds(prev => [...prev, publicIdToDelete]);
-      setExistingImages(prev => prev.filter(img => img.publicId !== publicIdToDelete));
+      // Удаление существующего
+      const { url: urlToRemove, publicId: publicIdToRemove } = imageToRemove;
+      
+      // Убираем из видимого списка по URL
+      setExistingImages(prev => prev.filter(img => img.url !== urlToRemove));
+      
+      // Добавляем объект {url, publicId} в список на удаление
+      setImagesMarkedForDeletion(prev => [...prev, { url: urlToRemove, publicId: publicIdToRemove }]);
+      
     } else {
-      // Удаление нового (по индексу)
-      const indexToRemove = imageToRemove.index;
-      if (!isNaN(indexToRemove)) {
-          // Освобождаем Object URL перед удалением из состояния
-          if (newFilePreviews[indexToRemove]) {
-              URL.revokeObjectURL(newFilePreviews[indexToRemove]);
-          }
-          setNewFiles(prev => prev.filter((_, index) => index !== indexToRemove));
-          setNewFilePreviews(prev => prev.filter((_, index) => index !== indexToRemove));
-      }
+      // Удаление нового (логика остается прежней)
+       const indexToRemove = imageToRemove.index;
+       if (indexToRemove !== -1 && !isNaN(indexToRemove)) {
+           if (newFilePreviews[indexToRemove]) {
+               URL.revokeObjectURL(newFilePreviews[indexToRemove]);
+           }
+           setNewFiles(prev => prev.filter((_, index) => index !== indexToRemove));
+           setNewFilePreviews(prev => prev.filter((_, index) => index !== indexToRemove));
+       }
     }
     // Закрываем модалку и сбрасываем состояния
     setShowConfirmModal(false);
@@ -557,7 +602,7 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
       isAvailable: formData.isAvailable
     };
     try {
-      await onSave(dataToSend, newFiles, deletedPublicIds); 
+      await onSave(dataToSend, newFiles, imagesMarkedForDeletion); 
       // Успех обработается в RoomsAdminPanel
     } catch (error) {
        console.error("Ошибка при вызове onSave:", error);
@@ -589,11 +634,13 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
           {/* Поле для загрузки новых файлов */}
           <FormGroup>
              <Label htmlFor="roomImages">Добавить изображения</Label>
+             {/* --- Добавляем ref к input --- */}
              <FileInput
+                ref={fileInputRef} // <-- Добавлен ref
                 type="file"
                 id="roomImages"
                 multiple
-                accept="image/*" // Принимаем только изображения
+                accept="image/*"
                 onChange={handleFileChange}
              />
           </FormGroup>
@@ -605,16 +652,18 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
               {existingImages.map((image) => (
                 <ImagePreviewContainer key={image.publicId || image.url}>
                   <img src={optimizeCloudinaryImage(image.url, 'w_200,h_150,c_fill,q_auto')} alt="Превью номера" />
-                  {image.publicId && ( // Показываем кнопку удаления только если есть ID
+                  {/* --- УБИРАЕМ УСЛОВИЕ image.publicId --- */}
+                  {/* {image.publicId && ( // Условие убрано */} 
                     <button
                       type="button"
                       className="delete-btn"
                       title="Удалить это изображение"
-                      onClick={() => handleDeleteExistingImageClick(image.publicId)}
+                      // Передаем и URL, и publicId (который может быть null)
+                      onClick={() => handleDeleteExistingImageClick(image.url, image.publicId)}
                     >
                       &times; {/* Крестик */}
                     </button>
-                  )}
+                  {/* )} // Закрывающая скобка условия убрана */} 
                 </ImagePreviewContainer>
               ))}
 
@@ -772,10 +821,8 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
           onConfirm={confirmImageRemoval}
           onCancel={cancelImageRemoval}
           title="Подтвердить удаление"
-          message={isRemovingExisting 
-                      ? "Вы уверены, что хотите удалить это изображение? Оно будет удалено после сохранения номера."
-                      : "Вы уверены, что хотите убрать этот файл? Он не будет загружен."
-                  }
+          // Упрощаем сообщение
+          message="Вы уверены, что хотите удалить это фото?"
           confirmText="Удалить"
           cancelText="Отмена"
       />

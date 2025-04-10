@@ -29,6 +29,17 @@ const ActionButton = styled.button`
     }
   }
 
+  &.outline-dark {
+    background-color: transparent;
+    color: black; /* Черный текст */
+    border: 1px solid black; /* Черный контур */
+
+    &:hover:not(:disabled) {
+      background-color: rgba(0, 0, 0, 0.05); /* Легкий фон при наведении */
+      border-color: #333; /* Чуть темнее контур при наведении */
+    }
+  }
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;

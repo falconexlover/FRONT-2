@@ -61,6 +61,7 @@ const BannerTitle = styled.h1`
   font-family: 'Playfair Display', serif;
   font-weight: 700;
   line-height: 1.2;
+  color: white;
   
   @media screen and (max-width: 992px) {
     font-size: 3rem;
@@ -80,6 +81,7 @@ const BannerText = styled.p`
   max-width: 800px;
   margin-bottom: 2.5rem;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+  color: white;
   opacity: 0.9;
   
   @media screen and (max-width: 992px) {
@@ -138,7 +140,7 @@ const Banner: React.FC<BannerProps> = ({ content }) => {
   const title = content?.title || 'Добро пожаловать!';
   const subtitle = content?.subtitle || 'Лучшее место для отдыха и оздоровления.';
   const buttonText = content?.buttonText || 'Забронировать';
-  const buttonLink = content?.buttonLink || '#booking'; // Добавляем ссылку для кнопки
+  const buttonLink = content?.buttonLink || '/rooms'; // Изменяем fallback на /rooms
 
   // Предполагаем, что backgroundImage будет частью content.banner или передаваться отдельно
   // const backgroundImage = content?.backgroundImage || '/default-banner.jpg';

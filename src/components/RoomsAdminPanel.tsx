@@ -27,7 +27,7 @@ import { CSS } from '@dnd-kit/utilities';
 import RoomAdminCard from './admin/RoomAdminCard';
 
 interface RoomsAdminPanelProps {
-  onLogout: () => void;
+  onLogout?: () => void;
 }
 
 const AdminPanelContainer = styled.div`
@@ -303,9 +303,10 @@ interface SortableRoomRowProps {
   room: RoomType;
   onEdit: (room: RoomType) => void;
   onDelete: (id: string) => void;
+  disabled?: boolean;
 }
 
-function SortableRoomRow({ room, onEdit, onDelete }: SortableRoomRowProps) {
+function SortableRoomRow({ room, onEdit, onDelete, disabled }: SortableRoomRowProps) {
   const {
     attributes,
     listeners,
@@ -318,6 +319,7 @@ function SortableRoomRow({ room, onEdit, onDelete }: SortableRoomRowProps) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
@@ -342,10 +344,10 @@ function SortableRoomRow({ room, onEdit, onDelete }: SortableRoomRowProps) {
        </StyledTableCell>
        <StyledTableCell className="actions">
          <ActionButtonsContainer>
-           <IconButton className="edit" onClick={() => onEdit(room)} title="Редактировать">
+           <IconButton className="edit" onClick={() => onEdit(room)} title="Редактировать" disabled={disabled}>
              <i className="fas fa-pencil-alt"></i>
            </IconButton>
-           <IconButton className="delete" onClick={() => onDelete(room._id!)} title="Удалить">
+           <IconButton className="delete" onClick={() => onDelete(room._id!)} title="Удалить" disabled={disabled}>
              <i className="fas fa-trash-alt"></i>
            </IconButton>
          </ActionButtonsContainer>
@@ -354,14 +356,12 @@ function SortableRoomRow({ room, onEdit, onDelete }: SortableRoomRowProps) {
   );
 }
 
-// Добавляем тип для данных формы без ID и полей изображений
-type RoomDataToSave = Omit<RoomType, '_id' | 'imageUrls' | 'cloudinaryPublicIds'>;
-
 const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingRoom, setEditingRoom] = useState<RoomType | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingRoomId, setDeletingRoomId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [rooms, setRooms] = useState<RoomType[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -370,13 +370,11 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await roomsService.getAllRooms();
-      setRooms(Array.isArray(data) ? data.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)) : []);
+      const fetchedRooms = await roomsService.getAllRooms();
+      setRooms(fetchedRooms);
     } catch (err: any) {
-      console.error("Ошибка при загрузке номеров:", err);
-      const errorMsg = err.message || 'Не удалось загрузить список номеров.';
-      setError(errorMsg);
-      toast.error(errorMsg);
+      console.error("Ошибка загрузки номеров:", err);
+      setError(err.message || 'Не удалось загрузить список номеров');
     } finally {
       setIsLoading(false);
     }
@@ -404,93 +402,69 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
   const handleFormCancel = () => {
     setShowForm(false);
     setEditingRoom(null);
+    setIsSaving(false);
   };
 
-  // Обработчик сохранения (создание или обновление)
-  const handleSaveRoom = useCallback(async (
-      // Обновляем тип первого аргумента
-      roomData: RoomDataToSave,
-      // Добавляем новые аргументы
-      newFiles: File[],
-      deletedPublicIds: string[]
-    ) => {
-    setIsLoading(true);
+  const handleSaveRoom = async (
+    roomData: Omit<RoomType, '_id' | 'imageUrls' | 'cloudinaryPublicIds'>, 
+    newFiles: File[], 
+    imagesToDelete: { url: string, publicId: string | null }[]
+  ) => {
+    setIsSaving(true);
     setError(null);
-
-    // Создаем FormData для отправки данных, включая файлы
     const formData = new FormData();
 
-    // Добавляем поля комнаты в FormData
-    Object.entries(roomData).forEach(([key, value]) => {
-        // Преобразуем массивы (например, features) в строки или обрабатываем иначе,
-        // если бэкенд ожидает специфичный формат для FormData
-        if (Array.isArray(value)) {
-            // Для features, отправим каждый элемент отдельно, если бэкенд поддерживает
-            // Или JSON строку
-            // Пока отправим как JSON строку
-             if (key === 'features') {
-                formData.append(key, JSON.stringify(value));
-            } else {
-                 // Для других массивов (если появятся) нужно будет решить
-            }
-        } else if (typeof value === 'boolean') {
-             formData.append(key, value.toString()); // Boolean как строки 'true'/'false'
-        } else if (value !== null && value !== undefined) {
-            formData.append(key, value as string | Blob); // Остальные как строки или Blob
-        }
-    });
-
-    // Добавляем новые файлы
-    newFiles.forEach((file) => {
-        // Используем одинаковое имя поля для всех файлов, 
-        // бэкенд (multer) должен обработать это как массив
-        formData.append('imageFiles', file);
-    });
-
-    // Добавляем ID удаляемых изображений (как JSON строку)
-    if (deletedPublicIds.length > 0) {
-        formData.append('deletedImages', JSON.stringify(deletedPublicIds));
-    }
-
-    try {
-      let savedRoom;
-      if (editingRoom) {
-        // Обновление существующего номера
-        savedRoom = await roomsService.updateRoom(editingRoom._id, formData);
-        toast.success(`Номер "${savedRoom.title}" успешно обновлен.`);
-      } else {
-        // Создание нового номера
-        savedRoom = await roomsService.createRoom(formData);
-        toast.success(`Номер "${savedRoom.title}" успешно создан.`);
+    Object.keys(roomData).forEach(key => {
+      const value = roomData[key as keyof typeof roomData];
+      if (key === 'features' && Array.isArray(value)) {
+        formData.append(key, JSON.stringify(value));
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
       }
-      setShowForm(false);
-      setEditingRoom(null);
-      // Перезагружаем список номеров, чтобы увидеть изменения
-      fetchRooms(); 
-    } catch (err) {
-      console.error("Ошибка сохранения номера:", err);
-      const message = err instanceof Error ? err.message : 'Не удалось сохранить номер';
-      setError(message);
-      toast.error(message);
-      // Не закрываем форму при ошибке, чтобы пользователь мог исправить
-    } finally {
-      setIsLoading(false);
-    }
-  }, [editingRoom, fetchRooms]); // Добавляем fetchRooms в зависимости
+    });
 
-  const confirmDelete = async () => {
-    if (!deletingRoomId) return;
+    newFiles.forEach(file => {
+      formData.append('imageFiles', file);
+    });
+
+    if (imagesToDelete.length > 0) {
+      formData.append('imagesToDelete', JSON.stringify(imagesToDelete));
+    }
+
     try {
-      await roomsService.deleteRoom(deletingRoomId);
-      toast.success('Номер успешно удален');
-      setShowDeleteConfirm(false);
-      setDeletingRoomId(null);
+      let savedRoom: RoomType;
+      if (editingRoom?._id) {
+        savedRoom = await roomsService.updateRoom(editingRoom._id, formData);
+        toast.success(`Номер "${savedRoom.title}" успешно обновлен!`);
+      } else {
+        savedRoom = await roomsService.createRoom(formData);
+        toast.success(`Номер "${savedRoom.title}" успешно создан!`);
+      }
+      handleFormCancel();
       fetchRooms();
     } catch (err: any) {
-      console.error("Ошибка удаления номера:", err);
-      toast.error(`Ошибка удаления: ${err.message || 'Неизвестная ошибка'}`);
-      setShowDeleteConfirm(false);
-      setDeletingRoomId(null);
+      console.error("Ошибка сохранения номера:", err);
+      const message = err.message || 'Не удалось сохранить номер';
+      setError(message);
+      toast.error(`Ошибка сохранения: ${message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
+  const confirmDelete = async () => {
+    if (deletingRoomId) {
+      setError(null);
+      try {
+        await roomsService.deleteRoom(deletingRoomId);
+        toast.success('Номер успешно удален');
+        setDeletingRoomId(null);
+        setShowDeleteConfirm(false);
+        fetchRooms();
+      } catch (err: any) {
+        console.error("Ошибка удаления номера:", err);
+        toast.error(`Ошибка удаления: ${err.message || 'Не удалось удалить номер'}`);
+      }
     }
   };
   
@@ -508,25 +482,42 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const {active, over} = event;
-    
+    console.log('[DragEnd] Event:', event);
+    console.log('[DragEnd] Active ID:', active.id, 'Over ID:', over?.id);
+
     if (over && active.id !== over.id) {
       const oldIndex = rooms.findIndex((room) => room._id === active.id);
       const newIndex = rooms.findIndex((room) => room._id === over.id);
+      console.log(`[DragEnd] Old Index: ${oldIndex}, New Index: ${newIndex}`);
 
-      if (oldIndex === -1 || newIndex === -1) return;
+      if (oldIndex === -1 || newIndex === -1) {
+        console.warn('[DragEnd] Could not find indices for dragged items.');
+        return;
+      }
 
       const newOrderRooms = arrayMove(rooms, oldIndex, newIndex);
-      setRooms(newOrderRooms);
+      console.log('[DragEnd] New optimistic order:', newOrderRooms.map(r => ({ id: r._id, title: r.title, order: r.displayOrder })) ); // Показываем id, title и текущий order
+      setRooms(newOrderRooms); // Оптимистичное обновление
 
       const orderedIds = newOrderRooms.map(room => room._id!);
+      console.log('[DragEnd] Sending orderedIds to backend:', orderedIds);
+
       try {
         await roomsService.updateRoomsOrder(orderedIds);
+        console.log('[DragEnd] Backend update successful.');
         toast.success('Порядок номеров обновлен.');
+        // Может быть, стоит перезапросить номера после успешного обновления?
+        // fetchRooms(); 
       } catch (err) {
-        console.error("Ошибка обновления порядка номеров:", err);
-        toast.error('Не удалось сохранить новый порядок номеров.');
-        setRooms(rooms); 
+        console.error("[DragEnd] Ошибка обновления порядка номеров:", err);
+        toast.error('Не удалось сохранить новый порядок номеров. Возвращаем старый порядок.');
+        // Откат оптимистичного обновления
+        const previousOrder = arrayMove(newOrderRooms, newIndex, oldIndex); // Возвращаем обратно
+        setRooms(previousOrder);
+        console.log('[DragEnd] Reverted optimistic update.');
       }
+    } else {
+        console.log('[DragEnd] Drag ended without a valid target or on the same item.');
     }
   };
 
@@ -535,7 +526,7 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
       <Header>
         <Title>Управление номерами</Title>
         {!showForm && (
-          <Button onClick={handleAddRoomClick} className="primary">
+          <Button onClick={handleAddRoomClick} className="primary" disabled={isSaving}>
             <i className="fas fa-plus" style={{ marginRight: '8px' }}></i>
             Добавить номер
           </Button>
@@ -552,9 +543,9 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
             style={{ overflow: 'hidden' }}
           >
             <RoomForm 
-              key={editingRoom?._id || 'new'} // Ключ для сброса состояния формы
+              key={editingRoom?._id || 'new'} 
               initialData={editingRoom} 
-              onSave={handleSaveRoom} 
+              onSave={handleSaveRoom}
               onCancel={handleFormCancel} 
             />
           </motion.div>
@@ -571,24 +562,25 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
 
       {!isLoading && !showForm && rooms.length > 0 && (
         <>
-          {/* Оборачиваем таблицу и DndContext в TableWrapper */} 
+          {/* Таблица для больших экранов */}
           <TableWrapper>
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd} // Перетаскивание только для таблицы
+              onDragEnd={handleDragEnd}
             >
               <TableContainer>
                 <StyledTable>
                   <thead>
                     <tr>
                       <TableHeader style={{ width: '40px' }}></TableHeader>
-                      <TableHeader>Фото</TableHeader>
+                      <TableHeader className="image-cell">Фото</TableHeader>
                       <TableHeader>Название</TableHeader>
                       <TableHeader>Цена</TableHeader>
                       <TableHeader className="hide-mobile">Вмест.</TableHeader>
                       <TableHeader className="hide-mobile">Особенности</TableHeader>
-                      <TableHeader>Действия</TableHeader>
+                      <TableHeader>Доступен</TableHeader>
+                      <TableHeader className="actions">Действия</TableHeader>
                     </tr>
                   </thead>
                   <SortableContext
@@ -600,8 +592,9 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
                         <SortableRoomRow 
                           key={room._id} 
                           room={room} 
-                          onEdit={handleEditRoomClick} 
-                          onDelete={handleDeleteRoomClick} 
+                          onEdit={() => handleEditRoomClick(room)} 
+                          onDelete={() => handleDeleteRoomClick(room._id)} 
+                          disabled={isSaving}
                         />
                       ))}
                     </tbody>
@@ -611,14 +604,14 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
             </DndContext>
           </TableWrapper>
 
-          {/* Контейнер с карточками, видимый только на малых экранах */} 
+          {/* Контейнер с карточками, видимый только на малых экранах */}
           <CardsContainer>
             {rooms.map((room) => (
               <RoomAdminCard 
                 key={room._id} 
                 room={room} 
-                onEdit={handleEditRoomClick} 
-                onDelete={handleDeleteRoomClick} 
+                onEdit={() => handleEditRoomClick(room)} 
+                onDelete={() => handleDeleteRoomClick(room._id)} 
               />
             ))}
           </CardsContainer>

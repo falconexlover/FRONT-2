@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { HomePageContent } from '../types/HomePage';
 import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
+import { Link } from 'react-router-dom';
 
 interface AboutProps {
   content: HomePageContent['about'];
@@ -41,7 +42,7 @@ const AboutText = styled.div`
   p {
     margin-bottom: 1.5rem;
     font-size: 1.05rem;
-    color: #555;
+    color: #444;
     line-height: 1.8;
   }
   
@@ -180,7 +181,7 @@ const About: React.FC<AboutProps> = ({ content }) => {
           {textContent.split('\n\n').map((paragraph, index) => (
             <p key={index}>{paragraph}</p>
           ))}
-          <AboutButton href="#rooms">Посмотреть номера</AboutButton>
+          <AboutButton as={Link} to="/rooms">Посмотреть номера</AboutButton>
         </AboutText>
         
         <AboutImage

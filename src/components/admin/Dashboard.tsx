@@ -5,7 +5,7 @@ import { LoadingSpinner } from '../AdminPanel'; // Импортируем спи
 
 // --- Интерфейс пропсов ---
 interface DashboardProps {
-  setActiveTab: (tabId: string) => void;
+  setActiveTab?: (tabId: string) => void; // Делаем опциональным
 }
 
 // --- Стили ---
@@ -207,23 +207,23 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
       {/* Виджет быстрого доступа */}
       <SectionTitle>Быстрый доступ</SectionTitle>
       <ShortcutsGrid>
-        <ShortcutButton onClick={() => setActiveTab('rooms')}>
+        <ShortcutButton onClick={() => setActiveTab?.('rooms')}>
           <i className="fas fa-bed"></i>
           Управление номерами
         </ShortcutButton>
-        <ShortcutButton onClick={() => setActiveTab('homepage')}>
+        <ShortcutButton onClick={() => setActiveTab?.('homepage')}>
            <i className="fas fa-home"></i>
           Редактор главной
         </ShortcutButton>
-         <ShortcutButton onClick={() => setActiveTab('upload')}>
+         <ShortcutButton onClick={() => setActiveTab?.('upload')}>
           <i className="fas fa-upload"></i>
           Загрузить фото
         </ShortcutButton>
-         <ShortcutButton onClick={() => setActiveTab('promotions')}>
+         <ShortcutButton onClick={() => setActiveTab?.('promotions')}>
           <i className="fas fa-tags"></i>
           Управление акциями
         </ShortcutButton>
-         <ShortcutButton onClick={() => setActiveTab('services')}>
+         <ShortcutButton onClick={() => setActiveTab?.('services')}>
           <i className="fas fa-concierge-bell"></i>
           Управление услугами
         </ShortcutButton>

@@ -8,4 +8,5 @@ export interface GalleryImageItem {
   description?: string; // Описание может быть опциональным
   createdAt?: string; // Дата добавления (если нужна)
   updatedAt?: string;
+  displayOrder?: number; // Поле для сортировки
 } 

@@ -73,7 +73,7 @@ const YandexMap: React.FC<YandexMapProps> = ({
               <h3 style="margin-top: 0; color: #217148;">Отель "Лесной дворик"</h3>
               <p style="margin-bottom: 10px;">${address}</p>
               <p style="margin-bottom: 5px;"><b>Телефон:</b> <a href="tel:+74984831941" style="color: #217148;">8 (498) 483 19 41</a></p>
-              <a href="#" style="color: #217148; text-decoration: none; font-weight: 600;">Построить маршрут</a>
+              <a href={\`https://yandex.ru/maps/?rtext=~${coordinates[0]},${coordinates[1]}\`} target="_blank" rel="noopener noreferrer" style="color: #217148; text-decoration: none; font-weight: 600;">Построить маршрут</a>
             </div>
           `
         }, {

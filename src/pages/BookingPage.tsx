@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { roomsService, bookingService } from '../utils/api';
 import { RoomType } from '../types/Room';
-import { BookingData } from '../types/Booking';
+import { BookingData, BookingConfirmation } from '../types/Booking';
 import RoomSelection from '../components/Booking/RoomSelection';
 import BookingFormFields from '../components/Booking/BookingFormFields';
 import PriceSummary from '../components/Booking/PriceSummary';
@@ -210,11 +210,15 @@ const BookingPage: React.FC = () => {
     setSubmissionStatus('idle');
 
     try {
+      // Преобразуем guests из строки в объект перед отправкой
+      const adults = parseInt(formData.guests, 10) || 1;
+      const guestsData = { adults: adults, children: 0 }; // Предполагаем 0 детей, если поле не добавлено
+
       const bookingData: BookingData = {
         roomId: formData.selectedRoomId!,
         checkIn: formData.checkIn,
         checkOut: formData.checkOut,
-        guests: parseInt(formData.guests, 10),
+        guests: guestsData, // Отправляем объект
         guestName: formData.fullName,
         guestEmail: formData.email,
         guestPhone: formData.phone,
@@ -223,9 +227,23 @@ const BookingPage: React.FC = () => {
         numberOfNights: numberOfNights,
       };
       
-      const response = await bookingService.createBooking(bookingData);
-      setSubmittedBookingDetails(response);
-      setSubmissionStatus('success');
+      // Ожидаем BookingConfirmation с confirmationUrl
+      const response: BookingConfirmation = await bookingService.createBooking(bookingData);
+      
+      if (response.confirmationUrl) {
+          // Перенаправляем пользователя на страницу оплаты
+          window.location.href = response.confirmationUrl;
+          // Не устанавливаем статус success здесь, т.к. ждем оплаты
+          // Можно показать сообщение "Перенаправление на страницу оплаты..."
+          setSubmittedBookingDetails(null); // Сбрасываем старые данные
+          setSubmissionStatus('idle'); 
+      } else {
+          // Если URL не пришел - что-то пошло не так на бэкенде при создании платежа
+          console.error('Не получен URL для оплаты от бэкенда.');
+          setSubmissionError('Не удалось инициализировать оплату. Пожалуйста, попробуйте позже.');
+          setSubmissionStatus('error');
+      }
+      
     } catch (err: any) {
       console.error("Ошибка бронирования:", err);
       setSubmissionError(err.response?.data?.message || "Произошла ошибка при бронировании. Пожалуйста, попробуйте еще раз.");

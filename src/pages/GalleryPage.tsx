@@ -16,7 +16,7 @@ import '../assets/css/gallery.css';
 const GalleryContainer = styled.div`
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 4rem 1rem; // Увеличим верхний отступ
 `;
 
 const GalleryHeader = styled.div`
@@ -27,93 +27,45 @@ const GalleryHeader = styled.div`
     font-family: 'Playfair Display', serif;
     color: var(--dark-color);
     margin-bottom: 1rem;
+    font-size: 2.5rem; // Крупнее
   }
   
   p {
     color: var(--text-color);
     max-width: 600px;
     margin: 0 auto 1.5rem;
+    font-size: 1.1rem; // Крупнее
   }
 `;
 
-const FiltersContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
+// Новый контейнер для секции категории
+const CategorySection = styled.div`
+  margin-bottom: 4rem;
+`;
+
+// Новый заголовок для секции категории
+const CategoryTitle = styled.h2`
+  font-family: 'Playfair Display', serif;
+  color: var(--dark-color);
   margin-bottom: 2rem;
-`;
-
-const CategoriesContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-`;
-
-const CategoryButton = styled.button<{ $active: boolean }>`
-  padding: 0.7rem 1.5rem;
-  margin: 0 0.5rem 1rem;
-  background: ${props => props.$active ? 'var(--primary-color)' : 'transparent'};
-  color: ${props => props.$active ? 'white' : 'var(--text-color)'};
-  border: 2px solid ${props => props.$active ? 'var(--primary-color)' : '#eee'};
-  border-radius: var(--radius-full);
-  font-weight: ${props => props.$active ? '600' : '400'};
-  cursor: pointer;
-  transition: var(--transition);
-  
-  &:hover {
-    border-color: var(--primary-color);
-    color: ${props => props.$active ? 'white' : 'var(--primary-color)'};
-  }
-`;
-
-const SearchContainer = styled.div<{ $active: boolean }>`
-  position: relative;
-  display: ${props => props.$active ? 'flex' : 'none'};
-  align-items: center;
-  margin-left: 1rem;
-`;
-
-const SearchIconButton = styled.button<{ $active: boolean }>`
-  background: none;
-  border: none;
-  color: ${props => props.$active ? 'var(--primary-color)' : 'var(--dark-color)'};
-  font-size: 1.5rem;
-  cursor: pointer;
-  transition: var(--transition);
-  
-  &:hover {
-    color: var(--accent-color);
-  }
-`;
-
-const SearchInput = styled.input`
-  padding: 0.5rem;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 1rem;
-  width: 200px;
-  transition: var(--transition);
-  
-  &:focus {
-    outline: none;
-    box-shadow: var(--shadow-sm);
-  }
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--primary-color);
+  display: inline-block; // Чтобы подчеркивание было по ширине текста
+  font-size: 1.8rem;
 `;
 
 const GalleryGrid = styled(motion.div)`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
-  margin-bottom: 3rem;
+  grid-template-columns: repeat(4, 1fr); // Строго 4 колонки
+  gap: 1.5rem;
 `;
 
 const GalleryItem = styled(motion.div)`
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm); // Меньше радиус
   overflow: hidden;
   position: relative;
   cursor: pointer;
-  height: 250px;
+  height: 220px; // Меньше высота
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
   
@@ -125,10 +77,9 @@ const GalleryItem = styled(motion.div)`
       transform: scale(1.05);
     }
     
-    .image-caption {
-    opacity: 1;
-      transform: translateY(0);
-  }
+    .image-overlay {
+      opacity: 1;
+    }
   }
   
   img {
@@ -138,26 +89,23 @@ const GalleryItem = styled(motion.div)`
     transition: transform 0.3s ease;
   }
   
-  .image-caption {
+  // Заменяем .image-caption на .image-overlay
+  .image-overlay {
     position: absolute;
-    bottom: 0;
+    top: 0;
     left: 0;
     right: 0;
-    padding: 1rem;
-    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-    color: white;
+    bottom: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.1));
+    display: flex;
+    align-items: center;
+    justify-content: center;
     opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.3s ease;
+    transition: opacity 0.3s ease;
     
-    h3 {
-      margin-bottom: 0.3rem;
-      font-size: 1.2rem;
-    }
-    
-    p {
-      font-size: 0.9rem;
-      opacity: 0.8;
+    i { // Иконка лупы
+      font-size: 2rem;
+      color: white;
     }
   }
 `;
@@ -243,29 +191,12 @@ const LightboxClose = styled.button`
   }
 `;
 
-const LightboxCaption = styled.div`
-  text-align: center;
-  color: white;
-  width: 100%;
-  padding: 1rem 0;
-  max-width: 800px;
-  
-  h3 {
-    margin-bottom: 0.5rem;
-    font-size: 1.2rem;
-  }
-  
-  p {
-    font-size: 1rem;
-  }
-`;
-
 const LoadingContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 300px;
+  min-height: 400px; // Занимаем место пока грузится
 `;
 
 const LoadingSpinner = styled.div`
@@ -301,52 +232,89 @@ const EmptyState = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 300px;
+  min-height: 200px;
   text-align: center;
+  padding: 2rem;
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
   
   i {
-    font-size: 4rem;
-    color: var(--dark-color);
+    font-size: 3rem;
+    color: var(--text-secondary);
     margin-bottom: 1rem;
   }
   
   h3 {
-    font-size: 1.5rem;
-    color: var(--dark-color);
+    font-size: 1.3rem;
+    color: var(--text-primary);
     margin-bottom: 0.5rem;
   }
   
   p {
     font-size: 1rem;
-    color: var(--dark-color);
-    opacity: 0.7;
+    color: var(--text-secondary);
   }
 `;
 
+// Задаем порядок категорий и их названия
+const CATEGORY_ORDER: { [key: string]: { name: string; order: number } } = {
+  rooms: { name: 'Номера', order: 1 },
+  territory: { name: 'Территория', order: 2 },
+  sauna: { name: 'Сауна', order: 3 },
+  conference: { name: 'Конференц-зал', order: 4 },
+  party: { name: 'Детские праздники', order: 5 },
+  food: { name: 'Питание', order: 6 }, // Добавляем питание
+  // Добавляем 'Другое' как запасной вариант
+  other: { name: 'Другое', order: 99 }
+};
+
 const GalleryPage: React.FC = () => {
-  const [images, setImages] = useState<GalleryImageItem[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [filteredImages, setFilteredImages] = useState<GalleryImageItem[]>([]);
+  // Убираем состояния для фильтров и поиска
+  const [allImages, setAllImages] = useState<GalleryImageItem[]>([]);
+  const [groupedImages, setGroupedImages] = useState<{ [category: string]: GalleryImageItem[] }>({});
+  const [orderedCategories, setOrderedCategories] = useState<string[]>([]);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentImage, setCurrentImage] = useState<GalleryImageItem | null>(null); // Храним сам объект картинки
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isSearchActive, setIsSearchActive] = useState(false);
 
   const loadGallery = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
+      // Загружаем все изображения
       const galleryData = await galleryService.getAllImages();
-      if (galleryData && galleryData.length > 0) {
-        setImages(galleryData);
-        const uniqueCategories = Array.from(new Set(galleryData.map((image: GalleryImageItem) => image.category)));
-        setCategories(['all', ...uniqueCategories]);
+      
+      // Сортируем ВСЕ изображения по displayOrder СРАЗУ
+      const sortedAllImages = galleryData.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+
+      if (sortedAllImages && sortedAllImages.length > 0) {
+        setAllImages(sortedAllImages); // Сохраняем отсортированный общий список для лайтбокса
+        
+        // Группируем отсортированные изображения по категориям
+        const grouped: { [category: string]: GalleryImageItem[] } = {};
+        sortedAllImages.forEach((image) => { // Итерируем по УЖЕ отсортированному списку
+          const categoryKey = image.category || 'other'; 
+          if (!grouped[categoryKey]) {
+            grouped[categoryKey] = [];
+          }
+          grouped[categoryKey].push(image); // Добавляем в группу, порядок внутри группы сохраняется
+        });
+        setGroupedImages(grouped);
+        
+        // Сортируем ключи категорий для отображения секций
+        const sortedCategories = Object.keys(grouped).sort((a, b) => {
+            const orderA = CATEGORY_ORDER[a]?.order ?? CATEGORY_ORDER.other.order;
+            const orderB = CATEGORY_ORDER[b]?.order ?? CATEGORY_ORDER.other.order;
+            return orderA - orderB;
+        });
+        setOrderedCategories(sortedCategories);
+
       } else {
-        setImages([]);
-        setCategories(['all']);
+        setAllImages([]);
+        setGroupedImages({});
+        setOrderedCategories([]);
       }
     } catch (err) {
       console.error("Ошибка при загрузке галереи:", err);
@@ -356,8 +324,9 @@ const GalleryPage: React.FC = () => {
       }
       setError(message);
       toast.error(message);
-      setImages([]);
-      setCategories(['all']);
+      setAllImages([]);
+      setGroupedImages({});
+      setOrderedCategories([]);
     } finally {
       setLoading(false);
     }
@@ -367,54 +336,38 @@ const GalleryPage: React.FC = () => {
     loadGallery();
   }, [loadGallery]);
 
-  useEffect(() => {
-    let result = images;
-    if (selectedCategory !== 'all') {
-      result = result.filter(image => image.category === selectedCategory);
-    }
-    if (searchTerm.trim() !== '') {
-      const lowerCaseSearch = searchTerm.toLowerCase();
-      result = result.filter(image => 
-        (image.title?.toLowerCase().includes(lowerCaseSearch)) ||
-        (image.description?.toLowerCase().includes(lowerCaseSearch))
-      );
-    }
-    setFilteredImages(result);
-  }, [images, selectedCategory, searchTerm]);
-
-  const openLightbox = (index: number) => {
-    setCurrentImageIndex(index);
+  // Функции для лайтбокса
+  const openLightbox = (image: GalleryImageItem) => { // Принимаем объект картинки
+    setCurrentImage(image);
     setLightboxOpen(true);
     document.body.style.overflow = 'hidden';
   };
   
   const closeLightbox = () => {
     setLightboxOpen(false);
+    setCurrentImage(null);
     document.body.style.overflow = 'auto';
   };
 
-  const getCurrentLightboxImage = (): GalleryImageItem | null => {
-    if (currentImageIndex !== null && images[currentImageIndex]) {
-        return images[currentImageIndex];
-    }
-    return null;
-  };
-  
   const handlePrevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const newIndex = (currentImageIndex - 1 + images.length) % images.length;
-    setCurrentImageIndex(newIndex);
+    if (!currentImage) return;
+    const currentIndex = allImages.findIndex(img => img._id === currentImage._id);
+    if (currentIndex === -1) return;
+    const newIndex = (currentIndex - 1 + allImages.length) % allImages.length;
+    setCurrentImage(allImages[newIndex]);
   };
 
   const handleNextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const newIndex = (currentImageIndex + 1) % images.length;
-    setCurrentImageIndex(newIndex);
+    if (!currentImage) return;
+    const currentIndex = allImages.findIndex(img => img._id === currentImage._id);
+    if (currentIndex === -1) return;
+    const newIndex = (currentIndex + 1) % allImages.length;
+    setCurrentImage(allImages[newIndex]);
   };
 
-  const currentImage = getCurrentLightboxImage();
-
-  // Определяем variants для анимации здесь, перед return
+  // Определяем variants для анимации
   const imageVariants = {
     hidden: { opacity: 0, scale: 0.8 },
     visible: (i: number) => ({
@@ -436,41 +389,7 @@ const GalleryPage: React.FC = () => {
       <GalleryContainer>
         <GalleryHeader>
           <h1>Фотогалерея</h1>
-          <p>Ознакомьтесь с фотографиями нашего санатория-профилактория</p>
-          
-          <FiltersContainer>
-            <CategoriesContainer>
-              {categories.map((category) => (
-                <CategoryButton 
-                  key={category} 
-                  $active={selectedCategory === category}
-                  onClick={() => setSelectedCategory(category)}
-                >
-                  {category === 'all' ? 'Все' : category.charAt(0).toUpperCase() + category.slice(1)}
-                </CategoryButton>
-              ))}
-            </CategoriesContainer>
-            
-            {images.length > 0 && (
-              <SearchContainer $active={isSearchActive}>
-                <SearchIconButton 
-                  onClick={() => setIsSearchActive(!isSearchActive)}
-                  $active={isSearchActive}
-                >
-                  <i className={`fas ${isSearchActive ? 'fa-times' : 'fa-search'}`}></i>
-                </SearchIconButton>
-                {isSearchActive && (
-                  <SearchInput
-                    type="text"
-                    placeholder="Поиск по галерее..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    autoFocus
-                  />
-                )}
-              </SearchContainer>
-            )}
-          </FiltersContainer>
+          <p>Ознакомьтесь с фотографиями нашего отеля</p>
         </GalleryHeader>
         
         {loading ? (
@@ -480,97 +399,87 @@ const GalleryPage: React.FC = () => {
           </LoadingContainer>
         ) : error ? (
            <ErrorMessage>{error}</ErrorMessage>
-        ) : filteredImages.length > 0 ? (
-          <GalleryGrid>
-            {filteredImages.map((image, index) => (
-              <GalleryItem
-                key={image._id}
-                variants={imageVariants}
-                initial="hidden"
-                animate="visible"
-                exit="hidden"
-                custom={index}
-                layout
-              >
-                <motion.div 
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                  onClick={() => openLightbox(index)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <img
-                    src={optimizeCloudinaryImage(image.imageUrl)}
-                    alt={image.title || image.category}
-                    loading="lazy"
-                  />
-                </motion.div>
-                <div className="image-caption">
-                    <h3>{image.title || '(без названия)'}</h3> 
-                    <p>{image.description || ''}</p> 
-                 </div>
-              </GalleryItem>
-            ))}
-          </GalleryGrid>
+        ) : orderedCategories.length > 0 ? (
+          // Итерируем по отсортированным категориям
+          orderedCategories.map(categoryKey => (
+            <CategorySection key={categoryKey}>
+              <CategoryTitle>
+                {CATEGORY_ORDER[categoryKey]?.name ?? CATEGORY_ORDER.other.name}
+              </CategoryTitle>
+              <GalleryGrid>
+                {groupedImages[categoryKey].map((image, index) => (
+                  <GalleryItem
+                    key={image._id}
+                    variants={imageVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="hidden"
+                    custom={index} 
+                    layout
+                    onClick={() => openLightbox(image)}
+                  >
+                    <img
+                      src={optimizeCloudinaryImage(image.imageUrl, 'f_auto,q_auto,w_400')} // Оптимизация с шириной
+                      alt={image.title || image.category}
+                      loading="lazy"
+                    />
+                    <div className="image-overlay">
+                      <i className="fas fa-search-plus"></i>
+                    </div>
+                  </GalleryItem>
+                ))}
+              </GalleryGrid>
+            </CategorySection>
+          ))
         ) : (
           <EmptyState>
             <i className="fas fa-images"></i>
-            <h3>Изображения не найдены</h3>
-            <p>
-              {searchTerm 
-                ? 'По вашему запросу ничего не найдено. Попробуйте изменить поисковый запрос.'
-                : selectedCategory === 'all' 
-                   ? 'В галерее пока нет изображений.' 
-                   : 'В этой категории пока нет изображений.'}
-            </p>
+            <h3>Галерея пуста</h3>
+            <p>Администратор скоро добавит сюда фотографии.</p>
           </EmptyState>
         )}
-        
-        <>
-          <AnimatePresence>
-            {lightboxOpen && currentImage && (
-              <Lightbox
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={closeLightbox}
-              >
-                <LightboxContent 
-                   layoutId={currentImage._id}
-                   onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                 >
-                  <LightboxImage 
-                    src={optimizeCloudinaryImage(currentImage.imageUrl, 'f_auto,q_auto,w_1200')}
-                    alt={currentImage.title || currentImage.category}
-                  />
-                  
-                  <LightboxControls>
-                    <LightboxButton onClick={handlePrevImage}>
-                      <i className="fas fa-chevron-left"></i>
-                    </LightboxButton>
-                    
-                    <LightboxButton onClick={handleNextImage}>
-                      <i className="fas fa-chevron-right"></i>
-                    </LightboxButton>
-                  </LightboxControls>
-                  
-                  <LightboxClose onClick={closeLightbox}>
-                    <i className="fas fa-times"></i>
-                  </LightboxClose>
-                    
-                  {(currentImage.title || currentImage.description) && (
-                    <LightboxCaption>
-                        {currentImage.title && <h3>{currentImage.title}</h3>}
-                        {currentImage.description && (
-                          <p>{currentImage.description}</p>
-                        )}
-                    </LightboxCaption>
-                  )}
-                </LightboxContent>
-              </Lightbox>
-            )}
-          </AnimatePresence>
-        </>
       </GalleryContainer>
+      
+      {/* Лайтбокс */} 
+      <AnimatePresence>
+        {lightboxOpen && currentImage && (
+          <Lightbox
+            key="lightbox"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closeLightbox}
+          >
+            <LightboxContent 
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              onClick={(e) => e.stopPropagation()} // Предотвращаем закрытие при клике на контент
+            >
+                <LightboxClose onClick={closeLightbox} aria-label="Закрыть">
+                    &times;
+                </LightboxClose>
+                <LightboxImage 
+                    src={optimizeCloudinaryImage(currentImage.imageUrl, 'f_auto,q_auto,w_1200')} // Оптимизация для лайтбокса
+                    alt={currentImage.title || currentImage.category} 
+                />
+                {/* Убрали подпись из лайтбокса */}
+            </LightboxContent>
+            {/* Добавляем кнопки навигации только если картинок больше одной */} 
+            {allImages.length > 1 && (
+                <LightboxControls>
+                    <LightboxButton onClick={handlePrevImage} aria-label="Предыдущее изображение">
+                        <i className="fas fa-chevron-left"></i>
+                    </LightboxButton>
+                    <LightboxButton onClick={handleNextImage} aria-label="Следующее изображение">
+                        <i className="fas fa-chevron-right"></i>
+                    </LightboxButton>
+                </LightboxControls>
+            )}
+          </Lightbox>
+        )}
+      </AnimatePresence>
+
     </motion.div>
   );
 };

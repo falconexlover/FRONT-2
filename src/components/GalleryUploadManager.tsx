@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import styled from 'styled-components';
-import ImageUploader from './ImageUploader';
+import ImageUploader from './admin/ImageUploader';
 import { galleryService } from '../utils/api';
 import { toast } from 'react-toastify';
 
@@ -36,11 +36,11 @@ const CategorySelector = styled.div`
   }
 `;
 
-const CategoryButton = styled.button<{ active: boolean }>`
+const CategoryButton = styled.button<{ $active: boolean }>`
   padding: 0.7rem 1.5rem;
-  background-color: ${props => props.active ? 'var(--primary-color)' : 'white'};
-  color: ${props => props.active ? 'white' : 'var(--text-primary)'};
-  border: 2px solid ${props => props.active ? 'var(--primary-color)' : 'var(--text-primary)'};
+  background-color: ${props => props.$active ? 'var(--primary-color)' : 'white'};
+  color: ${props => props.$active ? 'white' : 'var(--text-primary)'};
+  border: 2px solid ${props => props.$active ? 'var(--primary-color)' : 'var(--text-primary)'};
   border-radius: var(--radius-sm);
   font-weight: 600;
   font-size: 0.95rem;
@@ -48,7 +48,7 @@ const CategoryButton = styled.button<{ active: boolean }>`
   transition: var(--transition);
   
   &:hover {
-    background-color: ${props => props.active ? 'var(--primary-color)' : 'var(--gray-bg)'};
+    background-color: ${props => props.$active ? 'var(--primary-color)' : 'var(--gray-bg)'};
     transform: translateY(-3px);
     box-shadow: var(--shadow-sm);
   }
@@ -67,7 +67,7 @@ const UploadStatusList = styled.ul`
   overflow-y: auto;
 `;
 
-const UploadStatusItem = styled.li<{ status: 'pending' | 'uploading' | 'success' | 'error' }>`
+const UploadStatusItem = styled.li<{ $status: 'pending' | 'uploading' | 'success' | 'error' }>`
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -89,9 +89,9 @@ const UploadStatusItem = styled.li<{ status: 'pending' | 'uploading' | 'success'
     font-weight: 600;
     white-space: nowrap;
     color: ${props =>
-      props.status === 'success' ? 'var(--secondary-color)' :
-      props.status === 'error' ? '#e53935' :
-      props.status === 'pending' ? 'gray' :
+      props.$status === 'success' ? 'var(--secondary-color)' :
+      props.$status === 'error' ? '#e53935' :
+      props.$status === 'pending' ? 'gray' :
       'var(--text-color)'};
   }
 `;
@@ -124,19 +124,16 @@ const GalleryUploadManager: React.FC<GalleryUploadManagerProps> = ({ onImageUplo
   const [selectedCategory, setSelectedCategory] = useState(categories.length > 0 ? categories[0].id : '');
   const [uploadQueue, setUploadQueue] = useState<FileUploadStatus[]>([]);
   const [isUploading, setIsUploading] = useState<boolean>(false);
-  const [overallError, setOverallError] = useState<string | null>(null);
 
   // handleCategorySelect остается без изменений
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
   };
   
-  // handleUpload остается без изменений
   const handleUpload = useCallback(async (files: File[], category: string) => {
     if (files.length === 0) return;
 
     setIsUploading(true);
-    setOverallError(null);
     
     const initialQueue: FileUploadStatus[] = files.map((file, index) => ({
       id: `${Date.now()}-${index}-${file.name}`,
@@ -180,7 +177,6 @@ const GalleryUploadManager: React.FC<GalleryUploadManagerProps> = ({ onImageUplo
         console.error(`Ошибка загрузки файла ${fileStatus.name}:`, err);
         updateFileStatus(fileStatus.id, 'error', message);
         uploadErrorCount++;
-        setOverallError('При загрузке некоторых файлов произошла ошибка.');
       }
     });
 
@@ -209,6 +205,11 @@ const GalleryUploadManager: React.FC<GalleryUploadManagerProps> = ({ onImageUplo
 
   }, [onImageUpload]);
   
+  // --- Создаем обертку для onUpload --- 
+  const handleFilesSelected = useCallback((files: File[]) => {
+      handleUpload(files, selectedCategory);
+  }, [handleUpload, selectedCategory]);
+  
   return (
     <UploadManagerContainer>
       <CategorySelector>
@@ -218,7 +219,7 @@ const GalleryUploadManager: React.FC<GalleryUploadManagerProps> = ({ onImageUplo
           {categories.map(category => (
             <CategoryButton
               key={category.id}
-              active={selectedCategory === category.id}
+              $active={selectedCategory === category.id}
               onClick={() => handleCategorySelect(category.id)}
               disabled={isUploading}
             >
@@ -232,10 +233,12 @@ const GalleryUploadManager: React.FC<GalleryUploadManagerProps> = ({ onImageUplo
         <SectionHeader>2. Выберите файлы для загрузки</SectionHeader>
         <ImageUploader
           // Убедимся, что передаем актуальную категорию
-          category={selectedCategory} 
-          onUpload={handleUpload}
-          isUploading={isUploading}
-          error={overallError}
+          // category={selectedCategory} // Убираем category, т.к. admin/ImageUploader его не принимает
+          // --- Передаем новую функцию-обертку --- 
+          onUpload={handleFilesSelected} 
+          // --- Переименовываем проп isUploading в isLoading --- 
+          isLoading={isUploading}
+          // error={overallError} // Убираем error, т.к. admin/ImageUploader его не принимает
         />
       </div>
       
@@ -244,7 +247,7 @@ const GalleryUploadManager: React.FC<GalleryUploadManagerProps> = ({ onImageUplo
           <h3>Статус загрузки:</h3>
           <UploadStatusList>
             {uploadQueue.map(item => (
-              <UploadStatusItem key={item.id} status={item.status}>
+              <UploadStatusItem key={item.id} $status={item.status}>
                 <span className="file-info" title={item.name}>{item.name}</span>
                 <span className="file-status">
                   {item.status === 'pending' && 'Ожидание...'}

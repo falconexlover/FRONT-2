@@ -102,7 +102,7 @@ const HomePage: React.FC = () => {
             <About content={about} />
             <Rooms title={rooms?.title} subtitle={rooms?.subtitle} />
             <Services title={services?.title} subtitle={services?.subtitle} />
-            <section id="contact" className="section" style={{ padding: '6rem 2rem', backgroundColor: 'white' }}>
+            <section id="contact" className="section" style={{ padding: '6rem 2rem', backgroundColor: '#f8f9fa' }}>
                 <div className="container">
                     <SectionTitle>
                         <h2>{contact?.title}</h2>

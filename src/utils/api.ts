@@ -205,6 +205,24 @@ export const galleryService = {
       }
     });
     await handleResponse<null>(response);
+  },
+  
+  // Обновить порядок изображений
+  async updateImageOrder(orderedIds: string[]): Promise<{ message: string, modifiedCount: number }> {
+      const token = authService.getToken();
+      if (!token) {
+          return Promise.reject(new Error('Требуется аутентификация'));
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/gallery/order`, {
+          method: 'PUT',
+          headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ orderedIds })
+      });
+      return handleResponse<{ message: string, modifiedCount: number }>(response);
   }
 };
 
@@ -381,8 +399,45 @@ export const bookingService = {
     return handleResponse<BookingConfirmation>(response);
   },
 
-  // Можно добавить метод для получения бронирования по номеру, если он будет нужен
-  // async getBookingByNumber(bookingNumber: string): Promise<any> { ... }
+  // Получить бронирование по номеру бронирования
+  async getBookingByNumber(bookingNumber: string): Promise<BookingConfirmation> {
+    const response = await fetch(`${API_BASE_URL}/bookings/${bookingNumber}`);
+    return handleResponse<BookingConfirmation>(response);
+  },
+  
+  // Получить бронирование по ID
+  async getBookingById(id: string): Promise<BookingConfirmation> {
+      const response = await fetch(`${API_BASE_URL}/bookings/id/${id}`);
+      return handleResponse<BookingConfirmation>(response);
+  },
+
+  // Получить все бронирования (для админа)
+  async getAllBookings(): Promise<BookingConfirmation[]> { // Уточняем тип возвращаемого массива
+    const token = authService.getToken();
+    if (!token) return Promise.reject(new Error('Требуется аутентификация'));
+    
+    const response = await fetch(`${API_BASE_URL}/bookings`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      }
+    });
+    const result = await handleResponse<BookingConfirmation[] | null>(response);
+    return Array.isArray(result) ? result : [];
+  },
+  
+  // Удалить бронирование (для админа)
+  async deleteBooking(id: string): Promise<void> {
+    const token = authService.getToken();
+    if (!token) return Promise.reject(new Error('Требуется аутентификация'));
+    
+    const response = await fetch(`${API_BASE_URL}/bookings/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+    });
+    await handleResponse<null>(response);
+  },
 };
 
 /**
@@ -528,5 +583,41 @@ export const promotionsService = {
     } catch (e) {
       return { message: 'Акция успешно удалена' }; 
     }
+  },
+};
+
+// --- Page Service ---
+const PAGES_API_URL = `${API_BASE_URL}/pages`;
+
+// Тип для ответа API (содержит content)
+interface PageApiResponse {
+  _id?: string;
+  pageId: string;
+  content: any; // Тип контента будет разный для разных страниц
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const pageService = {
+  // Получить контент страницы по ID
+  getPageContent: async (pageId: string): Promise<PageApiResponse> => {
+    console.log(`[API] Fetching content for page: ${pageId}`);
+    const response = await fetch(`${PAGES_API_URL}/${pageId}`);
+    return handleResponse<PageApiResponse>(response);
+  },
+
+  // Обновить контент страницы по ID
+  updatePageContent: async (pageId: string, content: any): Promise<PageApiResponse> => {
+    console.log(`[API] Updating content for page: ${pageId}`);
+    const token = authService.getToken();
+    const response = await fetch(`${PAGES_API_URL}/${pageId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ content }),
+    });
+    return handleResponse<PageApiResponse>(response);
   },
 }; 

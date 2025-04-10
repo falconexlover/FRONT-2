@@ -104,13 +104,15 @@ const IconButton = styled.button`
   }
 `;
 
-const StatusBadge = styled.span<{ isActive: boolean }>`
-    padding: 0.3rem 0.6rem;
-    border-radius: var(--radius-sm);
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: white;
-    background-color: ${props => props.isActive ? 'var(--success-color)' : 'var(--text-secondary)'};
+const StatusIndicator = styled.span<{ $isActive: boolean }>`
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  background-color: ${props => props.$isActive ? 'var(--success-light-bg)' : 'var(--secondary-light-bg)'};
+  color: ${props => props.$isActive ? 'var(--success-color)' : 'var(--secondary-dark-color)'};
+  border: 1px solid ${props => props.$isActive ? 'var(--success-color)' : 'var(--secondary-color)'};
 `;
 
 const NoItemsMessage = styled.div`
@@ -301,9 +303,9 @@ const PromotionsAdminPanel: React.FC = () => {
                     <TableCell>{formatDate(promo.startDate)}</TableCell>
                     <TableCell>{formatDate(promo.endDate)}</TableCell>
                     <TableCell>
-                        <StatusBadge isActive={promo.isActive}>
-                            {promo.isActive ? 'Активна' : 'Неактивна'}
-                        </StatusBadge>
+                      <StatusIndicator $isActive={promo.isActive}>
+                        {promo.isActive ? 'Активна' : 'Неактивна'}
+                      </StatusIndicator>
                     </TableCell>
                     <TableCell className="actions">
                       <ActionButtonsContainer>

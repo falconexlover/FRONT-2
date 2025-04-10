@@ -4,6 +4,7 @@ import { homePageService, galleryService } from '../utils/api';
 import { HomePageContent } from '../types/HomePage';
 import { toast } from 'react-toastify';
 import ActionButton from './ui/ActionButton';
+import HomeImageUploader from './HomeImageUploader';
 
 // Адаптация стилей под темную тему
 const EditorContainer = styled.div`
@@ -102,6 +103,26 @@ const FileInput = styled.input`
   margin-top: 0.5rem;
   /* Добавить стили, если нужно */
 `;
+
+// <<< Определяем стили для PhoneFieldWrapper и RemoveButton
+const PhoneFieldWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+`;
+
+const RemoveButton = styled.button`
+  background: none;
+  border: none;
+  color: var(--danger-color);
+  cursor: pointer;
+  font-size: 1.4rem; /* Немного увеличим для телефонов */
+  padding: 0.2rem 0.5rem;
+  line-height: 1;
+  &:hover { color: var(--danger-dark); }
+`;
+// >>>
 
 const HomepageEditor: React.FC = () => {
   const [formData, setFormData] = useState<Partial<HomePageContent>>({});
@@ -300,32 +321,38 @@ const HomepageEditor: React.FC = () => {
       <EditorTitle>Редактирование главной страницы</EditorTitle>
       
       {/* --- Секция Баннер --- */}
-      <SectionSubheader>Баннер</SectionSubheader>
+      <SectionSubheader>Секция "Баннер"</SectionSubheader>
       <FormGroup>
-        <Label htmlFor="banner.title">Заголовок</Label>
+        <Label htmlFor="banner.title">Заголовок баннера</Label>
         <Input id="banner.title" name="title" value={formData.banner?.title || ''} onChange={(e) => handleNestedChange('banner', e)} />
       </FormGroup>
       <FormGroup>
-        <Label htmlFor="banner.subtitle">Подзаголовок</Label>
-        <Input id="banner.subtitle" name="subtitle" value={formData.banner?.subtitle || ''} onChange={(e) => handleNestedChange('banner', e)} />
+        <Label htmlFor="banner.subtitle">Подзаголовок баннера</Label>
+        <TextArea id="banner.subtitle" name="subtitle" value={formData.banner?.subtitle || ''} onChange={(e) => handleNestedChange('banner', e)} />
       </FormGroup>
-       <FormGroup>
-        <Label htmlFor="banner.buttonText">Текст кнопки</Label>
+      <FormGroup>
+        <Label htmlFor="banner.buttonText">Текст кнопки баннера</Label>
         <Input id="banner.buttonText" name="buttonText" value={formData.banner?.buttonText || ''} onChange={(e) => handleNestedChange('banner', e)} />
       </FormGroup>
-       <FormGroup>
-        <Label htmlFor="banner.buttonLink">Ссылка кнопки (напр., /booking)</Label>
+      <FormGroup>
+        <Label htmlFor="banner.buttonLink">Ссылка кнопки баннера</Label>
         <Input id="banner.buttonLink" name="buttonLink" value={formData.banner?.buttonLink || ''} onChange={(e) => handleNestedChange('banner', e)} />
       </FormGroup>
 
+      {/* Добавляем загрузчик для изображения баннера */}
+      <FormGroup>
+        <Label>Изображение баннера</Label>
+        <HomeImageUploader /> 
+      </FormGroup>
+
       {/* --- Секция "О нас" --- */}
-      <SectionSubheader>О нас</SectionSubheader>
-       <FormGroup>
-        <Label htmlFor="about.title">Заголовок</Label>
+      <SectionSubheader>Секция "О нас"</SectionSubheader>
+      <FormGroup>
+        <Label htmlFor="about.title">Заголовок "О нас"</Label>
         <Input id="about.title" name="title" value={formData.about?.title || ''} onChange={(e) => handleNestedChange('about', e)} />
       </FormGroup>
       <FormGroup>
-        <Label htmlFor="about.content">Текст</Label>
+        <Label htmlFor="about.content">Текст "О нас"</Label>
         <TextArea id="about.content" name="content" value={formData.about?.content || ''} onChange={(e) => handleNestedChange('about', e)} />
       </FormGroup>
        <FormGroup>
@@ -348,28 +375,36 @@ const HomepageEditor: React.FC = () => {
       </FormGroup>
       
       {/* --- Секция Контакты --- */} 
-      <SectionSubheader>Контактная информация</SectionSubheader>
+      <SectionSubheader>Секция "Контакты"</SectionSubheader>
       <FormGroup>
-        <Label htmlFor="contact.title">Заголовок</Label>
+        <Label htmlFor="contact.title">Заголовок "Контакты"</Label>
         <Input id="contact.title" name="title" value={formData.contact?.title || ''} onChange={(e) => handleNestedChange('contact', e)} />
       </FormGroup>
       <FormGroup>
         <Label htmlFor="contact.address">Адрес</Label>
-        <Input id="contact.address" name="address" value={formData.contact?.address || ''} onChange={(e) => handleNestedChange('contact', e)} />
+        <Input id="contact.address" name="address" value={formData.contact?.address || ''} onChange={(e) => handleNestedChange('contact', e)} autoComplete="street-address" />
       </FormGroup>
       <FormGroup>
         <Label>Телефоны</Label>
-        {(formData.contact?.phone || []).map((phone: string, index: number) => (
-             <div key={index} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <Input type="tel" value={phone} onChange={(e) => handlePhoneChange(index, e.target.value)} placeholder="+7 (XXX) XXX-XX-XX" />
-                <button type="button" onClick={() => removePhoneField(index)} style={{ padding: '0.5rem', background:'#fdd' }}>-</button>
-             </div>
+        {(formData.contact?.phone || []).map((phone, index) => (
+          <PhoneFieldWrapper key={index}>
+            {/* Для телефонов лучше не ставить id, чтобы избежать дублирования */}
+            <Input 
+              type="tel" 
+              name={`phone-${index}`} 
+              value={phone} 
+              onChange={(e) => handlePhoneChange(index, e.target.value)} 
+              placeholder="Введите номер телефона" 
+              autoComplete="tel"
+            />
+            <RemoveButton type="button" onClick={() => removePhoneField(index)}>&times;</RemoveButton>
+          </PhoneFieldWrapper>
         ))}
-        <button type="button" onClick={addPhoneField} style={{ padding: '0.5rem' }}>+ Добавить телефон</button>
+        <ActionButton type="button" onClick={addPhoneField} style={{ marginTop: '0.5rem' }}>Добавить телефон</ActionButton>
       </FormGroup>
        <FormGroup>
         <Label htmlFor="contact.email">Email</Label>
-        <Input type="email" id="contact.email" name="email" value={formData.contact?.email || ''} onChange={(e) => handleNestedChange('contact', e)} />
+        <Input id="contact.email" name="email" type="email" value={formData.contact?.email || ''} onChange={(e) => handleNestedChange('contact', e)} autoComplete="email" />
       </FormGroup>
 
       {/* --- Кнопка Сохранения --- */}

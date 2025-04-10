@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { TabItem } from '../ui/Tabs'; // Импортируем тип из Tabs для элементов меню
+// import { NavLink } from 'react-router-dom'; // Убираем неиспользуемый импорт
 
 interface SidebarProps {
   menuItems: TabItem[];
@@ -28,27 +29,27 @@ const NavItem = styled.li`
 `;
 
 // Адаптируем Ссылки/Кнопки навигации
-const NavLink = styled.button<{ isActive: boolean }>`
+const NavLinkStyled = styled.button<{ $isActive: boolean }>`
   display: block;
   width: 100%;
   padding: 0.8rem 1.5rem;
   border: none;
   /* Используем переменные темной темы */
-  background-color: ${props => props.isActive ? 'var(--primary-color)' : 'transparent'};
-  color: ${props => props.isActive ? 'var(--text-on-primary-bg)' : 'var(--text-secondary)'}; 
+  background-color: ${props => props.$isActive ? 'var(--primary-color)' : 'transparent'};
+  color: ${props => props.$isActive ? 'var(--text-on-primary-bg)' : 'var(--text-secondary)'}; 
   text-align: left;
-  font-weight: ${props => props.isActive ? '600' : '500'}; /* Немного изменим вес */
+  font-weight: ${props => props.$isActive ? '600' : '500'}; /* Немного изменим вес */
   font-size: 0.95rem; /* Чуть меньше */
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
   /* Убираем бордер справа, т.к. фон будет меняться */
-  /* border-right: ${props => props.isActive ? '3px solid var(--primary-color)' : 'none'}; */
+  /* border-right: ${props => props.$isActive ? '3px solid var(--primary-color)' : 'none'}; */
   border-radius: var(--radius-sm); /* Добавим небольшое скругление */
   margin: 0 0.5rem; /* Небольшие отступы по бокам */
   width: calc(100% - 1rem); /* Учитываем отступы */
 
   &:hover {
-    background-color: ${props => props.isActive ? 'var(--primary-color)' : 'var(--bg-tertiary)'}; 
+    background-color: ${props => props.$isActive ? 'var(--primary-color)' : 'var(--bg-tertiary)'}; 
     color: var(--text-primary); /* При наведении текст всегда основной */
   }
 
@@ -56,14 +57,14 @@ const NavLink = styled.button<{ isActive: boolean }>`
     margin-right: 12px; /* Чуть больше отступ для иконки */
     width: 20px;
     text-align: center;
-    opacity: ${props => props.isActive ? '1' : '0.8'}; /* Делаем неактивные иконки чуть тусклее */
+    opacity: ${props => props.$isActive ? '1' : '0.8'}; /* Делаем неактивные иконки чуть тусклее */
   }
 
   @media (max-width: 768px) {
     /* Стили для мобильной версии можно оставить */
     padding: 0.8rem 1rem;
     font-size: 0.9rem;
-    /* border-bottom: ${props => props.isActive ? '2px solid var(--primary-color)' : 'none'}; */
+    /* border-bottom: ${props => props.$isActive ? '2px solid var(--primary-color)' : 'none'}; */
     /* Убираем нижнюю границу, используем фон */
   }
 `;
@@ -138,6 +139,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           case 'gallery': return 'fa-images';
           case 'upload': return 'fa-upload';
           case 'promotions': return 'fa-tags'; // Добавляем иконку для акций
+          case 'edit-conference': return 'fa-chalkboard-teacher'; // Иконка доски
+          case 'edit-party': return 'fa-birthday-cake'; // Иконка торта
           default: return 'fa-question-circle';
       }
   };
@@ -163,13 +166,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         <NavList>
           {menuItems.map(item => (
             <NavItem key={item.id}>
-              <NavLink 
-                isActive={item.id === activeItemId}
+              <NavLinkStyled 
+                $isActive={item.id === activeItemId}
                 onClick={() => handleItemClick(item.id)} // Используем новый обработчик
               >
                 <i className={`fas ${getIcon(item.id)}`}></i>
                 {item.label}
-              </NavLink>
+              </NavLinkStyled>
             </NavItem>
           ))}
         </NavList>

@@ -293,8 +293,8 @@ const Services: React.FC<ServicesProps> = ({
               </ServiceIcon>
               <h3>{service.name}</h3>
               <p>{service.description || 'Описание услуги скоро появится.'}</p>
-              <OutlineButton href="#booking" data-service={service._id}>
-                Забронировать
+              <OutlineButton href="/services"> 
+                Подробнее
               </OutlineButton>
             </ServiceCard>
           ))}

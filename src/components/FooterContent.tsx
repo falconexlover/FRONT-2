@@ -24,7 +24,7 @@ const FooterContent: React.FC = () => {
           </div>
           <div className="faq-item">
             <p className="question">Можно ли с животными?</p>
-            <p className="answer">Размещение с небольшими животными возможно по предварительному согласованию.</p>
+            <p className="answer">К сожалению, у нас нет условий для проживания с животными.</p>
           </div>
         </FooterSection>
 

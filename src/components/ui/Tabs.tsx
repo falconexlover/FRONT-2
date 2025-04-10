@@ -45,6 +45,7 @@ const TabStyled = styled.button<{ active: boolean }>` // Переименова�
 export interface TabItem {
   id: string;
   label: string;
+  path?: string; // Добавляем опциональное поле path
 }
 
 interface TabsProps {

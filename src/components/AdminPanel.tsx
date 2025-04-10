@@ -7,26 +7,23 @@ import ImageEditForm from './admin/ImageEditForm';
 import ConfirmModal from './ui/ConfirmModal';
 import { TabItem } from './ui/Tabs';
 import HomePageEditor from './HomePageEditor';
-import { galleryService } from '../utils/api';
+import { galleryService, servicesService } from '../utils/api';
 import { GalleryImageItem } from '../types/GalleryImage';
 import { toast } from 'react-toastify';
 import RoomsAdminPanel from './RoomsAdminPanel';
 import AdminLayout from './admin/AdminLayout';
-import Sidebar from './admin/Sidebar';
 import EditServicesForm from './admin/EditServicesForm';
 import Dashboard from './admin/Dashboard';
 import PromotionsAdminPanel from './admin/PromotionsAdminPanel';
 import { ServiceType } from '../types/Service';
-import { servicesService } from '../utils/api';
+import { arrayMove } from '@dnd-kit/sortable';
+import { DragEndEvent } from '@dnd-kit/core';
+import ConferencePageEditor from './admin/editors/ConferencePageEditor';
+import PartyPageEditor from './admin/editors/PartyPageEditor';
 
 interface AdminPanelProps {
-  onLogout: () => void;
+  // Пустой интерфейс, т.к. пропсы больше не нужны здесь
 }
-
-const Panel = styled(motion.div)`
-  padding: 0;
-  height: 100%;
-`;
 
 const spin = keyframes`
   from { transform: rotate(0deg); }
@@ -61,13 +58,16 @@ const adminTabs: TabItem[] = [
     { id: 'homepage', label: 'Главная страница' },
     { id: 'rooms', label: 'Номера' },
     { id: 'services', label: 'Услуги' },
+    { id: 'edit-conference', label: 'Ред. Конференц-зал' }, 
+    { id: 'edit-party', label: 'Ред. Детские праздники' }, 
     { id: 'gallery', label: 'Галерея' },
     { id: 'upload', label: 'Загрузить фото' },
     { id: 'promotions', label: 'Акции' },
 ];
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
+const AdminPanel: React.FC<AdminPanelProps> = () => {
   const [activeTab, setActiveTab] = useState(adminTabs[0].id);
+
   const [galleryItems, setGalleryItems] = useState<GalleryImageItem[]>([]);
   const [services, setServices] = useState<ServiceType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,8 +80,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
-  const [galleryKey, setGalleryKey] = useState(Date.now());
 
   const [showServiceDeleteConfirm, setShowServiceDeleteConfirm] = useState(false);
   const [deletingServiceId, setDeletingServiceId] = useState<string | null>(null);
@@ -132,11 +130,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
     }
   }, [activeTab, loadGalleryItems, loadServices]);
 
-  const handleImageUpload = () => {
+  const handleImageUpload = useCallback(() => {
     loadGalleryItems();
     setActiveTab('gallery');
-    setGalleryKey(Date.now());
-  };
+  }, [loadGalleryItems]);
 
   const handleEditClick = (image: GalleryImageItem) => {
     setEditingImage(image);
@@ -205,15 +202,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
     setIsSaving(true);
     try {
       if (id) {
-        // Обновление существующей услуги
         await servicesService.updateService(id, data as Partial<Omit<ServiceType, '_id'>>);
         toast.success(`Услуга "${data.name}" обновлена.`);
       } else {
-        // Создание новой услуги
         await servicesService.createService(data as Omit<ServiceType, '_id'>);
         toast.success(`Услуга "${data.name}" создана.`);
       }
-      loadServices(); // Перезагружаем список услуг после сохранения
+      loadServices();
     } catch (err) {
         console.error("Ошибка сохранения услуги:", err);
         const message = err instanceof Error ? err.message : 'Неизвестная ошибка сервера';
@@ -250,6 +245,28 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
     }
   };
 
+  const handleGalleryDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = galleryItems.findIndex((item) => item._id === active.id);
+      const newIndex = galleryItems.findIndex((item) => item._id === over.id);
+
+      if (oldIndex === -1 || newIndex === -1) {
+        return;
+      }
+
+      const reorderedItems = arrayMove(galleryItems, oldIndex, newIndex);
+      setGalleryItems(reorderedItems);
+
+      const orderedIds = reorderedItems.map(item => item._id);
+      
+      console.log('Sending updated order to backend:', orderedIds);
+
+      await galleryService.updateImageOrder(orderedIds);
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -257,10 +274,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
       case 'homepage':
         return <HomePageEditor />;
       case 'rooms':
-        return <RoomsAdminPanel onLogout={onLogout} />;
+        return <RoomsAdminPanel />;
       case 'services':
-        if (isLoading) return <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка услуг...</LoadingSpinner>;
-        if (error && activeTab === 'services') return <p style={{ color: 'var(--danger-color)', textAlign: 'center' }}>{error}</p>; 
+        if (isLoading) return <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка...</LoadingSpinner>;
+        if (error) return <p style={{ color: 'var(--danger-color)', textAlign: 'center' }}>{error}</p>; 
         return (
           <EditServicesForm 
             services={services} 
@@ -270,10 +287,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
             isDeleting={isDeletingService}
           />
         );
+      case 'edit-conference':
+        return <ConferencePageEditor />;
+      case 'edit-party':
+        return <PartyPageEditor />;
       case 'gallery':
+        if (isLoading) return <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка...</LoadingSpinner>;
+        if (error) return <p style={{ color: 'red' }}>{error}</p>;
         if (editingImage) {
           return (
             <ImageEditForm
+              key={editingImage._id}
               image={editingImage}
               editedData={editedData}
               onFormChange={handleEditFormChange}
@@ -284,18 +308,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
             />
           );
         }
-        if (isLoading) return <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка галереи...</LoadingSpinner>;
-        if (error && activeTab === 'gallery') return <p style={{ color: 'var(--danger-color)', textAlign: 'center' }}>{error}</p>;
         return (
           <ExistingImagesList
-            key={galleryKey}
             images={galleryItems}
-            onEditClick={handleEditClick}
-            onDeleteClick={handleDeleteClick}
+            onEdit={handleEditClick}
+            onDelete={handleDeleteClick}
+            onDragEnd={handleGalleryDragEnd}
           />
         );
       case 'upload':
-        return <GalleryUploadManager onImageUpload={handleImageUpload} categories={CATEGORIES} />;
+        return <GalleryUploadManager categories={CATEGORIES} onImageUpload={handleImageUpload} />;
       case 'promotions':
         return <PromotionsAdminPanel />;
       default:
@@ -305,60 +327,45 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
 
   return (
     <AdminLayout 
-      sidebar={(
-        <Sidebar
-          menuItems={adminTabs}
-          activeItemId={activeTab}
-          onItemClick={setActiveTab}
-          onLogout={onLogout}
-        />
-      )}
+      menuItems={adminTabs} 
+      activeMenuItemId={activeTab} 
+      onMenuItemSelect={setActiveTab}
     >
       <AnimatePresence mode="wait">
-        <Panel
+        <motion.div 
           key={activeTab}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
         >
-          {renderContent()}
-        </Panel>
-      </AnimatePresence>
-      
-      <AnimatePresence>
-        {showDeleteConfirm && (
-          <ConfirmModal
-            key="confirm-delete-modal"
-            isOpen={showDeleteConfirm}
-            title="Подтвердите удаление"
-            message="Вы уверены, что хотите удалить это изображение? Это действие необратимо."
-            onConfirm={confirmDelete}
-            onCancel={cancelDelete}
-            confirmText="Удалить"
-            cancelText="Отмена"
-            isConfirming={isDeleting}
-            confirmButtonClass="danger"
-          />
-        )}
+          {renderContent()} 
+        </motion.div>
       </AnimatePresence>
 
-      <AnimatePresence>
-        {showServiceDeleteConfirm && (
-          <ConfirmModal
-            key="confirm-delete-service-modal"
-            isOpen={showServiceDeleteConfirm}
-            title="Подтвердите удаление услуги"
-            message={`Вы уверены, что хотите удалить услугу "${services.find(s => s._id === deletingServiceId)?.name}"? Это действие необратимо.`}
-            onConfirm={confirmServiceDelete}
-            onCancel={cancelServiceDelete}
-            confirmText="Удалить"
-            cancelText="Отмена"
-            isConfirming={isDeletingService}
-            confirmButtonClass="danger"
-          />
-        )}
-      </AnimatePresence>
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        title="Подтвердите удаление"
+        message="Вы уверены, что хотите удалить это изображение? Действие необратимо."
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        confirmText="Удалить"
+        cancelText="Отмена"
+        confirmButtonClass="danger"
+        isConfirming={isDeleting}
+      />
+       <ConfirmModal
+        isOpen={showServiceDeleteConfirm}
+        title="Подтвердите удаление услуги"
+        message={`Вы уверены, что хотите удалить услугу "${services.find(s => s._id === deletingServiceId)?.name}"? Это действие необратимо.`}
+        onConfirm={confirmServiceDelete}
+        onCancel={cancelServiceDelete}
+        confirmText="Удалить"
+        cancelText="Отмена"
+        confirmButtonClass="danger"
+        isConfirming={isDeletingService}
+      />
+
     </AdminLayout>
   );
 };

@@ -1,8 +1,10 @@
 import React, { useState, useRef, useCallback } from 'react';
-import styled from 'styled-components';
+import styled, { StyleSheetManager } from 'styled-components';
+import isPropValid from '@emotion/is-prop-valid';
 // import { motion, AnimatePresence } from 'framer-motion'; // Не используется
-import { galleryService } from '../utils/api';
+import { homePageService } from '../utils/api';
 import { toast } from 'react-toastify';
+import ActionButton from './ui/ActionButton';
 
 type HomePageSectionType = 'banner' | 'about' | 'room' | 'background' | string;
 
@@ -87,7 +89,24 @@ const ErrorMessage = styled.div`
   font-size: 0.9rem;
 `;
 
-const HomeImageUploader: React.FC<HomeImageUploaderProps> = ({}) => {
+const PreviewContainer = styled.div`
+    margin-top: 1.5rem;
+    text-align: center;
+`;
+
+const PreviewImage = styled.img`
+    max-width: 100%;
+    max-height: 200px;
+    margin-bottom: 1rem;
+    border: 1px solid #eee;
+    border-radius: var(--radius-sm);
+`;
+
+const UploadActionButton = styled(ActionButton)`
+    margin-top: 1rem;
+`;
+
+const HomeImageUploader: React.FC<HomeImageUploaderProps> = () => {
   const [imageType, setImageType] = useState<HomePageSectionType>('banner');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -163,8 +182,7 @@ const HomeImageUploader: React.FC<HomeImageUploaderProps> = ({}) => {
     formData.append('type', imageType); 
 
     try {
-      // Не присваиваем результат в result, так как он не используется
-      await galleryService.uploadImage(formData);
+      await homePageService.uploadHomePageImage(selectedFile, imageType);
       toast.success(`Изображение для секции "${imageType}" успешно загружено!`);
       setSelectedFile(null);
       setPreviewUrl(null);
@@ -197,36 +215,52 @@ const HomeImageUploader: React.FC<HomeImageUploaderProps> = ({}) => {
         </select>
       </TypeSelector>
       
-      <UploadArea
-        isDragActive={isDragActive}
-        onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-        onClick={() => !isLoading && fileInputRef.current?.click()}
-        style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}
-      >
-        <UploadIcon className={`fas ${isLoading ? 'fa-spinner fa-spin' : 'fa-cloud-upload-alt'}`} />
-        <h3>{isLoading ? 'Идет загрузка...' : '2. Загрузите изображение'}</h3>
-        <UploadText>{isLoading ? 'Пожалуйста, подождите.' : 'Перетащите файл сюда или нажмите для выбора'}</UploadText>
-        
-        <div style={{ fontSize: '0.85rem', color: '#666', marginTop: '1rem' }}>
-            (Рекомендуются форматы JPG, PNG, WEBP, размер до 5MB)
-         </div>
-        
-        <UploadButton as="div" aria-disabled={isLoading} style={{ marginTop: '1rem' }}>
-          {isLoading ? 'Загрузка...' : 'Выбрать файл'}
-          <input
-            type="file"
-            ref={fileInputRef}
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handleFileChange}
-            disabled={isLoading}
-          />
-        </UploadButton>
-      </UploadArea>
+      <StyleSheetManager shouldForwardProp={prop => isPropValid(prop)}>
+        <UploadArea
+          isDragActive={isDragActive}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          onClick={() => !isLoading && fileInputRef.current?.click()}
+          style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}
+        >
+          <UploadIcon className={`fas ${isLoading ? 'fa-spinner fa-spin' : 'fa-cloud-upload-alt'}`} />
+          <h3>{isLoading ? 'Идет загрузка...' : '2. Загрузите изображение'}</h3>
+          <UploadText>{isLoading ? 'Пожалуйста, подождите.' : 'Перетащите файл сюда или нажмите для выбора'}</UploadText>
+          
+          <div style={{ fontSize: '0.85rem', color: '#666', marginTop: '1rem' }}>
+              (Рекомендуются форматы JPG, PNG, WEBP, размер до 5MB)
+           </div>
+          
+          <UploadButton as="div" aria-disabled={isLoading} style={{ marginTop: '1rem' }}>
+            {isLoading ? 'Загрузка...' : 'Выбрать файл'}
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleFileChange}
+              disabled={isLoading}
+            />
+          </UploadButton>
+        </UploadArea>
+      </StyleSheetManager>
       
       {error && <ErrorMessage>{error}</ErrorMessage>}
+      
+      {selectedFile && previewUrl && (
+          <PreviewContainer>
+              <h4>Превью выбранного изображения:</h4>
+              <PreviewImage src={previewUrl} alt="Превью загружаемого изображения" />
+              <UploadActionButton 
+                className="primary" 
+                onClick={handleUpload} 
+                disabled={isLoading}
+              >
+                {isLoading ? 'Загрузка...' : 'Загрузить это изображение'}
+              </UploadActionButton>
+          </PreviewContainer>
+      )}
       
     </UploadContainer>
   );
