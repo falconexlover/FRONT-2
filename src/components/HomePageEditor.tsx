@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { homePageService, galleryService } from '../utils/api';
+import { homePageService } from '../utils/api';
 import { HomePageContent } from '../types/HomePage';
 import { toast } from 'react-toastify';
 import ActionButton from './ui/ActionButton';
@@ -228,79 +228,49 @@ const HomepageEditor: React.FC = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    // Сохраняем ID старого изображения перед потенциальной перезаписью
-    const oldPublicId = formData.about?.imagePublicId;
-    let newImageUrl = formData.about?.image; // URL по умолчанию - текущий
-    let newPublicId = formData.about?.imagePublicId; // ID по умолчанию - текущий
+    let dataToSave = { ...formData }; // Копируем текущие данные формы
 
     try {
-      // 1. Загрузка нового изображения (если выбрано)
+      // --- 1. Обработка загрузки изображения "О нас" (если выбрано новое) ---
       if (aboutImageFile) {
         console.log('Загрузка нового изображения для "О нас"...');
-        const uploadFormData = new FormData();
-        uploadFormData.append('image', aboutImageFile);
-        // Добавим категорию или папку для порядка в Cloudinary
-        uploadFormData.append('category', 'homepage'); 
-
         try {
-            // Используем galleryService для загрузки, он возвращает { imageUrl, cloudinaryPublicId }
-            const uploadedImage = await galleryService.uploadImage(uploadFormData);
-            newImageUrl = uploadedImage.imageUrl; // Получаем новый URL
-            newPublicId = uploadedImage.cloudinaryPublicId; // Получаем новый ID
-            console.log('Изображение загружено:', newImageUrl, newPublicId);
-            
-            // 2. Удаление старого изображения (если оно было и новое загружено успешно)
-            if (oldPublicId && oldPublicId !== newPublicId) {
-              console.log('Удаление старого изображения:', oldPublicId);
-              try {
-                await galleryService.deleteImage(oldPublicId);
-                console.log('Старое изображение удалено.');
-              } catch (deleteError) {
-                console.error("Ошибка удаления старого изображения из Cloudinary:", deleteError);
-                toast.warn('Не удалось удалить старое изображение из хранилища.');
-                // Не прерываем процесс, просто предупреждаем
-              }
-            }
-            
-            setAboutImageFile(null);
-            setAboutImagePreview(null);
+          const updatedHomepageContent = await homePageService.uploadHomePageImage(aboutImageFile, 'about');
+          
+          if (updatedHomepageContent) {
+             dataToSave = { 
+                ...dataToSave,
+                about: updatedHomepageContent.about ?? dataToSave.about, 
+             };
+             toast.success('Изображение для секции "О нас" успешно загружено и сохранено!');
+          } else {
+              toast.warn('Изображение загружено, но не удалось получить обновленные данные.');
+          }
+          
+          setAboutImageFile(null);
+          setAboutImagePreview(null);
+
         } catch (uploadError) {
-            console.error("Ошибка загрузки изображения:", uploadError);
-            toast.error(`Не удалось загрузить изображение: ${uploadError instanceof Error ? uploadError.message : 'Ошибка сервера'}`);
-            setIsSaving(false); // Прерываем сохранение, если загрузка не удалась
+            console.error("Ошибка загрузки изображения \"О нас\":", uploadError);
+            toast.error(`Не удалось загрузить изображение \"О нас\": ${uploadError instanceof Error ? uploadError.message : 'Ошибка сервера'}`);
+            setIsSaving(false); 
             return;
         }
-      }
+      } 
+      // --- Конец обработки загрузки изображения ---
 
-      // 3. Подготовка ВСЕХ данных для отправки
-      const dataToSend: Partial<HomePageContent> = { ...formData };
+      // --- 2. Сохранение остальных данных формы --- 
+      console.log('Сохранение текстовых данных главной страницы...');
+      if (dataToSave.contact?.phone) {
+        dataToSave.contact.phone = dataToSave.contact.phone.filter(phone => phone.trim() !== '');
+      }
       
-      // Обновляем URL и ID изображения в секции 'about'
-      if (dataToSend.about) {
-          dataToSend.about.image = newImageUrl || '';
-          dataToSend.about.imagePublicId = newPublicId || '';
-      } else if (newImageUrl) { // Если секции about не было, но загрузили картинку
-           dataToSend.about = { 
-             title: '', 
-             content: '', 
-             image: newImageUrl,
-             imagePublicId: newPublicId
-           };
-      }
-
-      // Очищаем пустые телефоны в контактах
-       if (dataToSend.contact?.phone) {
-            dataToSend.contact.phone = dataToSend.contact.phone.filter(p => p && p.trim() !== '');
-       }
-
-      // 4. Отправка данных на бэкенд
-      await homePageService.updateHomePageData(dataToSend);
-      toast.success('Данные главной страницы успешно сохранены!');
-      // Обновляем formData локально, чтобы отразить сохраненные URL/ID
-      setFormData(dataToSend);
+      await homePageService.updateHomePageData(dataToSave);
+      toast.success("Данные главной страницы сохранены!");
+      // loadContent(); 
 
     } catch (err) {
-      console.error("Ошибка сохранения данных главной страницы:", err);
+      console.error("Ошибка сохранения данных гл. страницы:", err);
       toast.error(`Ошибка сохранения: ${err instanceof Error ? err.message : 'Неизвестная ошибка'}`);
     } finally {
       setIsSaving(false);
@@ -357,12 +327,12 @@ const HomepageEditor: React.FC = () => {
       </FormGroup>
        <FormGroup>
         <Label htmlFor="about.image">Изображение</Label>
-        {/* Отображаем текущее или новое превью */} 
+        {/* Отображаем текущее или новое превью */}
         {(aboutImagePreview || formData.about?.image) && (
-            <ImagePreview src={aboutImagePreview || formData.about?.image} alt="Превью О нас" />
+            <ImagePreview src={aboutImagePreview || formData.about?.image || ''} alt="Превью О нас" />
         )}
         <FileInput type="file" id="about.image.file" accept="image/*" onChange={handleAboutImageChange} />
-        {/* Оставляем поле URL видимым для справки, но можно будет убрать */} 
+        {/* Оставляем поле URL видимым для справки, но можно будет убрать */}
         <Input 
             style={{marginTop: '1rem', opacity: 0.6}}
             id="about.image.url" 
