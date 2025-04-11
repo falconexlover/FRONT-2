@@ -242,19 +242,6 @@ const AddFeatureControls = styled.div`
     align-items: center;
 `;
 
-// Используем базовый ActionButton и переопределяем стили
-const AddFeatureButton = styled(ActionButton)`
-    padding: 0.9rem 1.2rem;
-    flex-shrink: 0;
-    background-color: var(--primary-color);
-    color: black; /* <<< Делаем текст черным */
-
-    &:hover:not(:disabled) {
-        background-color: var(--secondary-color);
-        color: black;
-    }
-`;
-
 // --- КОНЕЦ СТИЛЕЙ ДЛЯ ОСОБЕННОСТЕЙ --- 
 
 // Добавляем стили для секции изображений
@@ -367,67 +354,29 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
   // --- Добавляем Ref для input type="file" --- 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Новый useEffect для инициализации существующих изображений и сброса файлов при изменении initialData
   useEffect(() => {
-    if (initialData) {
-      setFormData({
-        _id: initialData._id,
-        title: initialData.title,
-        price: initialData.price,
-        pricePerNight: initialData.pricePerNight || 0,
-        capacity: initialData.capacity || 1,
-        features: initialData.features || [],
-        description: initialData.description || '',
-        isAvailable: initialData.isAvailable !== undefined ? initialData.isAvailable : true
-      });
-
-      // --- УЛУЧШЕННАЯ ЛОГИКА ИНИЦИАЛИЗАЦИИ existingImages --- 
-      const imagesFromData = (initialData.imageUrls || []).map((url) => {
-         // Пытаемся найти соответствующий publicId по URL (менее надежно, но лучше чем индекс)
-         // или просто берем по индексу, если ничего лучше нет, но ЯВНО проверяем его наличие
-         const index = initialData.imageUrls?.indexOf(url) ?? -1;
-         const publicId = index !== -1 ? initialData.cloudinaryPublicIds?.[index] : null;
-         
-         // Возвращаем объект, гарантируя, что publicId будет null, если его нет
-         return {
-            url,
-            publicId: publicId || null 
-         };
-      });
-      console.log('Initialized existingImages:', imagesFromData); // Добавим лог
-      setExistingImages(imagesFromData);
-      // --- КОНЕЦ УЛУЧШЕННОЙ ЛОГИКИ --- 
-
-      // Сбрасываем состояния для новых/удаленных файлов И ОЧИЩАЕМ INPUT
-      setNewFiles([]);
-      setNewFilePreviews(prev => { prev.forEach(URL.revokeObjectURL); return []; });
-      setImagesMarkedForDeletion([]);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''; // Очищаем input
-      }
-      setErrors({});
-      setNewFeature("");
-
+    if (initialData?.imageUrls && initialData?.cloudinaryPublicIds) {
+        // Совмещаем URL и Public ID 
+        // Предполагаем, что массивы имеют одинаковую длину и соответствуют друг другу
+        const images = initialData.imageUrls.map((url, index) => ({
+            url: url,
+            publicId: initialData.cloudinaryPublicIds?.[index] || null 
+        }));
+        setExistingImages(images);
     } else {
-      // Сброс формы для создания нового номера
-      setFormData({ ...DEFAULT_ROOM, _id: undefined }); // Убедимся, что _id сброшен
-      setExistingImages([]);
-      setNewFiles([]);
-      setNewFilePreviews(prev => { prev.forEach(URL.revokeObjectURL); return []; });
-      setImagesMarkedForDeletion([]);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''; // Очищаем input
-      }
-      setErrors({});
-      setNewFeature("");
+        // Сбрасываем, если initialData удален или не содержит изображений
+        setExistingImages([]);
     }
-    // Переносим очистку превью сюда, чтобы она срабатывала и при смене initialData
-    // Это предотвратит утечки памяти, если компонент не размонтируется, а просто получит новые props
-    return () => {
-      // Очищаем newFilePreviews напрямую
-      newFilePreviews.forEach(URL.revokeObjectURL);
-    };
+    // Сбрасываем новые файлы/превью/отметки об удалении при изменении initialData
+    setNewFiles([]);
+    setNewFilePreviews(prev => {
+        prev.forEach(URL.revokeObjectURL); // Освобождаем старые превью
+        return [];
+    });
+    setImagesMarkedForDeletion([]);
 
-  }, [initialData, newFilePreviews]); // Добавляем newFilePreviews в зависимости
+  }, [initialData]); // Зависимость от initialData
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -788,9 +737,16 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
               // Можно добавить обработку Enter
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddFeature(); } }}
             />
-            <AddFeatureButton type="button" onClick={handleAddFeature} disabled={!newFeature.trim()}>
+            {/* Используем ActionButton вместо AddFeatureButton */}
+            <ActionButton 
+              type="button" 
+              className="secondary" // Применяем стиль
+              onClick={handleAddFeature} 
+              disabled={!newFeature.trim()}
+              style={{ flexShrink: 0 }} // Предотвращаем сжатие кнопки
+            >
               Добавить
-            </AddFeatureButton>
+            </ActionButton>
           </AddFeatureControls>
         </FeaturesContainer>
 

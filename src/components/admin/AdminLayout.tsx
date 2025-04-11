@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import styled, { css } from 'styled-components';
 import Sidebar from './Sidebar';
 import { TabItem } from '../ui/Tabs'; // Общий тип для вкладок/пунктов меню
+import { useAuth } from '../../context/AuthContext'; // Импортируем useAuth
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -25,12 +26,14 @@ const LayoutContainer = styled.div`
 
 const ContentContainer = styled.main`
   flex-grow: 1;
+  /* Устанавливаем одинаковые отступы со всех сторон */
   padding: 1.5rem; 
   overflow-y: auto;
   background-color: var(--bg-primary); /* Фон контента */
   margin: 0; 
   border-radius: 0; 
 
+  /* Мобильные стили можно оставить как есть или тоже сделать padding: 1rem */
   @media (max-width: 768px) {
     padding: 1rem;
   }
@@ -117,6 +120,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
   onMenuItemSelect 
 }) => {
   const [sidebarOpenOnMobile, setSidebarOpenOnMobile] = useState(false);
+  const { logout } = useAuth(); // Получаем logout из контекста
 
   const handleSelectItem = useCallback((id: string) => {
     onMenuItemSelect(id);
@@ -145,7 +149,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
             onItemClick={handleSelectItem}
             isMobileOpen={sidebarOpenOnMobile}
             closeMobileSidebar={closeMobileSidebar}
-            onLogout={() => console.log('logout')}
+            onLogout={logout} // Передаем реальную функцию logout
           />
         </SidebarWrapper>
         <ContentContainer>{children}</ContentContainer>

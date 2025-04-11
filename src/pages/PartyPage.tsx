@@ -113,6 +113,15 @@ const VKLink = styled.a`
   }
 `;
 
+// <<< Новый контейнер для рамки вокруг сетки изображений
+const ImageGridContainer = styled.div`
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-top: 1rem;
+  background-color: var(--bg-primary); // Слегка отличный фон
+`;
+
 // --- Компонент страницы ---
 
 const PartyPage: React.FC = () => {
@@ -138,12 +147,15 @@ const PartyPage: React.FC = () => {
           <li>Подбор аниматоров.</li>
         </FeaturesList>
 
-         <ImageGrid>
-          {/* Заменяем рендеринг img на Skeleton */}
-          {IMAGES.GALLERY.PARTY.map((_, index) => (
-            <Skeleton key={index} />
-          ))}
-        </ImageGrid>
+         {/* Оборачиваем ImageGrid в новый контейнер */}
+        <ImageGridContainer>
+          <ImageGrid>
+            {/* Заменяем рендеринг img на Skeleton */}
+            {IMAGES.GALLERY.PARTY.map((_, index) => (
+              <Skeleton key={index} />
+            ))}
+          </ImageGrid>
+        </ImageGridContainer>
 
         <ContactInfo>
           <p>Скорее звоните и узнавайте подробности!</p>

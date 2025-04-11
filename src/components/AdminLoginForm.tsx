@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-// import { authService } from '../utils/api';
-import * as apiUtils from '../utils/api';
+import { authService } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface AdminLoginFormProps {
-  onLoginSuccess: () => void;
-  onCancel: () => void;
+  // Пропс больше не нужен, так как форма на отдельной странице
+  // onLoginSuccess?: () => void; // Сделаем необязательным или уберем
+  // onCancel?: () => void; // Сделаем необязательным
 }
 
 const LoginFormContainer = styled.div`
@@ -94,37 +96,49 @@ const ErrorMessage = styled.div`
   text-align: center;
 `;
 
-const AdminLoginForm: React.FC<AdminLoginFormProps> = ({ onLoginSuccess, onCancel }) => {
+const AdminLoginForm: React.FC<AdminLoginFormProps> = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+  const { login } = useAuth(); // Получаем функцию login из контекста
+  const navigate = useNavigate(); // Хук для навигации
+  const location = useLocation(); // Хук для получения location
+
+  // Определяем, куда перенаправить после успешного логина
+  const from = location.state?.from?.pathname || '/admin';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+    setIsLoading(true);
+
     if (!username || !password) {
       setError('Пожалуйста, введите логин и пароль');
+      setIsLoading(false);
       return;
     }
-    
+
     try {
-      setIsLoading(true);
-      await apiUtils.authService.login(username, password);
-      onLoginSuccess();
-    } catch (error) {
-      const errorMessage = typeof error === 'string' ? error : 'Неверный логин или пароль';
+      // Получаем весь объект TokenData
+      const tokenData = await authService.login(username, password); 
+      // Передаем весь объект в функцию login из контекста
+      login(tokenData); 
+      // onLoginSuccess?.(); // Вызываем колбэк, если он был передан (теперь не нужен)
+      navigate(from, { replace: true }); // Перенаправляем на нужную страницу
+    } catch (err) {
+      // Обработка ошибок остается прежней
+      const errorMessage = err instanceof Error ? err.message : 'Неверный логин или пароль';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   return (
-    <LoginFormContainer>
+    <LoginFormContainer style={{ marginTop: '5rem' }}> {/* Добавим отступ сверху */}
       <FormTitle>Вход в панель администратора</FormTitle>
-      
+
       <form onSubmit={handleSubmit}>
         <FormGroup>
           <label htmlFor="username">Логин:</label>
@@ -151,20 +165,25 @@ const AdminLoginForm: React.FC<AdminLoginFormProps> = ({ onLoginSuccess, onCance
         </FormGroup>
         
         {error && <ErrorMessage>{error}</ErrorMessage>}
-        
+
         <ButtonGroup>
+          {/* Кнопка "Отмена" больше не нужна на отдельной странице */}
+          {/* 
           <Button 
             type="button" 
             className="secondary" 
-            onClick={onCancel}
+            onClick={onCancel} // onCancel больше не используется
             disabled={isLoading}
           >
             Отмена
           </Button>
+          */}
+          {/* Оставляем только кнопку "Войти" */}
           <Button 
             type="submit" 
-            className="primary"
-            disabled={isLoading}
+            className="primary" 
+            disabled={isLoading} 
+            style={{ flexGrow: 1 }} // Растянем на всю ширину
           >
             {isLoading ? 'Вход...' : 'Войти'}
           </Button>

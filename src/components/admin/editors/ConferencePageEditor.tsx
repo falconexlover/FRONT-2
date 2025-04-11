@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
 import ActionButton from '../../ui/ActionButton'; // Уточняем путь к ActionButton
 import { pageService } from '../../../utils/api';
 import { LoadingSpinner } from '../../AdminPanel'; // Импортируем спиннер
+// Исправляем путь импорта
+import { SectionImageManager } from '../../homepageEditor/SectionImageManager'; 
 
 // Стили (можно доработать, взяв из RoomForm или EditServicesForm)
 const EditorWrapper = styled.div`
@@ -106,14 +108,22 @@ const AddFeatureWrapper = styled.div`
 interface PageContent {
   description: string;
   features: string[];
+  imageUrls?: string[]; // Добавляем поле для URL изображений
+  cloudinaryPublicIds?: string[]; // Добавляем поле для Public ID
 }
 
 const ConferencePageEditor: React.FC = () => {
-  const [content, setContent] = useState<PageContent>({ description: '', features: [] });
+  const [content, setContent] = useState<PageContent>({ description: '', features: [], imageUrls: [], cloudinaryPublicIds: [] });
   const [newFeature, setNewFeature] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Состояния для управления изображениями
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [imagesToDelete, setImagesToDelete] = useState<{ url: string, publicId: string | null }[]>([]);
+
+  const PAGE_ID = 'conference'; // Константа для ID страницы
 
   useEffect(() => {
     const loadData = async () => {
@@ -121,14 +131,17 @@ const ConferencePageEditor: React.FC = () => {
       setError(null);
       try {
         console.log("Загрузка данных для страницы Конференц-зал...");
-        const data = await pageService.getPageContent('conference');
+        const data = await pageService.getPageContent(PAGE_ID);
         if (data && data.content && typeof data.content === 'object') {
           setContent({
             description: data.content.description || '',
-            features: Array.isArray(data.content.features) ? data.content.features : []
+            features: Array.isArray(data.content.features) ? data.content.features : [],
+            // Инициализируем изображения
+            imageUrls: Array.isArray(data.content.imageUrls) ? data.content.imageUrls : [],
+            cloudinaryPublicIds: Array.isArray(data.content.cloudinaryPublicIds) ? data.content.cloudinaryPublicIds : []
           });
         } else {
-          setContent({ description: '', features: [] });
+          setContent({ description: '', features: [], imageUrls: [], cloudinaryPublicIds: [] });
         }
       } catch (err) { 
         setError("Ошибка загрузки данных страницы.");
@@ -159,17 +172,105 @@ const ConferencePageEditor: React.FC = () => {
     }));
   };
 
+  // --- Обработчики изображений --- 
+  const handleFilesChange = useCallback((files: File[]) => {
+    setNewFiles(files);
+  }, []);
+
+  const handleExistingDelete = useCallback((image: { url: string, publicId: string | null }) => {
+    setImagesToDelete(prev => [...prev, image]);
+    // Оптимистичное удаление из стейта для отображения
+    setContent(prev => ({
+        ...prev,
+        imageUrls: prev.imageUrls?.filter(url => url !== image.url),
+        cloudinaryPublicIds: prev.cloudinaryPublicIds?.filter(id => id !== image.publicId)
+    }));
+  }, []);
+  // ------------------------------
+
   const handleSave = async () => {
     setIsSaving(true);
     setError(null);
+    let latestContent = { ...content }; // Сохраняем текущее состояние
+
     try {
-      console.log("Сохранение данных:", content);
-      await pageService.updatePageContent('conference', content);
-      toast.success("Данные страницы сохранены!");
-    } catch (err) {
-      setError("Ошибка сохранения данных.");
-      toast.error("Ошибка сохранения данных.");
+        const uploadPromises: Promise<any>[] = [];
+
+        // 1. Удаление изображений
+        imagesToDelete.forEach(image => {
+            if (image.publicId) {
+                uploadPromises.push(
+                    // Вызываем (заглушку) API для удаления
+                    pageService.deletePageImage(PAGE_ID, image.publicId)
+                        .then(updatedPage => {
+                            // Обновляем content, если API вернул обновленные данные
+                            if(updatedPage?.content) latestContent = updatedPage.content;
+                        })
+                        .catch(err => {
+                            console.error(`Ошибка удаления изображения ${image.publicId}:`, err);
+                            toast.error(`Не удалось удалить изображение: ${image.url}`);
+                        })
+                );
+            } else {
+                 console.warn('Попытка удалить изображение без publicId:', image.url);
+            }
+        });
+
+        // 2. Загрузка новых изображений
+        newFiles.forEach(file => {
+             uploadPromises.push(
+                 // Вызываем (заглушку) API для добавления
+                 pageService.addPageImage(PAGE_ID, file)
+                     .then(updatedPage => {
+                         // Обновляем content
+                         if(updatedPage?.content) latestContent = updatedPage.content;
+                     })
+                    .catch(err => {
+                        console.error(`Ошибка загрузки изображения ${file.name}:`, err);
+                        toast.error(`Не удалось загрузить изображение: ${file.name}`);
+                    })
+            );
+        });
+        
+        // Выполняем операции с изображениями
+        await Promise.all(uploadPromises);
+
+        // 3. Сохраняем основной контент (текст, features и, возможно, обновленные списки imageUrls/publicIds из latestContent)
+        // Убедимся, что отправляем актуальные данные после операций с фото
+        const contentToSend = { 
+            description: latestContent.description, 
+            features: latestContent.features, 
+            imageUrls: latestContent.imageUrls, 
+            cloudinaryPublicIds: latestContent.cloudinaryPublicIds 
+        };
+
+        const result = await pageService.updatePageContent(PAGE_ID, contentToSend);
+        
+        // Обновляем стейт окончательными данными из ответа API
+        if (result && result.content && typeof result.content === 'object') {
+             setContent({
+                 description: result.content.description || '',
+                 features: Array.isArray(result.content.features) ? result.content.features : [],
+                 imageUrls: Array.isArray(result.content.imageUrls) ? result.content.imageUrls : [],
+                 cloudinaryPublicIds: Array.isArray(result.content.cloudinaryPublicIds) ? result.content.cloudinaryPublicIds : []
+             });
+        } else {
+            // Если ответ некорректный, можно оставить latestContent или показать ошибку
+            setContent(latestContent);
+            console.warn("Некорректный ответ от API после updatePageContent");
+        }
+
+        // Сбрасываем временные состояния
+        setNewFiles([]);
+        setImagesToDelete([]);
+        toast.success("Данные страницы сохранены!");
+
+    } catch (err: any) { // Ловим ошибки от заглушек API или updatePageContent
+      setError(`Ошибка сохранения: ${err.message || 'Неизвестная ошибка'}`);
+      toast.error(`Ошибка сохранения: ${err.message || 'Неизвестная ошибка'}`);
       console.error(err);
+      // Возвращаем контент к состоянию до начала сохранения, если были ошибки
+      setContent(latestContent); 
     } finally {
       setIsSaving(false);
     }
@@ -229,7 +330,20 @@ const ConferencePageEditor: React.FC = () => {
         </AddFeatureWrapper>
       </FormGroup>
       
-      {/* TODO: Добавить загрузчик изображений */}
+      {/* Добавляем SectionImageManager */}
+      <FormGroup style={{marginTop: '2rem'}}>
+          <SectionImageManager
+              label="Изображения для страницы"
+              existingImages={content.imageUrls?.map((url, index) => ({ 
+                  url,
+                  publicId: content.cloudinaryPublicIds?.[index] ?? null 
+              })) ?? []}
+              newFiles={newFiles}
+              onFilesChange={handleFilesChange}
+              onExistingDelete={handleExistingDelete}
+              isLoading={isSaving}
+            />
+      </FormGroup>
 
       <ActionButton 
         className="primary" 

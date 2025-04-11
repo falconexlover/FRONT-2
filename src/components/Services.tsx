@@ -196,7 +196,7 @@ interface ServicesProps {
 }
 
 const Services: React.FC<ServicesProps> = ({ 
-  title = "Для вас",
+  title = "Что мы предлагаем",
   subtitle = "Все необходимое для вашего комфорта"
 }) => {
   const [servicesData, setServicesData] = useState<ServiceType[]>([]);

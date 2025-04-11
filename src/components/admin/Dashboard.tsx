@@ -1,112 +1,177 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { roomsService, promotionsService, galleryService, servicesService } from '../../utils/api'; // Импортируем сервисы
+import { roomsService, promotionsService, galleryService, servicesService, bookingService } from '../../utils/api'; // Импортируем сервисы
+import { BookingConfirmation } from '../../types/Booking';
 import { LoadingSpinner } from '../AdminPanel'; // Импортируем спиннер
 
 // --- Интерфейс пропсов ---
 interface DashboardProps {
-  setActiveTab?: (tabId: string) => void; // Делаем опциональным
+  setActiveTab: (tabId: string) => void; // Возвращаем пропс
+}
+
+interface StatsData {
+  rooms: number | null;
+  promotions: number | null;
+  gallery: number | null;
+  services: number | null;
 }
 
 // --- Стили ---
-const DashboardContainer = styled.div`
-  padding: 1.5rem;
-  /* Стили для контейнера дашборда */
-`;
-
-const DashboardTitle = styled.h2`
-  margin-bottom: 2rem;
-  color: var(--text-primary);
-  font-family: 'Playfair Display', serif;
-  font-size: 1.8rem;
-`;
-
-const WidgetGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); // Уменьшим минимальную ширину для 4+ виджетов
-  gap: 1.5rem;
-  margin-bottom: 2.5rem; /* Добавляем отступ снизу */
-  /* Стили для сетки виджетов */
-`;
-
-// Пример виджета (пока пустой)
-const WidgetCard = styled.div`
-  background-color: var(--bg-secondary);
-  padding: 1.5rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
+const DashboardWrapper = styled.div`
+  padding: 0 1.5rem 1.5rem 1.5rem;
   display: flex;
   flex-direction: column;
-  align-items: center; // Центрируем контент
-  justify-content: center; // Центрируем контент
-  text-align: center;
-  min-height: 120px; // Задаем минимальную высоту
-  transition: var(--transition);
+  gap: 2.5rem; // Space between sections
+`;
+
+const Section = styled.section`
+  /* Common styles for sections if needed */
+`;
+
+const SectionTitle = styled.h2`
+  font-family: 'Playfair Display', serif;
+  font-size: 1.6rem; // Slightly smaller title
+  color: var(--text-primary);
+  margin: 0 0 1.5rem 0; // Reset margin and add bottom margin
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+`;
+
+// Stats Grid
+const StatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); // Responsive grid
+  gap: 1.5rem;
+`;
+
+const StatCard = styled.div`
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--border-color);
+  transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
 
   &:hover {
-    border-color: var(--primary-color-light);
     box-shadow: var(--shadow-sm);
+    border-color: var(--primary-color-light);
   }
 `;
 
-const WidgetValue = styled.div`
-  font-size: 2.5rem; // Крупный шрифт для числа
+const StatContent = styled.div`
+  line-height: 1.3;
+`;
+
+const StatValue = styled.div`
+  font-size: 2.2rem;
   font-weight: 600;
-  color: var(--primary-color); // Акцентный цвет
-  margin-bottom: 0.5rem;
-  line-height: 1;
+  color: var(--primary-color);
+  margin-bottom: 0.25rem;
 `;
 
-const WidgetLabel = styled.div`
-  font-size: 1rem;
+const StatLabel = styled.div`
+  font-size: 0.95rem;
   color: var(--text-secondary);
-  font-weight: 500;
 `;
 
-// Стили для виджета шорткатов
-const SectionTitle = styled.h3`
-    margin-top: 0;
-    margin-bottom: 1.5rem;
+const StatIcon = styled.div`
+  font-size: 2.8rem;
+  color: var(--primary-color);
+  opacity: 0.6;
+`;
+
+// Bookings List
+const BookingsListContainer = styled.div`
+  max-height: 500px; // Limit height
+  overflow-y: auto; // Enable scroll
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-secondary);
+`;
+
+const BookingsList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+`;
+
+const BookingItem = styled.li`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color-light);
+  font-size: 0.9rem;
+  flex-wrap: wrap; // Allow wrapping on small screens
+  gap: 0.5rem;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .guest-info {
+    font-weight: 500;
     color: var(--text-primary);
-    font-size: 1.3rem;
-    font-weight: 600;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.8rem;
+    flex-basis: 60%; // Take more space
+    min-width: 150px; // Prevent excessive shrinking
+  }
+
+  .room-name {
+    display: block; // Put room name on new line
+    font-style: italic;
+    font-weight: 400;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+  }
+
+  .dates {
+    color: var(--text-secondary);
+    flex-basis: 35%; // Take remaining space
+    text-align: right;
+    min-width: 100px; // Prevent excessive shrinking
+  }
 `;
 
+// Shortcuts Grid
 const ShortcutsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); // По 2-3 кнопки в ряд
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1rem;
 `;
 
 const ShortcutButton = styled.button`
   display: flex;
   align-items: center;
-  justify-content: center; // Центрируем текст и иконку
-  gap: 0.8rem; // Отступ между иконкой и текстом
-  padding: 1rem 1.5rem;
+  justify-content: flex-start; // Align items to start
+  gap: 0.8rem;
+  padding: 1rem 1.25rem;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 500;
-  text-align: center;
+  text-align: left;
   cursor: pointer;
-  transition: var(--transition);
-  width: 100%; // Растягиваем на всю ширину ячейки грида
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
+  width: 100%;
 
   i {
     font-size: 1.1rem;
-    color: var(--primary-color); // Иконка акцентным цветом
+    color: var(--primary-color);
+    width: 20px; // Fixed width for icon
+    text-align: center;
     transition: transform 0.2s ease-out;
   }
 
   &:hover {
     background-color: var(--bg-tertiary);
     border-color: var(--primary-color-light);
-    color: var(--primary-color); // Текст тоже акцентным при наведении
+    color: var(--primary-color);
 
     i {
         transform: scale(1.1);
@@ -115,126 +180,198 @@ const ShortcutButton = styled.button`
 
   &:active {
     transform: translateY(1px);
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
   }
 `;
 
-const ErrorMessage = styled.p`
+// Loading and Error Messages
+const CenteredMessage = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem 1.5rem;
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+`;
+
+const ErrorMessage = styled(CenteredMessage)`
   color: var(--danger-color);
-  text-align: center;
+  background-color: rgba(229, 57, 53, 0.05);
+  border: 1px solid rgba(229, 57, 53, 0.2);
+  border-radius: var(--radius-sm);
 `;
 
 // --- Компонент ---
 const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
-  const [stats, setStats] = useState<{
-    rooms: number | null;
-    promotions: number | null;
-    gallery: number | null;
-    services: number | null;
-  }>({
-    rooms: null,
-    promotions: null,
-    gallery: null,
-    services: null,
+  const [stats, setStats] = useState<StatsData>({
+    rooms: null, promotions: null, gallery: null, services: null,
   });
+  const [latestBookings, setLatestBookings] = useState<BookingConfirmation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchDashboardData = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Параллельно загружаем все данные
-        const [roomsData, promotionsData, galleryData, servicesData] = await Promise.all([
-          roomsService.getAllRooms(),
-          promotionsService.getAllPromotions(),
-          galleryService.getAllImages(),
-          servicesService.getAllServices(),
+        const [roomsData, promotionsData, galleryData, servicesData, bookingsData] = await Promise.all([
+          roomsService.getAllRooms().catch(e => { console.error('Rooms fetch failed:', e); return null; }),
+          promotionsService.getAllPromotions().catch(e => { console.error('Promos fetch failed:', e); return null; }),
+          galleryService.getAllImages().catch(e => { console.error('Gallery fetch failed:', e); return null; }),
+          servicesService.getAllServices().catch(e => { console.error('Services fetch failed:', e); return null; }),
+          bookingService.getAllBookings().catch(e => { console.error('Bookings fetch failed:', e); return null; })
         ]);
 
         setStats({
           rooms: roomsData?.length ?? 0,
-          // Считаем только активные акции (если есть поле isActive, иначе все)
           promotions: promotionsData?.filter(p => p.isActive).length ?? promotionsData?.length ?? 0,
           gallery: galleryData?.length ?? 0,
           services: servicesData?.length ?? 0,
         });
+
+        if (bookingsData) {
+          const sortedBookings = [...bookingsData].sort((a, b) =>
+              (b._id || '').localeCompare(a._id || '') // Sort by ID descending (proxy for time)
+          );
+          setLatestBookings(sortedBookings.slice(0, 5));
+        } else {
+          setLatestBookings([]);
+        }
+
       } catch (err) {
-        console.error("Ошибка загрузки статистики дашборда:", err);
-        const message = err instanceof Error ? err.message : 'Не удалось загрузить данные';
-        setError(message);
+        console.error("Critical dashboard loading error:", err);
+        setError('Не удалось загрузить данные для дашборда.');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchStats();
-  }, []); // Пустой массив зависимостей, чтобы запустить один раз при монтировании
+    fetchDashboardData();
+  }, []);
+
+  // Хелпер для форматирования дат
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '-';
+    try {
+      // Short format dd.mm
+      return new Date(dateString).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+    } catch {
+      return '-';
+    }
+  };
+
+  // --- Render Logic ---
+  if (isLoading) {
+    return (
+      <DashboardWrapper>
+        <CenteredMessage>
+          <LoadingSpinner>
+            <i className="fas fa-spinner"></i> Загрузка данных...
+          </LoadingSpinner>
+        </CenteredMessage>
+      </DashboardWrapper>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardWrapper>
+        <ErrorMessage>{error}</ErrorMessage>
+      </DashboardWrapper>
+    );
+  }
 
   return (
-    <DashboardContainer>
-      <DashboardTitle>Панель управления</DashboardTitle>
+    <DashboardWrapper>
+      {/* Statistics Section */}
+      <Section>
+        <SectionTitle>Общая статистика</SectionTitle>
+        <StatsGrid>
+          <StatCard>
+            <StatContent>
+              <StatValue>{stats.rooms ?? '-'}</StatValue>
+              <StatLabel>Номера</StatLabel>
+            </StatContent>
+            <StatIcon><i className="fas fa-bed"></i></StatIcon>
+          </StatCard>
+          <StatCard>
+            <StatContent>
+              <StatValue>{stats.promotions ?? '-'}</StatValue>
+              <StatLabel>Активные акции</StatLabel>
+            </StatContent>
+            <StatIcon><i className="fas fa-tags"></i></StatIcon>
+          </StatCard>
+          <StatCard>
+            <StatContent>
+              <StatValue>{stats.gallery ?? '-'}</StatValue>
+              <StatLabel>Фото в галерее</StatLabel>
+            </StatContent>
+            <StatIcon><i className="fas fa-images"></i></StatIcon>
+          </StatCard>
+          <StatCard>
+            <StatContent>
+              <StatValue>{stats.services ?? '-'}</StatValue>
+              <StatLabel>Услуги</StatLabel>
+            </StatContent>
+            <StatIcon><i className="fas fa-concierge-bell"></i></StatIcon>
+          </StatCard>
+        </StatsGrid>
+      </Section>
 
-      {/* Виджеты статистики */}
-      <SectionTitle>Общая статистика</SectionTitle>
-      {isLoading ? (
-        <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка...</LoadingSpinner>
-      ) : error ? (
-        <ErrorMessage>{error}</ErrorMessage>
-      ) : (
-        <WidgetGrid>
-          <WidgetCard>
-            <WidgetValue>{stats.rooms ?? '-'}</WidgetValue>
-            <WidgetLabel>Номера</WidgetLabel>
-          </WidgetCard>
-          <WidgetCard>
-            <WidgetValue>{stats.promotions ?? '-'}</WidgetValue>
-            <WidgetLabel>Активные акции</WidgetLabel>
-          </WidgetCard>
-          <WidgetCard>
-            <WidgetValue>{stats.gallery ?? '-'}</WidgetValue>
-            <WidgetLabel>Фото в галерее</WidgetLabel>
-          </WidgetCard>
-          <WidgetCard>
-            <WidgetValue>{stats.services ?? '-'}</WidgetValue>
-            <WidgetLabel>Услуги</WidgetLabel>
-          </WidgetCard>
-          {/* Здесь можно добавить другие виджеты */}
-        </WidgetGrid>
-      )}
+      {/* Latest Bookings Section */}
+      <Section>
+        <SectionTitle>Последние бронирования</SectionTitle>
+        {latestBookings.length > 0 ? (
+          <BookingsListContainer>
+            <BookingsList>
+              {latestBookings.map(booking => (
+                <BookingItem key={booking._id || booking.bookingNumber}>
+                  <div className="guest-info">
+                    {booking.guestName || 'Имя не указано'}
+                    <span className="room-name">{booking.room?.name || 'Номер не указан'}</span>
+                  </div>
+                  <div className="dates">
+                    {/* Use optional chaining and correct fields */}
+                    {formatDate(booking.checkIn)} - {formatDate(booking.checkOut)}
+                  </div>
+                </BookingItem>
+              ))}
+            </BookingsList>
+          </BookingsListContainer>
+        ) : (
+          <CenteredMessage>Нет недавних бронирований.</CenteredMessage>
+        )}
+      </Section>
 
-      {/* Виджет быстрого доступа */}
-      <SectionTitle>Быстрый доступ</SectionTitle>
-      <ShortcutsGrid>
-        <ShortcutButton onClick={() => setActiveTab?.('rooms')}>
-          <i className="fas fa-bed"></i>
-          Управление номерами
-        </ShortcutButton>
-        <ShortcutButton onClick={() => setActiveTab?.('homepage')}>
-           <i className="fas fa-home"></i>
-          Редактор главной
-        </ShortcutButton>
-         <ShortcutButton onClick={() => setActiveTab?.('upload')}>
-          <i className="fas fa-upload"></i>
-          Загрузить фото
-        </ShortcutButton>
-         <ShortcutButton onClick={() => setActiveTab?.('promotions')}>
-          <i className="fas fa-tags"></i>
-          Управление акциями
-        </ShortcutButton>
-         <ShortcutButton onClick={() => setActiveTab?.('services')}>
-          <i className="fas fa-concierge-bell"></i>
-          Управление услугами
-        </ShortcutButton>
-        {/* Добавить ссылку на предпросмотр сайта, если нужно */}
-        <ShortcutButton as="a" href="/" target="_blank" rel="noopener noreferrer">
-             <i className="fas fa-eye"></i>
-            Предпросмотр сайта
-        </ShortcutButton>
-      </ShortcutsGrid>
+      {/* Quick Actions Section */}
+      <Section>
+        <SectionTitle>Быстрые действия</SectionTitle>
+        <ShortcutsGrid>
+          <ShortcutButton onClick={() => setActiveTab('rooms')}>
+            <i className="fas fa-bed"></i> Управление номерами
+          </ShortcutButton>
+          <ShortcutButton onClick={() => setActiveTab('homepage')}>
+            <i className="fas fa-home"></i> Редактор главной
+          </ShortcutButton>
+          <ShortcutButton onClick={() => setActiveTab('upload')}>
+            <i className="fas fa-upload"></i> Загрузить фото
+          </ShortcutButton>
+          <ShortcutButton onClick={() => setActiveTab('promotions')}>
+            <i className="fas fa-tags"></i> Управление акциями
+          </ShortcutButton>
+          <ShortcutButton onClick={() => setActiveTab('services')}>
+            <i className="fas fa-concierge-bell"></i> Управление услугами
+          </ShortcutButton>
+          <ShortcutButton onClick={() => setActiveTab('articles')}>
+            <i className="fas fa-newspaper"></i> Управление статьями
+          </ShortcutButton>
+          <ShortcutButton as="a" href="/" target="_blank" rel="noopener noreferrer">
+            <i className="fas fa-eye"></i> Предпросмотр сайта
+          </ShortcutButton>
+        </ShortcutsGrid>
+      </Section>
 
-    </DashboardContainer>
+    </DashboardWrapper>
   );
 };
 

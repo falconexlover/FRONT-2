@@ -6,11 +6,12 @@ import { HomePageContent } from '../types/HomePage'; // Импортируем �
 import { BookingData, BookingConfirmation } from '../types/Booking';
 import { GalleryImageItem } from '../types/GalleryImage';
 import { PromotionType } from '../types/Promotion'; // <<< Раскомментируем и используем
+import { ArticleType } from '../types/Article'; // <<< Убираем неиспользуемый ContentBlock
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
 // API сервис для взаимодействия с бэкендом
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+const API_BASE_URL: string = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
 // Создаем экземпляр axios
 const axiosInstance = axios.create({
@@ -41,9 +42,9 @@ axiosInstance.interceptors.response.use(
 // --------------------------------------------------
 
 // Интерфейс для токена аутентификации - ВОЗВРАЩАЕМ ОПРЕДЕЛЕНИЕ
-interface TokenData {
+export interface TokenData {
   token: string;
-  expiresIn: string;
+  expiresIn: number;
 }
 
 // --- Обновляем handleResponse, делаем дженериком --- 
@@ -51,17 +52,36 @@ interface TokenData {
 async function handleResponse<T>(response: Response): Promise<T> {
   // Проверка на пустой ответ (например, при DELETE запросе)
   if (response.status === 204 || response.headers.get('content-length') === '0') {
-    // Возвращаем null или пустой объект/массив в зависимости от ожидаемого T
-    // Для простоты пока вернем null, но это может потребовать уточнений
-    return null as T; 
+    return null as T;
   }
 
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch (error) {
+    // Если ответ не JSON, но статус OK, возможно, это не ошибка API
+    if (response.ok) {
+        console.warn("Ответ сервера не является JSON, но статус OK:", response.status, response.statusText);
+        // Возвращаем что-то осмысленное или null
+        return null as T; 
+    } else {
+        // Если статус не OK и не JSON, выбрасываем ошибку со статусом
+        return Promise.reject(new Error(response.statusText || `Request failed with status ${response.status}`));
+    }
+  }
   
   if (!response.ok) {
-    // Уточняем тип ошибки, если возможно
-    const error = (data && typeof data === 'object' && data.message) || response.statusText || `Request failed with status ${response.status}`;
-    return Promise.reject(new Error(error)); // Возвращаем объект Error
+    // Формируем сообщение об ошибке
+    let errorMessage = (data && typeof data === 'object' && data.message) || response.statusText || `Request failed with status ${response.status}`;
+    
+    // Если есть детали валидации (errors), добавляем их
+    if (data && data.errors && Array.isArray(data.errors)) {
+        const validationErrors = data.errors.map((e: any) => `${e.field}: ${e.message}`).join('\n');
+        errorMessage += `\nДетали:\n${validationErrors}`;
+    }
+    
+    // Возвращаем объект Error с полным сообщением
+    return Promise.reject(new Error(errorMessage)); 
   }
   
   return data as T; // Используем утверждение типа, доверяя API
@@ -135,6 +155,18 @@ export const authService = {
     } catch {
       return null;
     }
+  },
+  
+  // Проверка токена на бэкенде
+  async verifyToken(token: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    // Если ответ не OK, handleResponse выбросит ошибку, и проверка не пройдет
+    return handleResponse<any>(response);
   }
 };
 
@@ -333,29 +365,69 @@ export const homePageService = {
     return handleResponse<HomePageContent | null>(response);
   },
   
-  // Загрузить изображение для главной страницы
+  // Загрузить ОДИНОЧНОЕ изображение для секции (banner, about)
   async uploadHomePageImage(file: File, section: string): Promise<HomePageContent | null> {
     const token = authService.getToken();
     if (!token) {
-      throw new Error('Требуется аутентификация');
+      return Promise.reject(new Error('Требуется аутентификация'));
     }
+    
     const formData = new FormData();
     formData.append('image', file);
     formData.append('section', section);
-
-    const response = await fetch(`${API_BASE_URL}/homepage/image`, { // ВНИМАНИЕ: Этот роут может не существовать на бэке
+    
+    const response = await fetch(`${API_BASE_URL}/homepage/image`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${token}`
       },
-      body: formData,
+      body: formData
     });
-    // Эта функция может возвращать не HomePageContent, а { imageUrl: string } или другое
-    // Требуется проверка бэкенда
-    return handleResponse<HomePageContent | null>(response); 
+    return handleResponse<HomePageContent | null>(response);
   },
-  
-  // Обновить все данные главной страницы
+
+  // Добавить изображение в МАССИВ секции (conference, party)
+  async addHomePageSectionImage(file: File, section: 'conference' | 'party'): Promise<HomePageContent['conference'] | HomePageContent['party'] | null> {
+    const token = authService.getToken();
+    if (!token) {
+      return Promise.reject(new Error('Требуется аутентификация'));
+    }
+    
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('section', section);
+    
+    const response = await fetch(`${API_BASE_URL}/homepage/section-image`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+    // Бэкенд возвращает обновленную секцию
+    return handleResponse<HomePageContent['conference'] | HomePageContent['party'] | null>(response);
+  },
+
+  // Удалить изображение из МАССИВА секции (conference, party)
+  async deleteHomePageSectionImage(publicId: string, section: 'conference' | 'party'): Promise<HomePageContent['conference'] | HomePageContent['party'] | null> {
+    const token = authService.getToken();
+    if (!token) {
+      return Promise.reject(new Error('Требуется аутентификация'));
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/homepage/section-image`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ publicId, section })
+    });
+    // Бэкенд возвращает обновленную секцию
+    return handleResponse<HomePageContent['conference'] | HomePageContent['party'] | null>(response);
+  },
+
+  // Обновить текстовые данные главной страницы (весь объект или частично)
   async updateHomePageData(data: Partial<HomePageContent>): Promise<HomePageContent | null> {
     const token = authService.getToken();
     if (!token) throw new Error('Требуется аутентификация');
@@ -620,4 +692,159 @@ export const pageService = {
     });
     return handleResponse<PageApiResponse>(response);
   },
+
+  /**
+   * ЗАГЛУШКА: Добавить изображение на страницу (требует реализации на бэкенде)
+   * Ожидаемый эндпоинт: POST /api/pages/:pageId/image
+   */
+  addPageImage: async (pageId: string, file: File): Promise<PageApiResponse> => {
+    console.warn(`[API ЗАГЛУШКА] Вызов addPageImage для pageId=${pageId}, file=${file.name}. Бэкенд не реализован.`);
+    // --- Пример реализации после доработки бэкенда ---
+    /*
+    const token = authService.getToken();
+    if (!token) throw new Error('Требуется аутентификация');
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const response = await fetch(`${PAGES_API_URL}/${pageId}/image`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+    return handleResponse<PageApiResponse>(response); // Ожидаем полный объект страницы в ответе
+    */
+    return Promise.reject(new Error('API метод addPageImage не реализован на бэкенде'));
+  },
+
+  /**
+   * ЗАГЛУШКА: Удалить изображение со страницы (требует реализации на бэкенде)
+   * Ожидаемый эндпоинт: DELETE /api/pages/:pageId/image
+   */
+  deletePageImage: async (pageId: string, publicId: string): Promise<PageApiResponse> => {
+    console.warn(`[API ЗАГЛУШКА] Вызов deletePageImage для pageId=${pageId}, publicId=${publicId}. Бэкенд не реализован.`);
+    // --- Пример реализации после доработки бэкенда ---
+    /*
+    const token = authService.getToken();
+    if (!token) throw new Error('Требуется аутентификация');
+
+    const response = await fetch(`${PAGES_API_URL}/${pageId}/image`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ publicId }),
+    });
+    return handleResponse<PageApiResponse>(response); // Ожидаем полный объект страницы в ответе
+    */
+     return Promise.reject(new Error('API метод deletePageImage не реализован на бэкенде'));
+  },
+};
+
+/**
+ * Функции для работы со статьями (блогом)
+ */
+export const articleService = {
+  // Получить все статьи (админка и публичная часть)
+  async getAllArticles(): Promise<ArticleType[]> {
+    const response = await fetch(`${API_BASE_URL}/articles`);
+    const result = await handleResponse<ArticleType[] | null>(response);
+    return Array.isArray(result) ? result : [];
+  },
+
+  // Получить статью по slug (публичная часть)
+  async getArticleBySlug(slug: string): Promise<ArticleType | null> {
+    const response = await fetch(`${API_BASE_URL}/articles/slug/${slug}`);
+    // Обработка случая 404 Not Found
+    if (response.status === 404) {
+      return null;
+    }
+    return handleResponse<ArticleType | null>(response);
+  },
+
+  // Создать новую статью (админка)
+  // Принимаем Partial<ArticleType>, так как _id и другие поля генерируются на бэке
+  // Убедимся, что передаем contentBlocks
+  async createArticle(articleData: Partial<Omit<ArticleType, '_id' | 'slug' | 'createdAt' | 'updatedAt'>>): Promise<ArticleType> {
+    const token = authService.getToken();
+    if (!token) {
+      return Promise.reject(new Error('Требуется аутентификация'));
+    }
+
+    // Проверяем наличие обязательных полей (хотя бы title и contentBlocks)
+    if (!articleData.title || !articleData.contentBlocks) {
+        return Promise.reject(new Error('Заголовок и контент статьи обязательны'));
+    }
+
+    const response = await fetch(`${API_BASE_URL}/articles`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(articleData)
+    });
+    return handleResponse<ArticleType>(response);
+  },
+
+  // Обновить статью по ID (админка)
+  // Принимаем Partial<Omit<ArticleType, '_id' | 'slug' | 'createdAt' | 'updatedAt'>> для обновления
+  async updateArticle(id: string, articleData: Partial<Omit<ArticleType, '_id' | 'slug' | 'createdAt' | 'updatedAt'>>): Promise<ArticleType> {
+    const token = authService.getToken();
+    if (!token) {
+      return Promise.reject(new Error('Требуется аутентификация'));
+    }
+
+    const response = await fetch(`${API_BASE_URL}/articles/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(articleData)
+    });
+    return handleResponse<ArticleType>(response);
+  },
+
+  // Удалить статью по ID (админка)
+  async deleteArticle(id: string): Promise<{ message: string }> {
+    const token = authService.getToken();
+    if (!token) {
+      return Promise.reject(new Error('Требуется аутентификация'));
+    }
+
+    const response = await fetch(`${API_BASE_URL}/articles/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    // Ожидаем объект с сообщением или null при 204
+    const result = await handleResponse<{ message: string } | null>(response);
+    return result || { message: 'Статья успешно удалена' }; // Возвращаем стандартное сообщение, если ответ пустой
+  },
+
+  // Загрузить/обновить изображение для статьи (админка)
+  async uploadArticleImage(id: string, file: File): Promise<ArticleType> {
+    const token = authService.getToken();
+    if (!token) {
+      return Promise.reject(new Error('Требуется аутентификация'));
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const response = await fetch(`${API_BASE_URL}/articles/${id}/image`, {
+      method: 'POST', // Или PUT, если бэкенд так настроен для обновления
+      headers: {
+        'Authorization': `Bearer ${token}`
+        // Content-Type не указываем, браузер сделает это сам для FormData
+      },
+      body: formData
+    });
+    return handleResponse<ArticleType>(response);
+  }
 }; 

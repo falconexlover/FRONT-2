@@ -57,6 +57,14 @@ const ImageGrid = styled.div`
   }
 `;
 
+const ImageGridContainer = styled.div`
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-top: 1rem;
+  background-color: var(--bg-primary); // Слегка отличный фон
+`;
+
 const Skeleton = styled.div`
   width: 100%;
   height: 220px; // Соответствует img
@@ -118,16 +126,18 @@ const ConferencePage: React.FC = () => {
 
         {/* Секция для фотографий */}
         <h3>Фотогалерея зала:</h3>
-        <ImageGrid>
-          {/* Отображаем 4 скелетона как плейсхолдеры */}
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} />
-          ))}
-          {/* Можно заменить на реальные фото из IMAGES.GALLERY.CONFERENCE, если они есть */}
-          {/* {IMAGES.GALLERY.CONFERENCE.map((imgSrc, index) => (
-            <img key={index} src={imgSrc} alt={`Конференц-зал фото ${index + 1}`} />
-          ))} */}
-        </ImageGrid>
+        <ImageGridContainer>
+          <ImageGrid>
+            {/* Отображаем 4 скелетона как плейсхолдеры */}
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} />
+            ))}
+            {/* Можно заменить на реальные фото из IMAGES.GALLERY.CONFERENCE, если они есть */}
+            {/* {IMAGES.GALLERY.CONFERENCE.map((imgSrc, index) => (
+              <img key={index} src={imgSrc} alt={`Конференц-зал фото ${index + 1}`} />
+            ))} */}
+          </ImageGrid>
+        </ImageGridContainer>
 
         <ContactInfo>
           <p>Планируете мероприятие?</p>

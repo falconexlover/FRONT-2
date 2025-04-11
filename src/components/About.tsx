@@ -178,9 +178,9 @@ const About: React.FC<AboutProps> = ({ content }) => {
           transition={{ duration: 0.7, delay: 0.2 }}
           viewport={{ once: true, amount: 0.3 }}
         >
-          {textContent.split('\n\n').map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
-          ))}
+          {textContent && textContent.split('\n\n')[0] && (
+            <p>{textContent.split('\n\n')[0]}</p>
+          )}
           <AboutButton as={Link} to="/rooms">Посмотреть номера</AboutButton>
         </AboutText>
         

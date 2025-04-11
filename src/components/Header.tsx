@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { homePageService } from '../utils/api';
 import { HomePageContent } from '../types/HomePage';
 
@@ -8,7 +8,7 @@ const HeaderContainer = styled.header`
   background-color: white;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1030;
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
   
@@ -93,7 +93,10 @@ const Navigation = styled.nav`
 const NavMenu = styled.ul<{ $isOpen: boolean }>`
   display: flex;
   list-style: none;
-  
+  margin: 0;
+  padding: 0;
+  align-items: center;
+
   @media screen and (max-width: 768px) {
     position: fixed;
     top: 0;
@@ -107,30 +110,35 @@ const NavMenu = styled.ul<{ $isOpen: boolean }>`
     transition: all 0.4s ease;
     z-index: 99;
     box-shadow: var(--shadow-lg);
+    align-items: stretch;
   }
 `;
 
 const NavItem = styled.li`
   position: relative;
-  
+  margin: 0;
+  padding: 0;
+
   @media screen and (max-width: 768px) {
     text-align: center;
-    margin: 1rem 0;
+    margin: 0;
+    width: 100%;
   }
 `;
 
-const NavLinkStyles = `
+const NavLinkStyles = css<{ $isSmall?: boolean }>`
   display: block;
-  padding: 1.2rem 1.5rem;
+  padding: ${({ $isSmall }) => $isSmall ? '1.2rem 1.3rem' : '1.2rem 1.5rem'};
   text-decoration: none;
   color: rgba(255, 255, 255, 0.9);
   font-weight: 500;
-  font-size: 0.95rem;
+  font-size: ${({ $isSmall }) => $isSmall ? '0.85rem' : '0.95rem'};
   letter-spacing: 0.5px;
   transition: var(--transition);
   text-transform: uppercase;
   position: relative;
   cursor: pointer;
+  white-space: nowrap;
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
@@ -159,16 +167,17 @@ const NavLinkStyles = `
   }
   
   @media screen and (max-width: 768px) {
-    font-size: 1.1rem;
+    font-size: ${({ $isSmall }) => $isSmall ? '1.0rem' : '1.1rem'};
     width: 100%;
+    padding: 1.2rem 1rem;
   }
 `;
 
-const NavLink = styled(Link)`
+const NavLink = styled(Link)<{ $isSmall?: boolean }>`
   ${NavLinkStyles}
 `;
 
-const NavScrollLink = styled.a`
+const NavScrollLink = styled.a<{ $isSmall?: boolean }>`
   ${NavLinkStyles}
 `;
 
@@ -242,12 +251,13 @@ const MobileMenuButton = styled.button<{ $isOpen: boolean }>`
 const MENU_ITEMS = [
   { label: 'Главная', path: '/' },
   { label: 'Номера', path: '/rooms' },
-  { label: 'Галерея', path: '/gallery' },
-  { label: 'Сауна', path: '/sauna' },
-  { label: 'Для вас', path: '/#services-section', isScrollLink: true, targetId: 'services-section' },
-  { label: 'Конференц-зал', path: '/conference' },
-  { label: 'Детские праздники', path: '/party' },
-  { label: 'Контакты', path: '/contact' }
+  { label: 'Галерея', path: '/gallery', isSmall: true },
+  { label: 'Сауна', path: '/sauna', isSmall: true },
+  { label: 'Для вас', path: '/#services-section', isScrollLink: true, targetId: 'services-section', isSmall: true },
+  { label: 'Блог', path: '/blog', isSmall: true },
+  { label: 'Конференц-зал', path: '/conference', isSmall: true },
+  { label: 'Детские праздники', path: '/party', isSmall: true },
+  { label: 'Контакты', path: '/contacts', isSmall: true }
 ];
 
 const Header: React.FC = () => {
@@ -257,6 +267,7 @@ const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const menuRef = useRef<HTMLUListElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -305,15 +316,46 @@ const Header: React.FC = () => {
     event.preventDefault();
     setIsMenuOpen(false);
 
+    const headerHeight = headerRef.current?.offsetHeight ?? 80;
+    const scrollOffset = headerHeight + 10;
+
     if (location.pathname === '/') {
       const element = document.getElementById(targetId);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - scrollOffset;
+
+        window.scrollTo({
+             top: offsetPosition,
+             behavior: "smooth"
+        });
       }
     } else {
-      navigate('/#' + targetId);
+      localStorage.setItem('scrollToAnchor', targetId);
+      navigate('/');
     }
   };
+
+  useEffect(() => {
+    const anchor = localStorage.getItem('scrollToAnchor');
+    if (anchor && location.pathname === '/' && location.hash === '') {
+        const element = document.getElementById(anchor);
+        if (element) {
+            setTimeout(() => {
+                const headerHeight = headerRef.current?.offsetHeight ?? 80;
+                const scrollOffset = headerHeight + 10;
+                const elementPosition = element.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - scrollOffset;
+                window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+                localStorage.removeItem('scrollToAnchor');
+            }, 100);
+        } else {
+             localStorage.removeItem('scrollToAnchor');
+        }
+    } else if (anchor && location.pathname !== '/') {
+         localStorage.removeItem('scrollToAnchor');
+    }
+  }, [location.pathname, location.hash, headerRef]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -347,7 +389,7 @@ const Header: React.FC = () => {
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   return (
-    <HeaderContainer className={isScrolled ? 'scrolled' : ''}>
+    <HeaderContainer ref={headerRef} className={isScrolled ? 'scrolled' : ''}>
       <LogoContainer>
         <Logo to="/">
           <img src="/images/logo/logo.png" alt="Логотип Лесной Дворик" />
@@ -370,14 +412,19 @@ const Header: React.FC = () => {
           {MENU_ITEMS.map((item) => (
             <NavItem key={item.label}>
               {item.isScrollLink ? (
-                <NavScrollLink 
+                <NavScrollLink
                   href={item.path}
                   onClick={(e) => handleScrollLinkClick(e, item.targetId)}
+                  $isSmall={item.isSmall}
                 >
                   {item.label}
                 </NavScrollLink>
               ) : (
-                <NavLink to={item.path} onClick={() => setIsMenuOpen(false)}>
+                <NavLink
+                  to={item.path}
+                  onClick={() => setIsMenuOpen(false)}
+                  $isSmall={item.isSmall}
+                >
                   {item.label}
                 </NavLink>
               )}

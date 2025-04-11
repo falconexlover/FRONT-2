@@ -2,6 +2,7 @@ export interface PromotionType {
   _id: string; // Добавляется MongoDB
   title: string;
   description?: string; // Опциональное описание
+  imageUrl?: string; // <-- Добавлено опциональное поле для URL изображения
   discountType: 'percentage' | 'fixed_amount';
   discountValue: number;
   code?: string; // Опциональный промокод

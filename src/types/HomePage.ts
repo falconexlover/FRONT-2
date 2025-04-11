@@ -53,13 +53,34 @@ export interface ContactContent {
   email: string;
 }
 
+// Интерфейс для раздела "Детские праздники"
+export interface PartyContent {
+  title: string;
+  content: string;
+  imageUrls?: string[]; // Опционально, так как могут быть не загружены
+  cloudinaryPublicIds?: string[]; // Опционально
+}
+
+// Интерфейс для раздела "Конференц-зал"
+export interface ConferenceContent {
+  title: string;
+  content: string;
+  imageUrls?: string[]; // Опционально
+  cloudinaryPublicIds?: string[]; // Опционально
+}
+
 // Основной интерфейс для всего контента главной страницы
 export interface HomePageContent {
-  banner: BannerContent;
-  about: AboutContent;
+  _id?: string; // Добавляется базой данных
+  identifier: string;
+  aboutText?: string; // TODO: Возможно, устарело
+  banner?: BannerContent;
+  about?: AboutContent;
   rooms: RoomsContent;
   services: ServicesContent;
-  contact: ContactContent;
+  contact?: ContactContent;
+  party?: PartyContent;
+  conference?: ConferenceContent;
   // Добавьте поле для изображений, если нужно управлять ими централизованно
   // images?: { [key: string]: string }; 
 } 

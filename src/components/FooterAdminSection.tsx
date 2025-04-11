@@ -1,16 +1,21 @@
-import React, { useState /*, useEffect, useCallback */ } from 'react';
-// import { Link } from 'react-router-dom'; // Link больше не нужен
-import AdminLoginForm from './AdminLoginForm';
-import AdminPanel from './AdminPanel'; // Импортируем AdminPanel
-import * as apiUtils from '../utils/api';
-import { toast } from 'react-toastify';
+import React from 'react';
+import { useNavigate } from 'react-router-dom'; // Используем useNavigate для навигации
+// import AdminLoginForm from './AdminLoginForm'; // Больше не нужен
+// import AdminPanel from './AdminPanel'; // Больше не нужен
+// import * as apiUtils from '../utils/api'; // Используем useAuth
+// import { toast } from 'react-toastify'; // Не нужен
 import styled from 'styled-components';
-import Modal from './ui/Modal';
+// import Modal from './ui/Modal'; // Больше не нужен
+import { useAuth } from '../context/AuthContext'; // Импортируем useAuth
 
 const AdminFooterContainer = styled.div`
   text-align: center;
-  padding: 0.5rem 1rem;
+  padding: 1rem; /* Немного увеличим отступ */
   background-color: inherit;
+  display: flex; /* Используем flex для расположения кнопок */
+  justify-content: center; /* Центрируем кнопки */
+  align-items: center;
+  gap: 1rem; /* Отступ между кнопками */
 `;
 
 // Убираем AdminLink
@@ -32,24 +37,25 @@ const AdminTrigger = styled.button`
 `;
 
 const FooterAdminSection: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(apiUtils.authService.isAuthenticated());
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showAdminModal, setShowAdminModal] = useState(false); // Состояние для модалки админ-панели
-
-  // handleLoginSuccessInternal теперь закрывает модальное окно админ-панели
-  const handleLoginSuccessInternal = () => {
-    setIsAuthenticated(true);
-    setShowLoginModal(false);
-    setShowAdminModal(true); // Открываем админ-панель после входа
-    toast.success("Вход выполнен успешно!");
-  };
+  const { isAuthenticated, logout } = useAuth(); // Получаем статус и функцию выхода
+  const navigate = useNavigate(); // Хук для навигации
 
   const handleAdminClick = () => {
+    // Прокручиваем вверх перед навигацией
+    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+    
     if (isAuthenticated) {
-      setShowAdminModal(true); // Открываем модалку с админ-панелью
+      navigate('/admin'); // Переход в админку
     } else {
-      setShowLoginModal(true); // Открываем модалку для входа
+      navigate('/login'); // Переход на страницу входа
     }
+  };
+
+  const handleLogoutClick = () => {
+    // Прокручиваем вверх перед выходом
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    logout(); // Вызываем logout из контекста
+    // Перенаправление на /login произойдет внутри logout() или в ProtectedRoute
   };
 
   return (
@@ -57,26 +63,12 @@ const FooterAdminSection: React.FC = () => {
       {/* Всегда показываем одну и ту же кнопку */}
       <AdminTrigger onClick={handleAdminClick}>Панель администратора</AdminTrigger>
 
-      {/* Модальное окно для входа */} 
-      <Modal 
-        isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)}
-        title="Вход для администратора"
-      >
-        <AdminLoginForm 
-          onLoginSuccess={handleLoginSuccessInternal} 
-          onCancel={() => setShowLoginModal(false)} 
-        />
-      </Modal>
+      {/* Показываем кнопку "Выход" только если пользователь аутентифицирован */}
+      {isAuthenticated && (
+        <AdminTrigger onClick={handleLogoutClick}>Выход</AdminTrigger>
+      )}
 
-      {/* Модальное окно для админ-панели */} 
-      <Modal 
-        isOpen={showAdminModal} 
-        onClose={() => setShowAdminModal(false)}
-        title="Панель администратора"
-      >
-        <AdminPanel /> 
-      </Modal>
+      {/* Модальные окна удалены */}
 
     </AdminFooterContainer>
   );

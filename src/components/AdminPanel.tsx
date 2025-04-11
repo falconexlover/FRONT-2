@@ -6,7 +6,7 @@ import ExistingImagesList from './admin/ExistingImagesList';
 import ImageEditForm from './admin/ImageEditForm';
 import ConfirmModal from './ui/ConfirmModal';
 import { TabItem } from './ui/Tabs';
-import HomePageEditor from './HomePageEditor';
+import HomepageEditor from './HomepageEditor';
 import { galleryService, servicesService } from '../utils/api';
 import { GalleryImageItem } from '../types/GalleryImage';
 import { toast } from 'react-toastify';
@@ -20,6 +20,8 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { DragEndEvent } from '@dnd-kit/core';
 import ConferencePageEditor from './admin/editors/ConferencePageEditor';
 import PartyPageEditor from './admin/editors/PartyPageEditor';
+import ArticlesAdminPanel from '../components/admin/ArticlesAdminPanel';
+import Modal from './ui/Modal';
 
 interface AdminPanelProps {
   // Пустой интерфейс, т.к. пропсы больше не нужны здесь
@@ -63,6 +65,7 @@ const adminTabs: TabItem[] = [
     { id: 'gallery', label: 'Галерея' },
     { id: 'upload', label: 'Загрузить фото' },
     { id: 'promotions', label: 'Акции' },
+    { id: 'articles', label: 'Статьи' },
 ];
 
 const AdminPanel: React.FC<AdminPanelProps> = () => {
@@ -246,24 +249,24 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
   };
 
   const handleGalleryDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-
+    const {active, over} = event;
     if (over && active.id !== over.id) {
-      const oldIndex = galleryItems.findIndex((item) => item._id === active.id);
-      const newIndex = galleryItems.findIndex((item) => item._id === over.id);
-
-      if (oldIndex === -1 || newIndex === -1) {
-        return;
-      }
-
-      const reorderedItems = arrayMove(galleryItems, oldIndex, newIndex);
-      setGalleryItems(reorderedItems);
-
-      const orderedIds = reorderedItems.map(item => item._id);
-      
-      console.log('Sending updated order to backend:', orderedIds);
-
-      await galleryService.updateImageOrder(orderedIds);
+        setGalleryItems((items) => {
+            const oldIndex = items.findIndex(item => item._id === active.id);
+            const newIndex = items.findIndex(item => item._id === over.id);
+            if (oldIndex === -1 || newIndex === -1) return items;
+            const newOrder = arrayMove(items, oldIndex, newIndex);
+            
+            const orderedIds = newOrder.map(item => item._id);
+            galleryService.updateImageOrder(orderedIds)
+                .then(() => toast.success('Порядок изображений сохранен'))
+                .catch((err: any) => {
+                    toast.error('Ошибка сохранения порядка изображений');
+                    console.error(err);
+                });
+            
+            return newOrder;
+        });
     }
   };
 
@@ -272,46 +275,26 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
       case 'dashboard':
         return <Dashboard setActiveTab={setActiveTab} />;
       case 'homepage':
-        return <HomePageEditor />;
+        return <HomepageEditor />;
       case 'rooms':
         return <RoomsAdminPanel />;
       case 'services':
-        if (isLoading) return <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка...</LoadingSpinner>;
-        if (error) return <p style={{ color: 'var(--danger-color)', textAlign: 'center' }}>{error}</p>; 
         return (
-          <EditServicesForm 
-            services={services} 
-            onSave={handleSaveService} 
-            onDelete={handleDeleteService} 
+          <EditServicesForm
+            services={services}
+            onSave={handleSaveService}
+            onDelete={handleDeleteService}
             isSaving={isSaving}
             isDeleting={isDeletingService}
           />
         );
-      case 'edit-conference':
-        return <ConferencePageEditor />;
-      case 'edit-party':
-        return <PartyPageEditor />;
       case 'gallery':
         if (isLoading) return <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка...</LoadingSpinner>;
         if (error) return <p style={{ color: 'red' }}>{error}</p>;
-        if (editingImage) {
-          return (
-            <ImageEditForm
-              key={editingImage._id}
-              image={editingImage}
-              editedData={editedData}
-              onFormChange={handleEditFormChange}
-              onSave={saveImageChanges}
-              onCancel={cancelEdit}
-              isSaving={isSaving}
-              categories={CATEGORIES}
-            />
-          );
-        }
         return (
-          <ExistingImagesList
+          <ExistingImagesList 
             images={galleryItems}
-            onEdit={handleEditClick}
+            onEdit={handleEditClick} 
             onDelete={handleDeleteClick}
             onDragEnd={handleGalleryDragEnd}
           />
@@ -320,8 +303,14 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
         return <GalleryUploadManager categories={CATEGORIES} onImageUpload={handleImageUpload} />;
       case 'promotions':
         return <PromotionsAdminPanel />;
+      case 'edit-conference':
+        return <ConferencePageEditor />;
+      case 'edit-party':
+        return <PartyPageEditor />;
+      case 'articles':
+        return <ArticlesAdminPanel />;
       default:
-        return <div>Выберите раздел</div>;
+        return <p>Раздел в разработке.</p>;
     }
   };
 
@@ -331,40 +320,49 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
       activeMenuItemId={activeTab} 
       onMenuItemSelect={setActiveTab}
     >
-      <AnimatePresence mode="wait">
-        <motion.div 
-          key={activeTab}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.2 }}
-        >
-          {renderContent()} 
-        </motion.div>
+      <AnimatePresence mode='wait'>
+          <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+          >
+             {renderContent()}
+          </motion.div>
       </AnimatePresence>
 
-      <ConfirmModal
-        isOpen={showDeleteConfirm}
-        title="Подтвердите удаление"
-        message="Вы уверены, что хотите удалить это изображение? Действие необратимо."
-        onConfirm={confirmDelete}
-        onCancel={cancelDelete}
-        confirmText="Удалить"
-        cancelText="Отмена"
-        confirmButtonClass="danger"
-        isConfirming={isDeleting}
-      />
+      <Modal isOpen={!!editingImage} onClose={cancelEdit} title="Редактировать информацию">
+        {editingImage && (
+           <ImageEditForm 
+              image={editingImage}
+              editedData={editedData}
+              onFormChange={handleEditFormChange}
+              onSave={saveImageChanges}
+              onCancel={cancelEdit}
+              isSaving={isSaving}
+              categories={CATEGORIES}
+           />
+        )}
+      </Modal>
+
        <ConfirmModal
-        isOpen={showServiceDeleteConfirm}
-        title="Подтвердите удаление услуги"
-        message={`Вы уверены, что хотите удалить услугу "${services.find(s => s._id === deletingServiceId)?.name}"? Это действие необратимо.`}
-        onConfirm={confirmServiceDelete}
-        onCancel={cancelServiceDelete}
-        confirmText="Удалить"
-        cancelText="Отмена"
-        confirmButtonClass="danger"
-        isConfirming={isDeletingService}
-      />
+           isOpen={showDeleteConfirm}
+           onCancel={cancelDelete}
+           onConfirm={confirmDelete}
+           title="Подтверждение удаления"
+           isConfirming={isDeleting}
+           message="Вы уверены, что хотите удалить это изображение?"
+       />
+
+        <ConfirmModal
+            isOpen={showServiceDeleteConfirm}
+            onCancel={cancelServiceDelete}
+            onConfirm={confirmServiceDelete}
+            title="Подтверждение удаления услуги"
+            isConfirming={isDeletingService}
+            message="Вы уверены, что хотите удалить эту услугу?"
+        />
 
     </AdminLayout>
   );

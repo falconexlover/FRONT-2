@@ -25,6 +25,15 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import RoomAdminCard from './admin/RoomAdminCard';
+import { 
+    TableContainer, 
+    StyledTable, 
+    StyledTableRow, 
+    StyledTableCell, 
+    TableHeader, 
+    ActionButtonsContainer, 
+    IconButton 
+} from './styles/TableStyles';
 
 interface RoomsAdminPanelProps {
   onLogout?: () => void;
@@ -74,108 +83,6 @@ const Button = styled.button`
   }
 `;
 
-const TableContainer = styled.div`
-  margin-top: 2rem;
-  overflow-x: auto;
-  width: 100%;
-  background-color: var(--bg-secondary); /* Фон для таблицы */
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-`;
-
-const StyledTable = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-`;
-
-const StyledTableRow = styled.tr<{ $isDragging?: boolean }>`
-  border-bottom: 1px solid var(--border-color);
-  background-color: var(--bg-secondary);
-  transition: background-color 0.2s ease, opacity 0.2s ease;
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  &:hover {
-    background-color: var(--bg-tertiary); /* Легкое выделение при наведении */
-  }
-
-  // Стили для перетаскивания
-  opacity: ${({ $isDragging }) => ($isDragging ? 0.5 : 1)};
-  box-shadow: ${({ $isDragging }) => ($isDragging ? '0 4px 12px rgba(0, 0, 0, 0.1)' : 'none')};
-`;
-
-const StyledTableCell = styled.td`
-  padding: 1rem 1.2rem; /* Такой же padding, как у заголовков */
-  color: var(--text-primary);
-  vertical-align: middle; /* Выравниваем по центру вертикально */
-  white-space: normal; /* Разрешаем перенос текста */
-  font-size: 0.9rem;
-
-  &.drag-handle {
-    width: 40px; // Явно задаем ширину для ручки
-    cursor: grab;
-    text-align: center;
-    color: var(--text-secondary);
-    &:active {
-        cursor: grabbing;
-    }
-  }
-
-  &.image-cell {
-    width: 120px; // Увеличим немного для превью
-    @media screen and (max-width: 768px) {
-      padding-right: 0.5rem; // Меньше отступ справа на мобильных
-    }
-  }
-
-  &.features-cell {
-    max-width: 200px; /* Ограничим ширину для фич */
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    cursor: default; /* Чтобы title всплывал */
-  }
-
-  &.actions {
-    width: 100px; // Фиксированная ширина для кнопок
-    white-space: nowrap;
-    text-align: right; /* Выравниваем кнопки вправо */
-    @media screen and (max-width: 768px) {
-      width: auto; // Автоматическая ширина на мобильных
-      text-align: left;
-      padding-left: 0.5rem; // Меньше отступ слева на мобильных
-    }
-  }
-
-  // Скрываем колонки на мобильных
-  &.hide-mobile {
-    @media screen and (max-width: 768px) {
-      display: none;
-    }
-  }
-`;
-
-const TableHeader = styled.th`
-  padding: 1rem 1.2rem; /* Скорректируем padding */
-  text-align: left;
-  border-bottom: 1px solid var(--border-color); /* Темная граница */
-  color: var(--text-secondary); /* Вторичный цвет для заголовков */
-  white-space: nowrap;
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-transform: uppercase; /* Заголовки капсом */
-  letter-spacing: 0.5px;
-
-  // Скрываем колонки на мобильных
-  &.hide-mobile {
-    @media screen and (max-width: 768px) {
-      display: none;
-    }
-  }
-`;
-
 const RoomImagePreview = styled.div` /* Оборачиваем img в div для стилизации */
   width: 100px; /* Уменьшим превью */
   height: 65px;
@@ -189,60 +96,6 @@ const RoomImagePreview = styled.div` /* Оборачиваем img в div для
     object-fit: cover;
     display: block;
   }
-`;
-
-const ActionButtonsContainer = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-`;
-
-const IconButton = styled.button` // Наследуемся от button, не ActionButton
-    padding: 0.5rem;
-    min-width: auto;
-    line-height: 1;
-    font-size: 1rem;
-    background: none;
-    border: none;
-    color: var(--text-secondary); /* Вторичный цвет по умолчанию */
-    border-radius: 50%; /* Сделаем круглыми */
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s ease, color 0.2s ease;
-
-    &:hover:not(:disabled) {
-        background-color: var(--bg-tertiary);
-        color: var(--text-primary);
-    }
-
-    &.edit {
-       &:hover:not(:disabled) {
-           color: var(--primary-color);
-           background-color: rgba(42, 167, 110, 0.1);
-       }
-    }
-
-    &.delete {
-        &:hover:not(:disabled) {
-            color: var(--danger-color);
-            background-color: rgba(229, 115, 115, 0.1);
-        }
-    }
-
-    i {
-        margin: 0;
-        font-size: 0.9rem; /* Уменьшим иконки */
-    }
-    
-    &:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-    }
 `;
 
 const ErrorMessage = styled.p`

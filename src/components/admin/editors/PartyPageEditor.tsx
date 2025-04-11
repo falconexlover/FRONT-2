@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
 import ActionButton from '../../ui/ActionButton';
-import { pageService } from '../../../utils/api';
+import { homePageService } from '../../../utils/api';
 import { LoadingSpinner } from '../../AdminPanel';
+import ImageUploadList from '../../ui/ImageUploadList';
+import { HomePageContent } from '../../../types/HomePage';
 
 // Стили можно будет взять из других редакторов
 const EditorWrapper = styled.div`
@@ -65,71 +67,23 @@ const Input = styled.input`
   }
 `;
 
-const FeaturesList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin-top: 0.5rem;
-`;
-
-const FeatureItem = styled.li`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem 0;
-  border-bottom: 1px dashed var(--border-color-light);
-  font-size: 0.95rem;
-
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-const RemoveButton = styled.button`
-  background: none;
-  border: none;
-  color: var(--danger-color);
-  cursor: pointer;
-  font-size: 1.2rem;
-  padding: 0.2rem 0.5rem;
-  line-height: 1;
-  &:hover { color: var(--danger-dark); }
-`;
-
-const AddFeatureWrapper = styled.div`
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-`;
-
-// Используем тот же интерфейс, что и для ConferencePage
-interface PageContent {
-  description: string;
-  features: string[];
-  // Можно добавить другие поля, если нужно для этой страницы
-}
-
 const PartyPageEditor: React.FC = () => {
-  const [content, setContent] = useState<PageContent>({ description: '', features: [] });
-  const [newFeature, setNewFeature] = useState('');
+  const [content, setContent] = useState<HomePageContent['party'] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // --- Загрузка данных для 'party' ---
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       setError(null);
       try {
         console.log("Загрузка данных для страницы Детские праздники...");
-        const data = await pageService.getPageContent('party');
-        if (data && data.content && typeof data.content === 'object') {
-          setContent({
-            description: data.content.description || '',
-            features: Array.isArray(data.content.features) ? data.content.features : []
-          });
+        const homeData = await homePageService.getHomePage(); 
+        if (homeData && homeData.party) {
+          setContent(homeData.party);
         } else {
-          setContent({ description: '', features: [] });
+          setContent({ title: 'Детские праздники', content: '', imageUrls: [], cloudinaryPublicIds: [] });
         }
       } catch (err) {
         setError("Ошибка загрузки данных страницы.");
@@ -143,32 +97,54 @@ const PartyPageEditor: React.FC = () => {
     loadData();
   }, []);
 
-  // --- Обработчики изменений (копируем) ---
-  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(prev => ({ ...prev, description: e.target.value }));
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setContent(prev => prev ? { ...prev, [name]: value } : null);
   };
 
-  const handleAddFeature = () => {
-    if (newFeature.trim()) {
-      setContent(prev => ({ ...prev, features: [...prev.features, newFeature.trim()] }));
-      setNewFeature('');
+  const handleImageUpload = async (file: File) => {
+    setIsSaving(true);
+    try {
+      const updatedSection = await homePageService.addHomePageSectionImage(file, 'party');
+      if (updatedSection) {
+        setContent(updatedSection);
+        toast.success("Изображение добавлено!");
+      } else {
+          throw new Error("Не удалось обновить секцию после загрузки изображения");
+      }
+    } catch (err) {
+      console.error("Ошибка загрузки изображения:", err);
+      toast.error("Не удалось загрузить изображение.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleRemoveFeature = (indexToRemove: number) => {
-    setContent(prev => ({ 
-        ...prev, 
-        features: prev.features.filter((_, index) => index !== indexToRemove)
-    }));
+  const handleImageDelete = async (publicId: string) => {
+    setIsSaving(true);
+    try {
+      const updatedSection = await homePageService.deleteHomePageSectionImage(publicId, 'party');
+      if (updatedSection) {
+        setContent(updatedSection);
+        toast.success("Изображение удалено.");
+      } else {
+           throw new Error("Не удалось обновить секцию после удаления изображения");
+      }
+    } catch (err) {
+      console.error("Ошибка удаления изображения:", err);
+      toast.error("Не удалось удалить изображение.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  // --- Сохранение данных для 'party' ---
   const handleSave = async () => {
+    if (!content) return;
     setIsSaving(true);
     setError(null);
     try {
       console.log("Сохранение данных для 'party':", content);
-      await pageService.updatePageContent('party', content); // Используем pageId 'party'
+      await homePageService.updateHomePageData({ party: content }); 
       toast.success("Данные страницы сохранены!");
     } catch (err) {
       setError("Ошибка сохранения данных.");
@@ -179,8 +155,7 @@ const PartyPageEditor: React.FC = () => {
     }
   };
 
-  // --- JSX (копируем и меняем заголовок) ---
-  if (isLoading) {
+  if (isLoading || !content) {
     return <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка редактора...</LoadingSpinner>;
   }
 
@@ -191,55 +166,45 @@ const PartyPageEditor: React.FC = () => {
       {error && <p style={{ color: 'var(--danger-color)' }}>{error}</p>}
 
       <FormGroup>
-        <Label htmlFor="description">Описание страницы</Label>
+        <Label htmlFor="title">Заголовок страницы</Label>
+        <Input 
+          type="text"
+          id="title"
+          name="title"
+          value={content.title || ''}
+          onChange={handleContentChange}
+          disabled={isSaving}
+        />
+      </FormGroup>
+
+      <FormGroup>
+        <Label htmlFor="content">Описание страницы</Label>
         <TextArea 
-          id="description"
-          name="description"
-          value={content.description}
-          onChange={handleDescriptionChange}
+          id="content"
+          name="content"
+          value={content.content || ''}
+          onChange={handleContentChange}
           rows={6}
           disabled={isSaving}
         />
       </FormGroup>
 
       <FormGroup>
-        <Label>Что предлагаем (список)</Label>
-        <FeaturesList>
-          {content.features.map((feature, index) => (
-            <FeatureItem key={index}>
-              <span>{feature}</span>
-              <RemoveButton 
-                onClick={() => handleRemoveFeature(index)}
-                disabled={isSaving}
-                title="Удалить пункт"
-              >
-                &times;
-              </RemoveButton>
-            </FeatureItem>
-          ))}
-        </FeaturesList>
-        <AddFeatureWrapper>
-          <Input 
-            type="text"
-            id="newFeature"
-            name="newFeature"
-            value={newFeature}
-            onChange={(e) => setNewFeature(e.target.value)}
-            placeholder="Новый пункт"
-            disabled={isSaving}
-          />
-          <ActionButton className="outline-dark" onClick={handleAddFeature} disabled={!newFeature.trim() || isSaving}>
-            Добавить
-          </ActionButton>
-        </AddFeatureWrapper>
+        <Label>Изображения</Label>
+        <ImageUploadList 
+          imageUrls={content.imageUrls || []}
+          cloudinaryPublicIds={content.cloudinaryPublicIds || []}
+          onUpload={handleImageUpload}
+          onDelete={handleImageDelete}
+          disabled={isSaving}
+          folderHint="party"
+        />
       </FormGroup>
-      
-      {/* TODO: Добавить загрузчик изображений */}
 
       <ActionButton 
         className="primary" 
         onClick={handleSave} 
-        disabled={isSaving}
+        disabled={isSaving || !content}
         style={{ marginTop: '2rem' }}
       >
         {isSaving ? 'Сохранение...' : 'Сохранить изменения'}

@@ -16,7 +16,7 @@ const FooterContent: React.FC = () => {
           <SectionTitle>Часто задаваемые вопросы</SectionTitle>
           <div className="faq-item">
             <p className="question">Какие удобства есть в номерах?</p>
-            <p className="answer">Во всех номерах есть Wi-Fi, ТВ, холодильник, кондиционер, санузел с душем.</p>
+            <p className="answer">Во всех номерах есть Wi-Fi, ТВ, холодильник, санузел с душем.</p>
           </div>
           <div className="faq-item">
             <p className="question">Есть ли парковка?</p>

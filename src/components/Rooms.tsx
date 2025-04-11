@@ -42,14 +42,10 @@ const RoomsGrid = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 2.5rem;
   position: relative;
   z-index: 1;
-  
-  @media screen and (max-width: 992px) {
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  }
   
   @media screen and (max-width: 576px) {
     grid-template-columns: 1fr;
@@ -256,7 +252,7 @@ const Rooms: React.FC<RoomsProps> = ({
       setError(null);
       try {
         const data = await roomsService.getAllRooms();
-        setRoomsData(data?.slice(0, 3) || []); 
+        setRoomsData(data || []);
       } catch (err) {
         console.error("Ошибка загрузки номеров:", err);
         let message = 'Не удалось загрузить информацию о номерах.';

@@ -89,7 +89,6 @@ const HomePage: React.FC = () => {
 
     const hotelCoordinates: [number, number] = [55.591259, 38.141982];
 
-    const openPromoModal = () => setIsPromoModalOpen(true);
     const closePromoModal = () => setIsPromoModalOpen(false);
 
     return (

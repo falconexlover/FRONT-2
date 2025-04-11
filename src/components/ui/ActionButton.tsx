@@ -40,9 +40,27 @@ const ActionButton = styled.button`
     }
   }
 
+  &.danger {
+    background-color: var(--danger-bg, #fee2e2); // Светло-красный фон (если переменная не задана)
+    color: var(--danger-color, #dc2626); // Темно-красный текст
+    border: 1px solid var(--danger-color-light, #fca5a5); // Красная рамка
+
+    &:hover:not(:disabled) {
+      background-color: var(--danger-bg-hover, #fecaca); // Чуть темнее фон
+      border-color: var(--danger-color, #dc2626);
+      color: var(--danger-color-dark, #b91c1c); // Еще темнее текст
+    }
+  }
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  // Модификатор размера
+  &.small {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
   }
 `;
 
