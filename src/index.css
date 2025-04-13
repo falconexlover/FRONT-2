@@ -1,13 +1,30 @@
 :root {
   --primary-color: #28a745; /* Основной зеленый (пример) */
   --secondary-color: #218838; /* Более темный зеленый (пример) */
+  --accent-color: #FFB300;  /* Золотисто-янтарный акцент */
+  --danger-color: #e53935;  /* Красный для ошибок/опасных действий */
+  --danger-color-rgb: 229, 57, 53; /* RGB компоненты для danger-color */
+  --danger-bg-light: #ffebee; /* Светло-красный фон для ошибок */
   --dark-color: #343a40;     /* Темно-серый для текста (пример) */
   --text-color: #495057;     /* Основной цвет текста (пример) */
   --text-secondary: #6c757d; /* Вторичный цвет текста (пример) */
+  --text-muted: #aaa;      /* Очень светлый/приглушенный текст */
   --bg-primary: #ffffff;     /* Основной фон (белый) */
   --bg-secondary: #f8f9fa;   /* Вторичный фон (светло-серый) */
   --border-color: #dee2e6;   /* Цвет границ */
+  --disabled-bg-color: #ccc; /* Фон для неактивных элементов */
   --white-color: #FFFFFF;     /* Белый цвет */
+
+  /* Переменные для отступов */
+  --space-xs: 0.25rem;  /* 4px */
+  --space-sm: 0.5rem;   /* 8px */
+  --space-md: 1rem;     /* 16px */
+  --space-lg: 1.5rem;   /* 24px */
+  --space-xl: 2rem;     /* 32px */
+  --space-xxl: 3rem;    /* 48px */
+  --space-xxxl: 4rem;   /* 64px */
+
+  /* Радиусы и тени */
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -15,8 +32,20 @@
   --shadow-sm: 0 3px 6px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 6px 12px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.15);
+
+  /* Другие переменные */
   --max-width: 1200px;
   --transition: all 0.2s ease-in-out;
+}
+
+/* Устанавливаем базовые настройки для всего документа */
+html {
+  font-size: 16px; /* Базовый размер шрифта для rem */
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit; /* Наследуем box-sizing для всех элементов */
 }
 
 body {
@@ -28,6 +57,38 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-primary); /* Используем переменную для фона body */
   color: var(--text-color); /* Используем переменную для основного текста */
+  line-height: 1.5; /* Устанавливаем базовый межстрочный интервал */
+}
+
+/* Базовые стили для типографики */
+p {
+  margin-top: 0;
+  margin-bottom: var(--space-md); /* 16px */
+  line-height: 1.6; /* Можно немного увеличить для лучшей читаемости текста */
+}
+
+h1, h2, h3, h4 {
+  margin-top: 0;
+  margin-bottom: var(--space-sm); /* 8px, чуть меньше */
+  font-weight: 600; /* Стандартная жирность для заголовков */
+  line-height: 1.3;
+  color: var(--dark-color); /* Используем более темный цвет для заголовков */
+}
+
+h1 {
+  font-size: 2.25rem; /* ~36px */
+}
+
+h2 {
+  font-size: 1.875rem; /* ~30px */
+}
+
+h3 {
+  font-size: 1.5rem; /* ~24px */
+}
+
+h4 {
+  font-size: 1.25rem; /* ~20px */
 }
 
 code {

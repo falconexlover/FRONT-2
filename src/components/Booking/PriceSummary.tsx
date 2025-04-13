@@ -10,7 +10,7 @@ const PriceCalculationContainer = styled.div` // Переименовано дл
   border-radius: var(--radius-md);
   margin-top: 1.5rem; // Добавлен отступ сверху
   margin-bottom: 2rem;
-  border: 1px solid #eee;
+  border: 1px solid var(--border-color);
 `;
 
 const PriceRow = styled.div`
@@ -18,8 +18,8 @@ const PriceRow = styled.div`
   justify-content: space-between;
   margin-bottom: 0.8rem;
   padding-bottom: 0.8rem;
-  border-bottom: 1px dashed #ddd;
-  color: #555; // Немного приглушим цвет строк
+  border-bottom: 1px dashed var(--border-color);
+  color: var(--text-secondary);
   font-size: 0.95rem;
 
   &:last-child {
@@ -34,7 +34,7 @@ const PriceRow = styled.div`
     font-size: 1.2rem;
     margin-top: 1rem;
     padding-top: 1rem;
-    border-top: 1px solid #ccc; // Сделаем линию итога заметнее
+    border-top: 1px solid var(--border-color);
   }
   
   span:last-child {

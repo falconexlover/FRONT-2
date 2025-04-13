@@ -14,24 +14,22 @@ const BANNER_WIDTH = '250px'; // Ширина выезжающей части
 const TAB_WIDTH = '35px'; // Ширина видимого язычка
 
 // Используем transient prop $isExpanded
-const BannerWrapper = styled.div<{ $isExpanded: boolean }>`
+const BannerWrapper = styled.div<{
+  $visible: boolean;
+  $position: 'left' | 'right';
+}>`
   position: fixed;
   top: 50%;
-  right: 0;
-  transform: translateY(-50%) translateX(calc(100% - ${TAB_WIDTH})); /* Скрываем, оставляя язычок */
-  z-index: 1000;
-  background-color: var(--danger-color); /* Цвет фона баннера */
+  ${({ $position }) => $position}: ${({ $visible }) => ($visible ? '0' : '-300px')}; /* Скрываем за экраном */
+  transform: translateY(-50%);
+  width: 300px;
+  padding: 1rem;
+  background-color: var(--danger-color); /* Используем переменную */
   color: white;
-  border-radius: var(--radius-md) 0 0 var(--radius-md); /* Скругляем левые углы */
+  z-index: 1040;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2);
-  transition: transform 0.4s ease-in-out;
-  width: calc(${BANNER_WIDTH} + ${TAB_WIDTH}); /* Общая ширина = контент + язычок */
-  display: flex; /* Чтобы Tab и Content были в строку */
-
-  /* Когда развернут - теперь используем проп $isExpanded */
-  ${({ $isExpanded }) => $isExpanded && `
-    transform: translateY(-50%) translateX(0); /* Показываем полностью */
-  `}
+  transition: ${({ $position }) => $position} 0.4s ease-in-out;
+  border-radius: ${({ $position }) => $position === 'left' ? '0 var(--radius-md) var(--radius-md) 0' : 'var(--radius-md) 0 0 var(--radius-md)'};
 `;
 
 const Tab = styled.div`
@@ -96,6 +94,54 @@ const Content = styled.div`
   }
 `;
 
+// Удаляем неиспользуемые стили
+/*
+const PromoTitle = styled.h4`
+  margin: 0 0 0.5rem 0;
+  color: white; 
+`;
+
+const PromoText = styled.p`
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: white; 
+`;
+
+const ToggleButton = styled.button<{
+  $visible: boolean;
+  $position: 'left' | 'right';
+}>`
+  position: absolute;
+  top: 50%;
+  ${({ $position, $visible }) => $position === 'left' ? 'right' : 'left'}: -40px; 
+  transform: translateY(-50%) rotate(${({ $position }) => $position === 'left' ? '-90deg' : '90deg'});
+  transform-origin: center;
+  width: 80px;
+  height: 40px;
+  background-color: var(--danger-color); 
+  color: white;
+  border: none;
+`;
+
+const DismissButton = styled.button`
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7); 
+  font-size: 1.2rem;
+`;
+
+const ClaimButton = styled.button`
+  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--danger-color); 
+  border: none;
+  padding: 0.6rem 1.2rem;
+`;
+*/
+
 // Удаляем пропс promotion
 // const SlidingPromoBanner: React.FC<SlidingPromoBannerProps> = ({ promotion }) => {
 const SlidingPromoBanner: React.FC = () => {
@@ -114,7 +160,7 @@ const SlidingPromoBanner: React.FC = () => {
 
   return (
     // Передаем $isExpanded вместо isExpanded и убираем className
-    <BannerWrapper $isExpanded={isExpanded}>
+    <BannerWrapper $visible={isExpanded} $position="right">
       {/* Убираем className из Tab */}
       <Tab onClick={toggleBanner}>
         %

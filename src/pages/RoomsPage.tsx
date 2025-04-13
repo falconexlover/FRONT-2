@@ -18,7 +18,7 @@ import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils'; // Импо�
  * Стили для секции номеров
  */
 const RoomsSection = styled.section`
-  padding: 3rem 0 6rem; /* Уменьшаем верхний отступ, оставляем нижний */
+  padding: var(--space-xxl) 0 var(--space-xxxl); /* 48px 0 64px */
   background-color: var(--bg-color); /* Оставляем как fallback */
   /* Добавляем градиент */
   background: linear-gradient(to bottom, var(--bg-color), var(--bg-secondary, var(--bg-color))); 
@@ -31,23 +31,27 @@ const RoomsSection = styled.section`
 const RoomsContainer = styled.div`
   max-width: 1100px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: var(--space-xl) var(--space-md); /* 32px 16px */
+
+  @media (max-width: 576px) {
+    padding: var(--space-md) var(--space-sm); /* 16px 8px */
+  }
 `;
 
 const SectionTitle = styled.div`
   text-align: center;
-  margin-bottom: 4rem;
+  margin-bottom: var(--space-xxxl); /* 64px */
   
   h1 {
     font-family: 'Playfair Display', serif;
     color: var(--primary-color); /* Меняем цвет на основной */
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-md); /* 16px */
     font-size: 2.5rem; /* Увеличиваем размер */
     font-weight: 600;
     letter-spacing: 0.5px;
     position: relative;
     display: inline-block; /* Нужно для позиционирования ::after */
-    padding-bottom: 0.75rem;
+    padding-bottom: var(--space-sm); /* 8px */
 
     &:after { /* Добавляем подчеркивание */
       content: '';
@@ -65,14 +69,23 @@ const SectionTitle = styled.div`
   p { /* Стили для подзаголовка */
       color: var(--text-secondary);
       font-size: 1.1rem;
-      margin-top: 1.5rem; /* Отступ от заголовка */
+      margin-top: var(--space-lg); /* 24px */
+  }
+
+  @media (max-width: 768px) {
+    margin-bottom: var(--space-xxl); /* 48px */
+  }
+  @media (max-width: 576px) {
+    margin-bottom: var(--space-xl); /* 32px */
+    h1 { font-size: 2rem; }
+    p { font-size: 1rem; margin-top: var(--space-md); /* 16px */}
   }
 `;
 
 const RoomsList = styled.div`
   display: grid;
   grid-template-columns: 1fr;
-  gap: 2.5rem; /* Увеличиваем гэп */
+  gap: var(--space-xl); /* 32px */
 `;
 
 const RoomCard = styled(motion.div)`
@@ -144,37 +157,53 @@ const SliderWrapper = styled.div`
 `;
 
 const RoomContent = styled.div`
-  padding: 2rem; /* Стандартный отступ со всех сторон */
-  display: flex; /* Используем flex для управления пространством */
+  padding: var(--space-xl); /* 32px */
+  display: flex;
   flex-direction: column;
-  position: relative; /* Для возможного позиционирования разделителя, если через псевдоэлемент */
+  position: relative;
   
-  /* Убираем специфичные отступы, т.к. нет разделителя */
-  /* @media (min-width: 993px) { padding-left: 2.5rem; } */
-  /* @media (max-width: 992px) { padding-top: 2.5rem; padding-left: 2.5rem; } */
-  
-  h3 { /* Стили по умолчанию для RoomTitle */
+  h3 {
     color: var(--dark-color);
     font-family: 'Playfair Display', serif;
-    margin-bottom: 0.8rem; /* Уменьшаем отступ снизу */
-    font-size: 1.6rem; /* Немного уменьшаем размер */
-    font-weight: 600; /* Немного уменьшаем жирность */
-    line-height: 1.4; /* Уменьшаем высоту строки для компактности */
+    margin-bottom: 0.8rem;
+    font-size: 1.6rem;
+    font-weight: 600;
+    line-height: 1.4;
+    @media (max-width: 768px) {
+      font-size: 1.4rem;
+    }
+    @media (max-width: 576px) {
+      font-size: 1.3rem;
+    }
   }
   
-  p { /* Стили по умолчанию для RoomDescription */
-    color: var(--text-secondary); /* Делаем текст описания светлее */
-    margin-bottom: 1.5rem;
-    line-height: 1.6; /* Слегка увеличиваем интервал */
-    flex-grow: 1; /* Позволяем описанию занимать доступное пространство */
-    font-size: 0.95rem; /* Делаем чуть меньше основного */
+  p {
+    color: var(--text-secondary);
+    margin-bottom: var(--space-lg); /* 24px */
+    line-height: 1.6;
+    flex-grow: 1;
+    font-size: 0.95rem;
+    @media (max-width: 768px) {
+      font-size: 0.9rem;
+    }
+    @media (max-width: 576px) {
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+  }
+
+  @media (max-width: 768px) {
+      padding: var(--space-lg); /* 24px */
+  }
+  @media (max-width: 576px) {
+      padding: calc(var(--space-md) + var(--space-xs)); /* ~20px */
   }
 `;
 
 const RoomTitle = styled.h3`
   color: var(--dark-color);
   font-family: 'Playfair Display', serif;
-  margin-bottom: 0.8rem; /* Уменьшаем отступ снизу */
+  margin-bottom: var(--space-sm); /* 8px */
   font-size: 1.6rem; /* Немного уменьшаем размер */
   font-weight: 600; /* Немного уменьшаем жирность */
   line-height: 1.4; /* Уменьшаем высоту строки для компактности */
@@ -182,24 +211,33 @@ const RoomTitle = styled.h3`
 
 const RoomDescription = styled.p`
   color: var(--text-secondary); /* Делаем текст описания светлее */
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-lg); /* 24px */
   line-height: 1.6; /* Слегка увеличиваем интервал */
   flex-grow: 1; /* Позволяем описанию занимать доступное пространство */
   font-size: 0.95rem; /* Делаем чуть меньше основного */
 `;
 
 const RoomPrice = styled.div`
-  font-size: 1.6rem; /* Немного увеличиваем цену */
-  font-weight: 700; /* Делаем жирнее */
+  font-size: 1.6rem;
+  font-weight: 700;
   color: var(--primary-color);
-  margin-bottom: 0.5rem;
-  white-space: nowrap; /* Предотвращаем перенос цены */
+  margin-bottom: var(--space-sm); /* 8px */
+  white-space: nowrap;
   
   small {
     font-size: 0.9rem;
-    opacity: 0.9; /* Делаем чуть заметнее */
-    margin-left: 0.5rem;
-    font-weight: 500; /* Немного жирнее */
+    opacity: 0.9;
+    margin-left: var(--space-sm); /* 8px */
+    font-weight: 500;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 1.4rem;
+    small { font-size: 0.85rem; }
+  }
+  @media (max-width: 576px) {
+    font-size: 1.3rem;
+    small { font-size: 0.8rem; }
   }
 `;
 
@@ -207,10 +245,15 @@ const RoomActions = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: auto; /* Прижимаем к низу карточки */
-  padding-top: 1rem; /* Добавляем отступ сверху */
-  /* Добавляем немного gap для случая, если элементы будут близко */
-  gap: 1rem; 
+  margin-top: auto;
+  padding-top: var(--space-md); /* 16px */
+  gap: var(--space-md); /* 16px */
+
+  @media (max-width: 576px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm); /* 8px */
+  }
 `;
 
 // --- НОВЫЙ СТИЛЬ ДЛЯ ССЫЛКИ "ПОДРОБНЕЕ" ---
@@ -225,14 +268,20 @@ const DetailsLink = styled(Link)`
     color: var(--secondary-color); 
     text-decoration: underline;
   }
+
+  @media (max-width: 576px) {
+    font-size: 0.85rem;
+    text-align: center;
+    margin-bottom: var(--space-sm); /* 8px */
+  }
 `;
 // --- КОНЕЦ НОВОГО СТИЛЯ ---
 
 const BookingButton = styled(Link)`
   display: inline-block;
-  padding: 0.9rem 2rem;
+  padding: var(--space-sm) var(--space-xl); /* 8px 32px */
   background-color: var(--primary-color);
-  color: var(--text-on-primary-bg); /* Используем переменную */
+  color: var(--text-on-primary-bg);
   border: none;
   border-radius: var(--radius-sm);
   font-weight: 600;
@@ -241,9 +290,10 @@ const BookingButton = styled(Link)`
   transition: var(--transition), transform 0.2s ease, box-shadow 0.2s ease;
   text-align: center;
   box-shadow: var(--shadow-sm);
+  font-size: 0.95rem;
 
   &:hover {
-    background-color: var(--secondary-color); /* Используем переменную */
+    background-color: var(--secondary-color);
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
   }
@@ -251,6 +301,16 @@ const BookingButton = styled(Link)`
   &:active {
       transform: translateY(0);
       box-shadow: var(--shadow-sm);
+  }
+
+  @media (max-width: 768px) {
+    padding: var(--space-sm) var(--space-lg); /* 8px 24px */
+    font-size: 0.9rem;
+  }
+  @media (max-width: 576px) {
+    padding: var(--space-sm) var(--space-md); /* 8px 16px */
+    font-size: 0.85rem;
+    width: 100%;
   }
 `;
 
@@ -274,7 +334,7 @@ const LoadingContainer = styled.div`
   justify-content: center;
   align-items: center;
   min-height: 300px;
-  padding: 2rem;
+  padding: var(--space-xl); /* 32px */
 `;
 
 const LoadingSpinner = styled.div`
@@ -292,30 +352,31 @@ const LoadingSpinner = styled.div`
 `;
 
 const ErrorMessage = styled.div`
-  color: var(--error-color);
   text-align: center;
-  margin-top: 1rem;
+  color: var(--danger-color);
+  padding: var(--space-xl); /* 32px */
+  font-size: 1.1rem;
 `;
 
 // --- НОВЫЙ КОМПОНЕНТ ДЛЯ УДОБСТВ ---
 const RoomFeatures = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem; /* Уменьшаем гэп */
-  margin-bottom: 1.5rem; /* Увеличиваем отступ снизу */
-  padding-top: 1rem;
+  gap: var(--space-sm); /* 8px */
+  margin-bottom: var(--space-lg); /* 24px */
+  padding-top: var(--space-md); /* 16px */
   border-top: 1px solid var(--border-color-light);
   align-items: center;
 
   span {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem; /* Немного увеличиваем гэп иконка-текст */
+    gap: var(--space-xs); /* 4px */
     font-size: 0.85rem; /* Делаем текст удобств мельче */
     color: var(--text-secondary);
     /* Возвращаем легкий фон и рамку */
     background-color: var(--bg-tertiary, #f8f9fa);
-    padding: 0.3rem 0.7rem;
+    padding: var(--space-xs) var(--space-sm); /* 4px 8px */
     border-radius: var(--radius-lg); /* Делаем более скругленными */
     border: 1px solid var(--border-color-light, #eee);
   }
@@ -528,7 +589,7 @@ const RoomsPage: React.FC = () => {
         )}
         
         {!isLoading && !error && rooms.length === 0 && (
-          <p style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-secondary)' }}>
+          <p style={{ textAlign: 'center', marginTop: 'var(--space-xl)', color: 'var(--text-secondary)' }}> {/* 32px */}
             Доступных номеров для отображения нет.
           </p>
         )}

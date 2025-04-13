@@ -36,6 +36,20 @@ const ErrorPlaceholder = styled.div`
     text-align: center;
 `;
 
+// Создаем стилизованный компонент для секции контактов
+const ContactSection = styled.section`
+  padding: 6rem 2rem; // Базовые отступы
+  background-color: #f8f9fa;
+
+  @media screen and (max-width: 768px) {
+    padding: 4rem 1.5rem;
+  }
+  
+  @media screen and (max-width: 576px) {
+    padding: 3rem 1rem;
+  }
+`;
+
 const HomePage: React.FC = () => {
     const [content, setContent] = useState<HomePageContent | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -102,10 +116,10 @@ const HomePage: React.FC = () => {
             <div id="services-section">
                 <Services title={services?.title} subtitle={services?.subtitle} />
             </div>
-            <section id="contact" className="section" style={{ padding: '6rem 2rem', backgroundColor: '#f8f9fa' }}>
+            <ContactSection id="contact" className="section">
                 <div className="container">
                     <SectionTitle>
-                        <h2>{contact?.title}</h2>
+                        <h2>{contact?.title || 'Наши контакты'}</h2>
                     </SectionTitle>
                     
                     <InfoContainer>
@@ -146,12 +160,12 @@ const HomePage: React.FC = () => {
                                 address={contact?.address || ''}
                                 coordinates={hotelCoordinates}
                                 zoom={16}
-                                height="450px"
+                                height={window.innerWidth <= 768 ? "300px" : "450px"}
                             />
                         </MapColumn>
                     </InfoContainer>
                 </div>
-            </section>
+            </ContactSection>
 
             <PromoModal 
                 isOpen={isPromoModalOpen} 
@@ -163,44 +177,88 @@ const HomePage: React.FC = () => {
 };
 
 const SectionTitle = styled.div`
-    // ... стили ...
+  text-align: center;
+  margin-bottom: 4rem;
 `;
+
 const InfoContainer = styled.div`
-    // ... стили ...
+  display: grid; 
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: center;
+
+  @media screen and (max-width: 992px) {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
 `;
+
 const InfoColumn = styled.div`
-    // text-align: center;
+  // Можно добавить стили, если нужно
 `;
+
 const MapColumn = styled.div`
-    // ... стили ...
+  // Можно добавить стили, если нужно
+  // На мобильных карта будет под информацией
 `;
+
 const ContactInfo = styled.div`
-    // ... стили ...
+  // Можно добавить стили, если нужно
 `;
+
 const ContactDetail = styled.div`
-    display: flex;
-    align-items: flex-start;
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
-    transition: var(--transition);
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: var(--transition);
 
-    &:hover {
-        transform: translateY(-3px);
-    }
+  &:hover {
+    transform: translateY(-3px);
+  }
 
-    h4 { margin: 0 0 0.3rem 0; color: var(--primary-color); }
-    p { margin: 0; color: var(--text-secondary); transition: var(--transition); }
-    a { color: var(--primary-color); text-decoration: none; transition: var(--transition); }
-    a:hover { color: var(--secondary-color); text-decoration: underline; }
-`;
-const Icon = styled.i`
-    font-size: 1.8rem;
+  h4 {
+    margin: 0 0 0.3rem 0;
     color: var(--primary-color);
+    font-size: 1.1rem;
+  }
+  p, a {
+    margin: 0;
+    color: var(--text-secondary);
     transition: var(--transition);
-
+    font-size: 1rem;
+  }
+  a {
+    color: var(--primary-color);
+    text-decoration: none;
     &:hover {
         color: var(--secondary-color);
+        text-decoration: underline;
     }
+  }
+
+  @media screen and (max-width: 576px) {
+    gap: 1rem;
+    h4 { font-size: 1rem; }
+    p, a { font-size: 0.9rem; }
+  }
+`;
+
+const Icon = styled.i`
+  font-size: 1.8rem;
+  color: var(--primary-color);
+  transition: var(--transition);
+  width: 25px;
+  text-align: center;
+
+  &:hover {
+    color: var(--secondary-color);
+  }
+
+  @media screen and (max-width: 576px) {
+    font-size: 1.5rem;
+    width: 20px;
+  }
 `;
 
 export default HomePage; 

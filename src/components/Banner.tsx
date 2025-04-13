@@ -25,17 +25,16 @@ interface BannerSectionProps {
 const BannerSection = styled.section<{
   $backgroundImage?: string; // transient prop
 }>`
-  min-height: 70vh;
+  min-height: 90vh;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 4rem 2rem;
-  background: ${props => props.$backgroundImage ? `url(${props.$backgroundImage})` : 'var(--primary-color)'} center center/cover no-repeat;
+  padding: var(--space-xxxl) var(--space-xl); /* 64px 32px */
+  background: ${props => props.$backgroundImage ? `url(${props.$backgroundImage})` : 'var(--primary-color)'} center center / cover no-repeat;
   color: white;
 
-  // Overlay для затемнения фона
   &::before {
     content: '';
     position: absolute;
@@ -46,17 +45,31 @@ const BannerSection = styled.section<{
     background: rgba(0, 0, 0, 0.5);
     z-index: 1;
   }
+
+  @media screen and (max-width: 992px) {
+      min-height: 85vh;
+  }
+
+  @media screen and (max-width: 768px) {
+      min-height: 80vh;
+      padding: var(--space-xxl) var(--space-lg); /* 48px 24px */
+  }
+
+  @media screen and (max-width: 576px) {
+      min-height: 75vh;
+      padding: var(--space-xl) var(--space-md); /* 32px 16px */
+  }
 `;
 
 const BannerContent = styled(motion.div)`
   position: relative;
   z-index: 2;
-  max-width: 900px;
+  max-width: 1100px;
 `;
 
 const BannerTitle = styled.h1`
   font-size: 4rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-lg); /* 24px */
   text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
   font-family: 'Playfair Display', serif;
   font-weight: 700;
@@ -79,7 +92,7 @@ const BannerTitle = styled.h1`
 const BannerText = styled.p`
   font-size: 1.3rem;
   max-width: 800px;
-  margin-bottom: 2.5rem;
+  margin-bottom: var(--space-xl); /* 32px */
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
   color: white;
   opacity: 0.9;
@@ -94,7 +107,7 @@ const BannerText = styled.p`
 `;
 
 const BookButton = styled(motion.a)`
-  padding: 1rem 2.5rem;
+  padding: var(--space-md) var(--space-xl); /* 16px 32px */
   font-size: 1.1rem;
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-lg);
@@ -128,6 +141,16 @@ const BookButton = styled(motion.a)`
   
   &:hover::before {
     width: 100%;
+  }
+
+  @media screen and (max-width: 768px) {
+      padding: var(--space-sm) var(--space-xl); /* 8px 32px */
+      font-size: 1rem;
+  }
+
+  @media screen and (max-width: 576px) {
+      padding: calc(var(--space-sm) + var(--space-xs)) var(--space-lg); /* ~12px 24px */
+      font-size: 0.9rem;
   }
 `;
 

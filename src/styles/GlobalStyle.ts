@@ -60,21 +60,67 @@ const GlobalStyle = createGlobalStyle`
     --radius-md: 10px;
     --radius-lg: 20px;
     --transition: all 0.2s ease-in-out; 
+
+    /* Отступы */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-xxl: 48px;
+    --space-xxxl: 64px;
   }
 
-  * {
+  *, *::before, *::after {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    background-color: white; /* Возвращаем простой фон */
   }
 
   body {
     font-family: 'Montserrat', sans-serif;
-    /* Устанавливаем базовые цвета для светлой темы */
-    background-color: var(--bg-primary);
+    line-height: 1.6;
     color: var(--text-primary);
-    line-height: 1.7;
+    background-color: white; /* Возвращаем фон body */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
+    position: relative; /* Нужно для позиционирования псевдоэлементов */
+  }
+
+  /* Добавляем декоративные линии по бокам на широких экранах */
+  body::before,
+  body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background-color: var(--border-color); /* Цвет линии */
+      z-index: 10; /* Ниже, чем шапка или меню */
+      opacity: 0.5; /* Делаем линии полупрозрачными */
+      display: none; /* По умолчанию скрыты */
+  }
+
+  body::before {
+      left: calc(50% - (var(--max-width, 1200px) / 2) - 30px); /* Позиция левой линии */
+  }
+
+  body::after {
+      right: calc(50% - (var(--max-width, 1200px) / 2) - 30px); /* Позиция правой линии */
+  }
+
+  /* Показываем линии только на экранах, которые шире max-width + отступы */
+  @media screen and (min-width: calc(var(--max-width, 1200px) + 100px)) { 
+      body::before,
+      body::after {
+          display: block;
+      }
   }
 
   h1, h2, h3, h4, h5, h6 {

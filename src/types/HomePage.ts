@@ -51,6 +51,8 @@ export interface ContactContent {
   address: string;
   phone: string[];
   email: string;
+  coordinates?: [number, number]; // Добавляем необязательные координаты
+  openingHours?: string;          // Добавляем необязательные часы работы
 }
 
 // Интерфейс для раздела "Детские праздники"

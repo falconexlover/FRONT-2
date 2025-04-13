@@ -29,7 +29,7 @@ const SubmitButton = styled.button`
 
   &:disabled {
     background-color: #ccc;
-    color: #666;
+    color: var(--text-secondary);
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
@@ -60,7 +60,7 @@ const SuccessMessageContainer = styled(motion.div)`
 
   .booking-details {
     background-color: white;
-    border: 1px solid #eee;
+    border: 1px solid var(--border-color);
     padding: 1.5rem;
     border-radius: var(--radius-sm);
     margin: 1.5rem 0;
@@ -72,7 +72,7 @@ const SuccessMessageContainer = styled(motion.div)`
       margin-bottom: 1rem; // Увеличим отступ
       color: var(--dark-color);
       font-weight: 600;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid var(--border-color);
       padding-bottom: 0.5rem;
     }
 
@@ -85,7 +85,7 @@ const SuccessMessageContainer = styled(motion.div)`
         display: flex;
         justify-content: space-between;
         padding: 0.6rem 0; // Немного увеличим отступы
-        border-bottom: 1px dashed #eee;
+        border-bottom: 1px dashed var(--border-color);
         font-size: 0.95rem;
 
         &:last-child {
@@ -94,12 +94,12 @@ const SuccessMessageContainer = styled(motion.div)`
 
         span:first-child {
           font-weight: 500;
-          color: #333;
+          color: var(--text-color);
           margin-right: 1rem;
         }
         span:last-child {
           font-weight: 400;
-          color: #555;
+          color: var(--text-secondary);
           text-align: right;
         }
       }

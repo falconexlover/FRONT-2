@@ -119,6 +119,13 @@ const ServiceCard = styled(motion.div)`
   &:hover::before {
     height: 100%;
   }
+
+  @media screen and (max-width: 768px) {
+    padding: 2rem;
+  }
+  @media screen and (max-width: 576px) {
+    padding: 1.5rem;
+  }
 `;
 
 const ServiceIcon = styled.div`
@@ -140,12 +147,56 @@ const ServiceIcon = styled.div`
     height: 100%;
     object-fit: cover;
   }
+
+  @media screen and (max-width: 768px) {
+    width: 150px;
+    height: 110px;
+    margin-bottom: 1.5rem;
+    font-size: 1.4rem;
+  }
+  @media screen and (max-width: 576px) {
+    width: 120px;
+    height: 90px;
+    margin-bottom: 1.2rem;
+    font-size: 1.2rem;
+  }
 `;
 
 const ServiceTextContent = styled.div`
   flex-grow: 1;
   display: flex;
   flex-direction: column;
+
+  h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.8rem;
+    color: var(--dark-color);
+
+    @media screen and (max-width: 768px) {
+        font-size: 1.3rem;
+        margin-bottom: 0.6rem;
+    }
+    @media screen and (max-width: 576px) {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+    }
+  }
+
+  p {
+    font-size: 1rem;
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+
+    @media screen and (max-width: 768px) {
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    @media screen and (max-width: 576px) {
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+  }
 `;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -184,10 +235,10 @@ const LoadingPlaceholder = styled.div`
 const ErrorPlaceholder = styled.div`
   text-align: center;
   padding: 2rem;
-  color: var(--error-color);
-  border: 1px solid var(--error-color);
+  color: var(--danger-color);
+  border: 1px solid var(--danger-color);
   border-radius: var(--radius-sm);
-  background-color: rgba(255, 0, 0, 0.05);
+  background-color: rgba(var(--danger-color-rgb), 0.05);
 `;
 
 interface ServicesProps {

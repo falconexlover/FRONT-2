@@ -13,7 +13,7 @@ interface RoomsProps {
 }
 
 const RoomsSection = styled.section`
-  padding: 6rem 2rem;
+  padding: var(--space-xxxl) var(--space-xl); /* 64px 32px */
   background-color: #f8f9fa;
   position: relative;
   
@@ -30,11 +30,11 @@ const RoomsSection = styled.section`
   }
   
   @media screen and (max-width: 768px) {
-    padding: 4rem 1.5rem;
+    padding: var(--space-xxxl) var(--space-lg); /* 64px 24px */
   }
   
   @media screen and (max-width: 576px) {
-    padding: 3rem 1rem;
+    padding: var(--space-xxl) var(--space-md); /* 48px 16px */
   }
 `;
 
@@ -43,7 +43,7 @@ const RoomsGrid = styled.div`
   margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 2.5rem;
+  gap: var(--space-xl); /* 32px */
   position: relative;
   z-index: 1;
   
@@ -54,7 +54,7 @@ const RoomsGrid = styled.div`
 
 const SectionTitle = styled.div`
   text-align: center;
-  margin-bottom: 4rem;
+  margin-bottom: var(--space-xxl); /* 48px */
   position: relative;
   
   h2 {
@@ -64,13 +64,16 @@ const SectionTitle = styled.div`
     font-family: 'Playfair Display', serif;
     font-weight: 600;
     position: relative;
+    margin-bottom: var(--space-xl); /* 32px */
     
     @media screen and (max-width: 768px) {
       font-size: 2.2rem;
+      margin-bottom: calc(var(--space-xl) - var(--space-xs)); /* ~28px */
     }
     
     @media screen and (max-width: 576px) {
       font-size: 1.8rem;
+      margin-bottom: var(--space-lg); /* 24px */
     }
     
     &::before {
@@ -79,7 +82,7 @@ const SectionTitle = styled.div`
       width: 60px;
       height: 3px;
       background-color: var(--accent-color);
-      bottom: -15px;
+      bottom: -10px;
       left: 50%;
       transform: translateX(-50%);
     }
@@ -90,9 +93,27 @@ const SectionTitle = styled.div`
       width: 20px;
       height: 3px;
       background-color: var(--primary-color);
-      bottom: -15px;
+      bottom: -10px;
       left: calc(50% + 35px);
       transform: translateX(-50%);
+    }
+  }
+
+  p {
+    color: var(--text-secondary);
+    margin-bottom: 0;
+    line-height: 1.6;
+    font-size: 1rem;
+
+    @media screen and (max-width: 768px) {
+      font-size: 0.95rem;
+    }
+
+    @media screen and (max-width: 576px) {
+      font-size: 0.9rem;
+      max-width: 90%;
+      margin-left: auto;
+      margin-right: auto;
     }
   }
 `;
@@ -115,7 +136,7 @@ const RoomCard = styled(motion.div)`
 `;
 
 const RoomImage = styled.div`
-  height: 200px;
+  height: 250px;
   overflow: hidden;
   position: relative;
   
@@ -129,35 +150,48 @@ const RoomImage = styled.div`
   ${RoomCard}:hover & img {
     transform: scale(1.1);
   }
+
+  @media screen and (max-width: 576px) {
+    height: 60vw;
+    max-height: 300px;
+  }
 `;
 
 const RoomPrice = styled.div`
   position: absolute;
-  bottom: 15px;
-  right: 15px;
+  bottom: var(--space-lg); /* 24px */
+  right: var(--space-lg); /* 24px */
   background-color: var(--primary-color);
   color: white;
-  padding: 0.5rem 1rem;
+  padding: var(--space-sm) var(--space-md); /* 8px 16px */
   border-radius: var(--radius-sm);
   font-weight: 600;
   z-index: 2;
 `;
 
 const RoomDetails = styled.div`
-  padding: 2rem;
+  padding: var(--space-xl); /* 32px */
   display: flex;
   flex-direction: column;
   flex-grow: 1;
   
   h3 {
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-md); /* 16px */
     color: var(--dark-color);
     font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+
+    @media screen and (max-width: 768px) {
+      font-size: 1.3rem;
+    }
+    @media screen and (max-width: 576px) {
+      font-size: 1.2rem;
+    }
   }
   
   p {
-    color: #666;
-    margin-bottom: 1.5rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-lg); /* 24px */
     line-height: 1.6;
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -165,11 +199,15 @@ const RoomDetails = styled.div`
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  @media screen and (max-width: 576px) {
+    padding: var(--space-lg); /* 24px */
+  }
 `;
 
 const RoomButtons = styled.div`
   display: flex;
-  gap: 1rem;
+  gap: var(--space-md); /* 16px */
   margin-top: auto;
   
   @media (max-width: 576px) {
@@ -179,7 +217,7 @@ const RoomButtons = styled.div`
 
 const BookButton = styled(Link)`
   flex: 1;
-  padding: 0.8rem 1rem;
+  padding: var(--space-sm) var(--space-md); /* 8px 16px */
   background-color: var(--primary-color);
   color: white;
   border-radius: var(--radius-sm);
@@ -196,8 +234,8 @@ const BookButton = styled(Link)`
 const ViewAllButton = styled(Link)`
   display: block;
   width: 250px;
-  margin: 3rem auto 0;
-  padding: 1rem 2rem;
+  margin: var(--space-xxl) auto 0; /* 48px auto 0 */
+  padding: var(--space-md) var(--space-xl); /* 16px 32px */
   background-color: var(--accent-color);
   color: white;
   text-align: center;
@@ -228,14 +266,24 @@ const ErrorPlaceholder = styled.div`
   align-items: center;
   min-height: 300px;
   font-size: 1.1rem;
-  color: #e53935;
-  padding: 2rem;
+  color: var(--danger-color);
+  padding: var(--space-xl); /* 32px */
   text-align: center;
-  background-color: #ffebee;
-  border: 1px solid #e53935;
+  background-color: var(--danger-bg-light);
+  border: 1px solid var(--danger-color);
   border-radius: var(--radius-sm);
   max-width: 800px;
   margin: 0 auto;
+`;
+
+const ErrorMessage = styled.p`
+  color: var(--danger-color);
+  margin: var(--space-md) 0; /* 16px 0 */
+  padding: var(--space-sm) var(--space-md); /* 8px 16px */
+  background-color: var(--danger-bg-light);
+  border: 1px solid var(--danger-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
 `;
 
 const Rooms: React.FC<RoomsProps> = ({ 
@@ -269,30 +317,18 @@ const Rooms: React.FC<RoomsProps> = ({
   }, []);
 
   return (
-    <RoomsSection id="rooms">
+    <RoomsSection id="rooms-section">
       <SectionTitle>
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true, amount: 0.3 }}
-        >
-          {title}
-        </motion.h2>
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          viewport={{ once: true, amount: 0.3 }}
-        >
-          {subtitle}
-        </motion.p>
+        <h2>{title}</h2>
+        {subtitle && <p>{subtitle}</p>}
       </SectionTitle>
       
       {isLoading ? (
         <LoadingPlaceholder>Загрузка номеров...</LoadingPlaceholder>
       ) : error ? (
-        <ErrorPlaceholder>{error}</ErrorPlaceholder>
+        <ErrorPlaceholder>
+          <ErrorMessage>{error}</ErrorMessage>
+        </ErrorPlaceholder>
       ) : roomsData.length === 0 ? (
         <LoadingPlaceholder>Нет доступных номеров для отображения.</LoadingPlaceholder>
       ) : (
@@ -300,10 +336,9 @@ const Rooms: React.FC<RoomsProps> = ({
           {roomsData.map((room: RoomType, index: number) => (
             <RoomCard 
               key={room._id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true, amount: 0.3 }}
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
             >
               <RoomImage>
                 <img src={optimizeCloudinaryImage(room.imageUrls?.[0] || '/placeholder-room.jpg', 'f_auto,q_auto,w_500')} alt={room.title} loading="lazy" />

@@ -15,7 +15,7 @@ const UploaderContainer = styled.div`
 `;
 
 const DropZone = styled.div<{ isDragging: boolean, hasImage: boolean }>`
-  border: 2px dashed ${props => props.isDragging ? 'var(--primary-color)' : '#ccc'};
+  border: 2px dashed ${props => props.isDragging ? 'var(--primary-color)' : 'var(--border-color)'};
   border-radius: var(--radius-sm);
   padding: 2rem;
   text-align: center;
@@ -65,9 +65,9 @@ const ImagePreview = styled.div`
 
 const RemoveButton = styled.button`
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background-color: rgba(0, 0, 0, 0.5);
+  top: 5px;
+  right: 5px;
+  background-color: rgba(var(--danger-color-rgb, 220, 53, 69), 0.8);
   color: white;
   border: none;
   width: 30px;
@@ -127,6 +127,12 @@ const ErrorMessage = styled.div`
   color: #dc3545;
   font-size: 0.85rem;
   margin-top: 0.5rem;
+`;
+
+const ErrorText = styled.p`
+  color: var(--danger-color, #dc3545);
+  font-size: 0.8rem;
+  margin-top: 4px;
 `;
 
 const RoomImageUploader: React.FC<RoomImageUploaderProps> = ({ initialImage, onImageChange }) => {

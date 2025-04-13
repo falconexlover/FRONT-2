@@ -24,14 +24,14 @@ const AdminFooterContainer = styled.div`
 const AdminTrigger = styled.button`
   background: none;
   border: none;
-  color: #aaa; // Незаметный серый цвет
+  color: var(--text-muted); /* Заменяем #aaa */
   font-size: 0.8rem;
   cursor: pointer;
   padding: 0;
   transition: color 0.2s;
 
   &:hover {
-    color: #ccc;
+    color: var(--text-secondary); /* Заменяем #ccc */
     text-decoration: underline;
   }
 `;

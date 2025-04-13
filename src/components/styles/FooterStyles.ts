@@ -30,6 +30,9 @@ export const FooterContainer = styled.div`
     grid-template-columns: 1fr;
     padding: 0 1.5rem 2rem;
   }
+  @media (max-width: 576px) {
+    padding: 0 1rem 1.5rem;
+  }
 `;
 
 export const SectionTitle = styled.h3`
@@ -48,6 +51,11 @@ export const SectionTitle = styled.h3`
     width: 50px;
     height: 2px;
     background-color: var(--accent-color);
+  }
+
+  @media (max-width: 768px) {
+    font-size: 1.2rem;
+    margin-bottom: 1.2rem;
   }
 `;
 
@@ -89,6 +97,11 @@ export const FooterSection = styled.div`
         color: #a0a7b3;
         font-size: 0.95rem;
         margin-left: 30px;
+
+        @media (max-width: 576px) {
+          font-size: 0.9rem;
+          margin-left: 25px;
+        }
       }
     }
   }
@@ -125,6 +138,10 @@ export const FooterSection = styled.div`
             color: var(--accent-color);
             font-size: 1.2rem;
             font-weight: bold;
+          }
+
+          @media (max-width: 576px) {
+             font-size: 0.9rem;
           }
         }
       }
@@ -168,6 +185,10 @@ export const FooterSection = styled.div`
              text-decoration: underline;
           }
         }
+
+        @media (max-width: 576px) {
+          font-size: 0.9rem;
+        }
       }
     }
   }
@@ -194,6 +215,14 @@ export const FooterBottom = styled.div`
     &:active {
         color: #e1e1e1;
     }
+  }
+
+  @media (max-width: 768px) {
+    padding: 1.2rem 1.5rem;
+  }
+  @media (max-width: 576px) {
+    padding: 1rem 1rem;
+    font-size: 0.85rem;
   }
 `;
 

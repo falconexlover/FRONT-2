@@ -89,10 +89,10 @@ const Button = styled.button`
   }
 `;
 
-const ErrorMessage = styled.div`
-  color: #e53935;
+const ErrorMessage = styled.p`
+  color: var(--danger-color);
+  font-size: 0.875rem;
   margin-top: 1rem;
-  font-size: 0.9rem;
   text-align: center;
 `;
 

@@ -28,7 +28,7 @@ const FormGroup = styled.div`
   input, select, textarea {
     width: 100%;
     padding: 0.8rem 1rem;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
     font-family: inherit;
     font-size: 1rem;

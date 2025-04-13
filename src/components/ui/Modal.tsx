@@ -29,8 +29,8 @@ const overlayVariants = {
 };
 
 const ModalContent = styled(motion.div)`
-  background-color: var(--bg-secondary);
-  padding: 2rem;
+  background: white;
+  padding: var(--space-xl); /* 32px */
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   max-width: 1300px;
@@ -47,31 +47,24 @@ const contentVariants = {
     exit: { scale: 0.9, opacity: 0 },
 };
 
+const ModalTitle = styled.h3`
+  margin: 0;
+  font-size: 1.4rem;
+  color: var(--text-primary);
+`;
+
 const CloseButton = styled.button`
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
   background: none;
   border: none;
-  font-size: 1.5rem;
-  color: var(--text-secondary);
+  font-size: 1.8rem;
   cursor: pointer;
-  transition: color 0.2s;
+  color: var(--text-secondary);
+  padding: 0;
   line-height: 1;
 
   &:hover {
     color: var(--text-primary);
   }
-`;
-
-const ModalTitle = styled.h3`
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-  color: var(--text-primary);
-  font-size: 1.4rem;
-  font-weight: 600;
-  text-align: center;
-  padding-right: 2rem;
 `;
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, key }) => {

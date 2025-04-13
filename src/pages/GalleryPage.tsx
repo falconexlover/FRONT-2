@@ -6,6 +6,11 @@ import { GalleryImageItem } from '../types/GalleryImage';
 import { toast } from 'react-toastify';
 import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
 import '../assets/css/gallery.css';
+// Импорты для Swiper
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Pagination, A11y } from 'swiper/modules'; // Используем только Pagination и A11y для галереи
+import 'swiper/css';
+import 'swiper/css/pagination';
 
 // Неиспользуемый компонент
 // const GallerySection = styled.section`
@@ -16,56 +21,127 @@ import '../assets/css/gallery.css';
 const GalleryContainer = styled.div`
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 4rem 1rem; // Увеличим верхний отступ
+  padding: var(--space-xxxl) var(--space-md); /* 64px 16px */
+
+  @media (max-width: 768px) {
+    padding: var(--space-xxl) var(--space-md); /* 48px 16px */
+  }
+  @media (max-width: 576px) {
+    padding: var(--space-xl) var(--space-sm); /* 32px 8px */
+  }
 `;
 
 const GalleryHeader = styled.div`
   text-align: center;
-  margin-bottom: 4rem;
+  margin-bottom: var(--space-xxxl); /* 64px */
   
   h1 {
     font-family: 'Playfair Display', serif;
     color: var(--dark-color);
-    margin-bottom: 1rem;
-    font-size: 2.5rem; // Крупнее
+    margin-bottom: var(--space-md); /* 16px */
+    font-size: 2.5rem;
+    @media (max-width: 768px) {
+      font-size: 2.2rem;
+    }
+    @media (max-width: 576px) {
+      font-size: 1.8rem;
+    }
   }
   
   p {
     color: var(--text-color);
     max-width: 600px;
-    margin: 0 auto 1.5rem;
-    font-size: 1.1rem; // Крупнее
+    margin: 0 auto var(--space-lg); /* 0 auto 24px */
+    font-size: 1.1rem;
+    @media (max-width: 768px) {
+      font-size: 1rem;
+    }
+    @media (max-width: 576px) {
+      font-size: 0.9rem;
+      margin-bottom: var(--space-md); /* 16px */
+    }
+  }
+
+  @media (max-width: 768px) {
+    margin-bottom: var(--space-xxl); /* 48px */
   }
 `;
 
 // Новый контейнер для секции категории
 const CategorySection = styled.div`
-  margin-bottom: 4rem;
+  margin-bottom: var(--space-xxxl); /* 64px */
 `;
 
 // Новый заголовок для секции категории
 const CategoryTitle = styled.h2`
   font-family: 'Playfair Display', serif;
   color: var(--dark-color);
-  margin-bottom: 2rem;
-  padding-bottom: 0.5rem;
+  margin-bottom: var(--space-xl); /* 32px */
+  padding-bottom: var(--space-sm); /* 8px */
   border-bottom: 2px solid var(--primary-color);
   display: inline-block; // Чтобы подчеркивание было по ширине текста
   font-size: 1.8rem;
+  @media (max-width: 768px) {
+    font-size: 1.6rem;
+    margin-bottom: var(--space-lg); /* 24px */
+  }
+  @media (max-width: 576px) {
+    font-size: 1.4rem;
+    margin-bottom: var(--space-md); /* 16px */
+  }
 `;
 
+// --- НОВЫЙ КОМПОНЕНТ ДЛЯ ОБЕРТКИ SWIPER НА МОБИЛЬНЫХ ---
+const MobileSwiperWrapper = styled.div`
+  display: none; // Скрыт по умолчанию
+  margin-bottom: var(--space-xl); /* 32px */
+  
+  .swiper-slide {
+    width: 65%; // Показываем неполные соседние слайды
+    margin-right: calc(var(--space-md) - var(--space-xs)); /* ~12px */ 
+  }
+
+  .swiper-pagination {
+    position: static; // Статическое позиционирование под слайдером
+    margin-top: var(--space-md); /* 16px */
+  }
+  .swiper-pagination-bullet {
+    background-color: var(--primary-color);
+    opacity: 0.5;
+  }
+  .swiper-pagination-bullet-active {
+    opacity: 1;
+  }
+
+  @media (max-width: 768px) {
+    display: block; // Показываем на мобильных
+  }
+  @media (max-width: 576px) {
+    .swiper-slide {
+        width: 75%; // Немного шире на совсем маленьких экранах
+    }
+  }
+`;
+
+// --- АДАПТИРУЕМ GALLERYGRID --- 
 const GalleryGrid = styled(motion.div)`
   display: grid;
-  grid-template-columns: repeat(4, 1fr); // Строго 4 колонки
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+  gap: var(--space-md); /* 16px */ 
+
+  @media (max-width: 768px) {
+    display: none; // Скрываем сетку на мобильных
+  }
 `;
 
 const GalleryItem = styled(motion.div)`
-  border-radius: var(--radius-sm); // Меньше радиус
+  border-radius: var(--radius-sm);
   overflow: hidden;
   position: relative;
   cursor: pointer;
-  height: 220px; // Меньше высота
+  // Убираем фиксированную высоту, делаем квадратными
+  aspect-ratio: 1 / 1; 
+  /* height: 220px; */ 
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
   
@@ -121,7 +197,7 @@ const Lightbox = styled(motion.div)`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: var(--space-xl); /* 32px */
 `;
 
 const LightboxContent = styled(motion.div)`
@@ -148,14 +224,14 @@ const LightboxControls = styled.div`
   align-items: center;
   top: 50%;
   transform: translateY(-50%);
-  padding: 0 1rem;
+  padding: 0 var(--space-md); /* 0 16px */
 `;
 
 const LightboxButton = styled.button`
   background-color: rgba(255,255,255,0.2);
   color: white;
-  width: 40px;
-  height: 40px;
+  width: 35px; // Уменьшаем кнопки навигации
+  height: 35px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -163,6 +239,12 @@ const LightboxButton = styled.button`
   border: none;
   cursor: pointer;
   transition: var(--transition);
+  font-size: 0.9rem;
+
+  @media (max-width: 576px) {
+    width: 30px;
+    height: 30px;
+  }
   
   &:hover {
     background-color: var(--primary-color);
@@ -171,12 +253,12 @@ const LightboxButton = styled.button`
 
 const LightboxClose = styled.button`
   position: absolute;
-  top: -40px;
-  right: -40px;
+  top: -35px; // Ближе к картинке
+  right: -35px;
   background: none;
   border: none;
   color: white;
-  font-size: 2rem;
+  font-size: 1.8rem; // Уменьшаем крестик
   cursor: pointer;
   transition: var(--transition);
   
@@ -186,8 +268,16 @@ const LightboxClose = styled.button`
   }
   
   @media screen and (max-width: 768px) {
-    top: -40px;
-    right: 0;
+    top: var(--space-md); /* 16px */
+    right: var(--space-md); /* 16px */
+    background-color: rgba(0,0,0,0.3); // Добавляем фон для видимости
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 `;
 
@@ -206,7 +296,7 @@ const LoadingSpinner = styled.div`
     width: 40px;
     height: 40px;
   animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-md); /* 16px */
 
   @keyframes spin {
     0% {
@@ -219,12 +309,14 @@ const LoadingSpinner = styled.div`
 `;
 
 const ErrorMessage = styled.div`
-  text-align: center;
-  padding: 2rem;
-  color: #e53935;
-  background-color: #ffebee;
-  border: 1px solid #e53935;
+  color: var(--danger-color);
+  background-color: var(--danger-bg-light);
+  border: 1px solid var(--danger-color);
+  padding: var(--space-md); /* 16px */
   border-radius: var(--radius-sm);
+  text-align: center;
+  margin: var(--space-xl) auto; /* 32px auto */
+  max-width: 600px;
 `;
 
 const EmptyState = styled.div`
@@ -234,7 +326,7 @@ const EmptyState = styled.div`
   justify-content: center;
   min-height: 200px;
   text-align: center;
-  padding: 2rem;
+  padding: var(--space-xl); /* 32px */
   background-color: var(--bg-secondary);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
@@ -242,13 +334,13 @@ const EmptyState = styled.div`
   i {
     font-size: 3rem;
     color: var(--text-secondary);
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-md); /* 16px */
   }
   
   h3 {
     font-size: 1.3rem;
     color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-sm); /* 8px */
   }
   
   p {
@@ -400,12 +492,13 @@ const GalleryPage: React.FC = () => {
         ) : error ? (
            <ErrorMessage>{error}</ErrorMessage>
         ) : orderedCategories.length > 0 ? (
-          // Итерируем по отсортированным категориям
           orderedCategories.map(categoryKey => (
             <CategorySection key={categoryKey}>
               <CategoryTitle>
                 {CATEGORY_ORDER[categoryKey]?.name ?? CATEGORY_ORDER.other.name}
               </CategoryTitle>
+              
+              {/* --- ДЕСКТОПНАЯ СЕТКА --- */}
               <GalleryGrid>
                 {groupedImages[categoryKey].map((image, index) => (
                   <GalleryItem
@@ -429,6 +522,42 @@ const GalleryPage: React.FC = () => {
                   </GalleryItem>
                 ))}
               </GalleryGrid>
+
+              {/* --- МОБИЛЬНЫЙ СВАЙПЕР --- */}
+              <MobileSwiperWrapper>
+                <Swiper
+                  modules={[Pagination, A11y]}
+                  spaceBetween={10} // Отступ между слайдами
+                  slidesPerView={'auto'} // Автоматическое определение кол-ва видимых слайдов на основе их ширины
+                  pagination={{ clickable: true }}
+                  grabCursor={true}
+                >
+                  {groupedImages[categoryKey].map((image, index) => (
+                    <SwiperSlide key={image._id}>
+                      <GalleryItem
+                        // Убираем анимацию для слайдов, она может конфликтовать со свайпером
+                        // variants={imageVariants}
+                        // initial="hidden"
+                        // animate="visible"
+                        // exit="hidden"
+                        // custom={index} 
+                        // layout // layout может быть полезен, но проверим
+                        onClick={() => openLightbox(image)}
+                      >
+                        <img
+                          src={optimizeCloudinaryImage(image.imageUrl, 'f_auto,q_auto,w_400')} 
+                          alt={image.title || image.category}
+                          loading="lazy"
+                        />
+                        <div className="image-overlay">
+                          <i className="fas fa-search-plus"></i>
+                        </div>
+                      </GalleryItem>
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
+              </MobileSwiperWrapper>
+
             </CategorySection>
           ))
         ) : (

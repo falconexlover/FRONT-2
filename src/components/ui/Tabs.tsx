@@ -5,8 +5,8 @@ import styled from 'styled-components';
 
 const TabsContainerStyled = styled.div` // Переименовано
   display: flex;
-  border-bottom: 1px solid var(--border-color, #eee); // Используем переменную или дефолтный цвет
-  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color); /* Убираем фоллбэк */
+  margin-bottom: 1.5rem;
   overflow-x: auto; // Добавим прокрутку, если вкладок много
 `;
 

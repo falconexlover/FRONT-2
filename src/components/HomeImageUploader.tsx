@@ -15,7 +15,7 @@ const UploadContainer = styled.div`
 `;
 
 const UploadArea = styled.div<{ isDragActive: boolean }>`
-  border: 2px dashed ${props => props.isDragActive ? 'var(--primary-color)' : '#ddd'};
+  border: 2px dashed ${props => props.isDragActive ? 'var(--primary-color)' : 'var(--border-color)'};
   border-radius: var(--radius-md);
   padding: 2rem;
   text-align: center;
@@ -36,8 +36,9 @@ const UploadIcon = styled.i`
 `;
 
 const UploadText = styled.p`
-  color: #666;
-  margin-bottom: 1rem;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
 `;
 
 const UploadButton = styled.label`
@@ -59,7 +60,7 @@ const UploadButton = styled.label`
   }
 
   &[aria-disabled="true"] {
-    background-color: #ccc;
+    background-color: var(--disabled-bg-color);
     cursor: not-allowed;
     pointer-events: none;
   }
@@ -98,12 +99,48 @@ const PreviewImage = styled.img`
     max-width: 100%;
     max-height: 200px;
     margin-bottom: 1rem;
-    border: 1px solid #eee;
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
 `;
 
 const UploadActionButton = styled(ActionButton)`
     margin-top: 1rem;
+`;
+
+const DropZone = styled.div<{ isDragActive: boolean }>`
+  border: 2px dashed ${props => props.isDragActive ? 'var(--primary-color)' : 'var(--border-color)'};
+  border-radius: var(--radius-md);
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s;
+  background-color: ${props => props.isDragActive ? 'rgba(33, 113, 72, 0.1)' : 'transparent'};
+  cursor: pointer;
+  
+  &:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(33, 113, 72, 0.05);
+  }
+`;
+
+const PlaceholderText = styled.p`
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
+`;
+
+const RemoveButton = styled.button`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: var(--disabled-bg-color);
+  color: white;
+  border: none;
+`;
+
+const ImagePreview = styled.div`
+  margin-top: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
 `;
 
 const HomeImageUploader: React.FC<HomeImageUploaderProps> = () => {
@@ -229,8 +266,8 @@ const HomeImageUploader: React.FC<HomeImageUploaderProps> = () => {
           <h3>{isLoading ? 'Идет загрузка...' : '2. Загрузите изображение'}</h3>
           <UploadText>{isLoading ? 'Пожалуйста, подождите.' : 'Перетащите файл сюда или нажмите для выбора'}</UploadText>
           
-          <div style={{ fontSize: '0.85rem', color: '#666', marginTop: '1rem' }}>
-              (Рекомендуются форматы JPG, PNG, WEBP, размер до 5MB)
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '1rem' }}>
+              Разрешение: 800x600px (горизонтальное), Формат: JPG, PNG, WEBP, Макс. размер: 5MB
            </div>
           
           <UploadButton as="div" aria-disabled={isLoading} style={{ marginTop: '1rem' }}>

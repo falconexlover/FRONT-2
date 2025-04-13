@@ -16,6 +16,10 @@ const Label = styled.label`
   font-weight: 500;
   color: var(--text-secondary);
   font-size: 0.9rem;
+
+  @media (max-width: 576px) {
+    font-size: 0.85rem;
+  }
 `;
 
 const Input = styled.input`
@@ -32,6 +36,11 @@ const Input = styled.input`
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(42, 167, 110, 0.3);
+  }
+
+  @media (max-width: 576px) {
+    padding: 0.8rem 0.9rem;
+    font-size: 0.9rem;
   }
 `;
 
@@ -51,6 +60,32 @@ const TextArea = styled.textarea`
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(42, 167, 110, 0.3);
+  }
+
+  @media (max-width: 576px) {
+    padding: 0.8rem 0.9rem;
+    font-size: 0.9rem;
+    min-height: 120px;
+  }
+`;
+
+// Сообщение об успешной отправке
+const SuccessMessage = styled.p`
+  margin-top: 1rem;
+  padding: var(--space-sm) var(--space-md);
+  background-color: rgba(var(--success-color-rgb, 33, 113, 72), 0.1);
+  border: 1px solid var(--success-color, #217148);
+  border-radius: var(--radius-sm);
+  color: var(--success-color, #145a32);
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.9rem;
+  
+  &::before { /* Иконка галочки */
+    content: '\f00c'; /* Font Awesome check */
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    margin-right: var(--space-xs);
   }
 `;
 
@@ -118,7 +153,8 @@ const ContactForm: React.FC = () => {
       <ActionButton type="submit" className="primary" disabled={isSubmitting}>
         {isSubmitting ? 'Отправка...' : 'Отправить сообщение'}
       </ActionButton>
-      {submitMessage && <p style={{ color: 'var(--primary-color)', marginTop: '1rem' }}>{submitMessage}</p>}
+      {/* Используем SuccessMessage */} 
+      {submitMessage && <SuccessMessage>{submitMessage}</SuccessMessage>}
     </Form>
   );
 };

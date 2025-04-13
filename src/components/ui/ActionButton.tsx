@@ -1,13 +1,13 @@
 import styled from 'styled-components';
 
 const ActionButton = styled.button`
-  padding: 0.8rem 1.5rem;
+  padding: 0.9rem 1.8rem;
   border: none;
   border-radius: var(--radius-sm);
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
-  font-size: 0.9rem;
+  font-size: 1rem;
   
   &.primary {
     background-color: var(--primary-color);
@@ -36,7 +36,7 @@ const ActionButton = styled.button`
 
     &:hover:not(:disabled) {
       background-color: rgba(0, 0, 0, 0.05); /* Легкий фон при наведении */
-      border-color: #333; /* Чуть темнее контур при наведении */
+      border-color: var(--dark-color); /* Заменяем #333 */
     }
   }
 
@@ -59,7 +59,7 @@ const ActionButton = styled.button`
 
   // Модификатор размера
   &.small {
-    padding: 0.4rem 0.8rem;
+    padding: var(--space-xs) var(--space-sm); /* 4px 8px */
     font-size: 0.8rem;
   }
 `;
