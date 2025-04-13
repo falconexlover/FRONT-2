@@ -18,8 +18,14 @@ import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils'; // Импо�
  * Стили для секции номеров
  */
 const RoomsSection = styled.section`
-  padding: 5rem 0;
-  background-color: var(--bg-color);
+  padding: 3rem 0 6rem; /* Уменьшаем верхний отступ, оставляем нижний */
+  background-color: var(--bg-color); /* Оставляем как fallback */
+  /* Добавляем градиент */
+  background: linear-gradient(to bottom, var(--bg-color), var(--bg-secondary, var(--bg-color))); 
+  /* Пояснение: переход от --bg-color к --bg-secondary. 
+     Если --bg-secondary не определен, используется --bg-color (нет градиента). 
+     Можно заменить var(--bg-secondary, ...) на конкретный цвет, 
+     например, #f8f9fa, если хотите гарантированный градиент */
 `;
 
 const RoomsContainer = styled.div`
@@ -34,15 +40,39 @@ const SectionTitle = styled.div`
   
   h1 {
     font-family: 'Playfair Display', serif;
-    color: var(--dark-color);
+    color: var(--primary-color); /* Меняем цвет на основной */
     margin-bottom: 1rem;
+    font-size: 2.5rem; /* Увеличиваем размер */
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    position: relative;
+    display: inline-block; /* Нужно для позиционирования ::after */
+    padding-bottom: 0.75rem;
+
+    &:after { /* Добавляем подчеркивание */
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 3px;
+      background-color: var(--accent-color);
+      border-radius: 1.5px;
+    }
+  }
+  
+  p { /* Стили для подзаголовка */
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      margin-top: 1.5rem; /* Отступ от заголовка */
   }
 `;
 
 const RoomsList = styled.div`
   display: grid;
   grid-template-columns: 1fr;
-  gap: 2rem;
+  gap: 2.5rem; /* Увеличиваем гэп */
 `;
 
 const RoomCard = styled(motion.div)`
@@ -51,21 +81,53 @@ const RoomCard = styled(motion.div)`
   background-color: white;
   border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md); /* Улучшенная тень */
+  border: 1px solid var(--border-color-light, #e0e0e0); /* Добавляем тонкую рамку с fallback */
+  transition: transform 0.3s ease, box-shadow 0.3s ease; /* Добавляем transition */
+  
+  /* Убираем разделительную линию */
+  /* border-right: 1px solid var(--border-color-light, #e0e0e0); */
+  
+  &:hover {
+      transform: translateY(-5px); /* Подъем при наведении */
+      box-shadow: var(--shadow-lg); /* Усиленная тень при наведении */
+  }
   
   @media (max-width: 992px) {
     grid-template-columns: 1fr;
+    /* Убираем разделительную линию */
+    /* border-right: none; */
+    /* border-bottom: 1px solid var(--border-color-light, #e0e0e0); */
   }
 `;
 
 const SliderWrapper = styled.div`
   position: relative;
+  overflow: hidden;
+  height: 100%; /* Заставляем занимать всю высоту ячейки грида */
+  /* Убираем фиксированное соотношение сторон, чтобы слайдер занимал всю высоту */
+  /* aspect-ratio: 4 / 3; */ 
+  /* Убираем специфичное скругление, полагаемся на RoomCard */
+  /* @media (max-width: 992px) {
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0; 
+  } */
+  
+  /* Добавляем стили для Swiper и Slide, чтобы они занимали всю высоту */
+  .swiper,
+  .swiper-slide {
+    height: 100%;
+  }
   
   .swiper-slide img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.4s ease; /* Плавный переход для zoom */
+  }
+  
+  &:hover .swiper-slide img { /* Применяем scale при наведении на весь слайдер */
+    transform: scale(1.05); 
   }
   
   .swiper-pagination-bullet {
@@ -77,55 +139,67 @@ const SliderWrapper = styled.div`
     opacity: 1;
   }
 
-  @media (max-width: 992px) {
-    height: 300px;
-    .swiper-slide img {
-      height: 300px;
-    }
-  }
+  /* Убираем медиа-запрос для высоты отсюда, т.к. высота определяется соотношением сторон */
+  /* @media (max-width: 992px) { ... } */
 `;
 
 const RoomContent = styled.div`
-  padding: 2rem;
+  padding: 2rem; /* Стандартный отступ со всех сторон */
+  display: flex; /* Используем flex для управления пространством */
+  flex-direction: column;
+  position: relative; /* Для возможного позиционирования разделителя, если через псевдоэлемент */
   
-  h3 {
+  /* Убираем специфичные отступы, т.к. нет разделителя */
+  /* @media (min-width: 993px) { padding-left: 2.5rem; } */
+  /* @media (max-width: 992px) { padding-top: 2.5rem; padding-left: 2.5rem; } */
+  
+  h3 { /* Стили по умолчанию для RoomTitle */
     color: var(--dark-color);
     font-family: 'Playfair Display', serif;
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
+    margin-bottom: 0.8rem; /* Уменьшаем отступ снизу */
+    font-size: 1.6rem; /* Немного уменьшаем размер */
+    font-weight: 600; /* Немного уменьшаем жирность */
+    line-height: 1.4; /* Уменьшаем высоту строки для компактности */
   }
   
-  p {
-    color: var(--text-color);
+  p { /* Стили по умолчанию для RoomDescription */
+    color: var(--text-secondary); /* Делаем текст описания светлее */
     margin-bottom: 1.5rem;
-    line-height: 1.6;
+    line-height: 1.6; /* Слегка увеличиваем интервал */
+    flex-grow: 1; /* Позволяем описанию занимать доступное пространство */
+    font-size: 0.95rem; /* Делаем чуть меньше основного */
   }
 `;
 
 const RoomTitle = styled.h3`
   color: var(--dark-color);
   font-family: 'Playfair Display', serif;
-  margin-bottom: 1rem;
-  font-size: 1.5rem;
+  margin-bottom: 0.8rem; /* Уменьшаем отступ снизу */
+  font-size: 1.6rem; /* Немного уменьшаем размер */
+  font-weight: 600; /* Немного уменьшаем жирность */
+  line-height: 1.4; /* Уменьшаем высоту строки для компактности */
 `;
 
 const RoomDescription = styled.p`
-  color: var(--text-color);
+  color: var(--text-secondary); /* Делаем текст описания светлее */
   margin-bottom: 1.5rem;
-  line-height: 1.6;
+  line-height: 1.6; /* Слегка увеличиваем интервал */
+  flex-grow: 1; /* Позволяем описанию занимать доступное пространство */
+  font-size: 0.95rem; /* Делаем чуть меньше основного */
 `;
 
 const RoomPrice = styled.div`
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.6rem; /* Немного увеличиваем цену */
+  font-weight: 700; /* Делаем жирнее */
   color: var(--primary-color);
   margin-bottom: 0.5rem;
+  white-space: nowrap; /* Предотвращаем перенос цены */
   
   small {
     font-size: 0.9rem;
-    opacity: 0.8;
+    opacity: 0.9; /* Делаем чуть заметнее */
     margin-left: 0.5rem;
-    font-weight: 400;
+    font-weight: 500; /* Немного жирнее */
   }
 `;
 
@@ -133,24 +207,50 @@ const RoomActions = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1rem;
+  margin-top: auto; /* Прижимаем к низу карточки */
+  padding-top: 1rem; /* Добавляем отступ сверху */
+  /* Добавляем немного gap для случая, если элементы будут близко */
+  gap: 1rem; 
 `;
+
+// --- НОВЫЙ СТИЛЬ ДЛЯ ССЫЛКИ "ПОДРОБНЕЕ" ---
+const DetailsLink = styled(Link)`
+  color: var(--primary-color);
+  font-weight: 500;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--secondary-color); 
+    text-decoration: underline;
+  }
+`;
+// --- КОНЕЦ НОВОГО СТИЛЯ ---
 
 const BookingButton = styled(Link)`
   display: inline-block;
-  padding: 0.8rem 2rem;
+  padding: 0.9rem 2rem;
   background-color: var(--primary-color);
-  color: white;
+  color: var(--text-on-primary-bg); /* Используем переменную */
   border: none;
   border-radius: var(--radius-sm);
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
-  transition: var(--transition);
-  
+  transition: var(--transition), transform 0.2s ease, box-shadow 0.2s ease;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+
   &:hover {
-    background-color: var(--dark-color);
-    transform: translateY(-3px);
+    background-color: var(--secondary-color); /* Используем переменную */
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  &:active {
+      transform: translateY(0);
+      box-shadow: var(--shadow-sm);
   }
 `;
 
@@ -197,6 +297,35 @@ const ErrorMessage = styled.div`
   margin-top: 1rem;
 `;
 
+// --- НОВЫЙ КОМПОНЕНТ ДЛЯ УДОБСТВ ---
+const RoomFeatures = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem; /* Уменьшаем гэп */
+  margin-bottom: 1.5rem; /* Увеличиваем отступ снизу */
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color-light);
+  align-items: center;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem; /* Немного увеличиваем гэп иконка-текст */
+    font-size: 0.85rem; /* Делаем текст удобств мельче */
+    color: var(--text-secondary);
+    /* Возвращаем легкий фон и рамку */
+    background-color: var(--bg-tertiary, #f8f9fa);
+    padding: 0.3rem 0.7rem;
+    border-radius: var(--radius-lg); /* Делаем более скругленными */
+    border: 1px solid var(--border-color-light, #eee);
+  }
+
+  i {
+    color: var(--primary-color);
+    font-size: 0.9rem; /* Уменьшаем иконки */
+  }
+`;
+
 /**
  * Компонент страницы с номерами
  */
@@ -214,9 +343,10 @@ const RoomsPage: React.FC = () => {
       try {
         // Используем импортированный roomsService из api.ts
         const data = await roomsService.getAllRooms();
-        // Уточнение: roomsService.getAllRooms из api.ts возвращает Promise<any>
-        // Нужно будет типизировать его позже, пока используем Array.isArray
-        setRooms(Array.isArray(data) ? data : []); 
+        const fetchedRooms = Array.isArray(data) ? data : [];
+        setRooms(fetchedRooms);
+        // Убираем лог отсюда
+        // console.log("Загруженные номера (rooms state):", fetchedRooms);
       } catch (err: any) {
         console.error("Ошибка загрузки номеров:", err);
         const message = err.message || 'Не удалось загрузить информацию о номерах.';
@@ -235,13 +365,53 @@ const RoomsPage: React.FC = () => {
     target.src = './placeholder-image.jpg';
   };
 
+  // --- Варианты анимации --- 
+  const titleVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: { 
+        opacity: 1, 
+        y: 0, 
+        transition: { duration: 0.5, ease: "easeOut" } 
+    }
+  };
+
+  const cardVariants = {
+      hidden: { opacity: 0, y: 30 },
+      visible: (i: number = 1) => ({
+        opacity: 1,
+        y: 0,
+        transition: { delay: i * 0.1, duration: 0.5, ease: "easeOut" } 
+      })
+  };
+
+  // --- ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ ИКОНОК --- 
+  const getFeatureIcon = (feature: string): string | null => {
+    const lowerFeature = feature.toLowerCase().trim(); 
+    
+    if (lowerFeature.includes('wi-fi') || lowerFeature.includes('wifi') || lowerFeature.includes('вай фай') || lowerFeature.includes('интернет')) return 'fas fa-wifi';
+    if (lowerFeature.includes('кондиционер')) return 'fas fa-snowflake';
+    if (lowerFeature.includes('телевизор') || lowerFeature.includes('tv')) return 'fas fa-tv';
+    if (lowerFeature.includes('холодильник')) return 'fas fa-temperature-low';
+    if (lowerFeature.includes('бутилированная вода')) return 'fas fa-wine-bottle'; // Возвращаем иконку бутылки
+    if (lowerFeature.includes('душ')) return 'fas fa-shower';
+    if (lowerFeature.includes('ванна')) return 'fas fa-bath';
+    if (lowerFeature.includes('балкон') || lowerFeature.includes('лоджия')) return 'fas fa-archway';
+    if (lowerFeature.includes('чайник')) return 'fas fa-mug-hot';
+    if (lowerFeature.includes('фен')) return 'fas fa-wind';
+    if (lowerFeature.includes('сейф')) return 'fas fa-lock';
+    return null;
+  };
+
   return (
     <RoomsSection id="rooms">
       <RoomsContainer>
-        <SectionTitle>
-          <h1>Наши Номера</h1>
-          <p>Выберите идеальный вариант для вашего комфортного отдыха</p>
-        </SectionTitle>
+        {/* Анимация для заголовка */}
+        <motion.div initial="hidden" animate="visible" variants={titleVariants}>
+            <SectionTitle>
+                <h1>Наши Номера</h1>
+                <p>Выберите идеальный вариант для вашего комфортного отдыха</p>
+            </SectionTitle>
+        </motion.div>
         
         {isLoading && (
           <LoadingContainer>
@@ -250,77 +420,122 @@ const RoomsPage: React.FC = () => {
         )}
         
         {error && (
-          <ErrorMessage>Ошибка загрузки: {error}</ErrorMessage>
+          <ErrorMessage>{error}</ErrorMessage>
         )}
         
-        {!isLoading && !error && (
+        {!isLoading && !error && rooms.length > 0 && (
           <RoomsList>
-            {rooms.map((room) => (
-              <RoomCard
+            {rooms.map((room, index) => (
+              <RoomCard 
                 key={room._id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.5 }}
+                variants={cardVariants} // Анимация для карточки
+                initial="hidden"
+                animate="visible"
+                custom={index} // Задержка на основе индекса
               >
                 <SliderWrapper>
                   <Swiper
                     modules={[Navigation, Pagination, Autoplay, A11y]}
                     spaceBetween={0}
                     slidesPerView={1}
+                    navigation
                     pagination={{ clickable: true }}
-                    loop={true}
-                    autoplay={{
-                      delay: 3000,
-                      disableOnInteraction: false,
-                      pauseOnMouseEnter: true,
-                    }}
-                    a11y={{
-                      prevSlideMessage: 'Предыдущий слайд',
-                      nextSlideMessage: 'Следующий слайд',
-                      paginationBulletMessage: 'Перейти к слайду {{index}}',
-                    }}
+                    autoplay={{ delay: 5000, disableOnInteraction: true }}
+                    loop={room.imageUrls.length > 1}
                   >
-                    {room.imageUrls && room.imageUrls.length > 0 ? (
-                      room.imageUrls.map((url, index) => (
-                        <SwiperSlide key={index}>
-                          <img 
-                            src={optimizeCloudinaryImage(url, 'f_auto,q_auto,w_600')}
-                            alt={`${room.title} - изображение ${index + 1}`}
-                            onError={handleImageError}
-                            loading="lazy"
-                          />
-                        </SwiperSlide>
-                      ))
-                    ) : (
-                      <SwiperSlide>
-                         <img 
-                           src={optimizeCloudinaryImage('/placeholder-room.jpg', 'f_auto,q_auto,w_600')}
-                           alt={`${room.title} - плейсхолдер`}
-                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                           loading="lazy"
-                         />
+                    {room.imageUrls.map((url, imgIndex) => (
+                      <SwiperSlide key={imgIndex}>
+                        <img 
+                          src={optimizeCloudinaryImage(url, 'f_auto,q_auto,w_600,h_450,c_fill')}
+                          alt={`${room.title} - изображение ${imgIndex + 1}`}
+                          onError={handleImageError}
+                          loading="lazy"
+                        />
+                      </SwiperSlide>
+                    ))}
+                    {room.imageUrls.length === 0 && (
+                      <SwiperSlide> {/* Слайд-заглушка */} 
+                        <img src="./placeholder-image.jpg" alt={`${room.title} - нет изображения`} />
                       </SwiperSlide>
                     )}
                   </Swiper>
                 </SliderWrapper>
                 <RoomContent>
                   <RoomTitle>{room.title}</RoomTitle>
-                  <RoomDescription>{room.description || 'Описание номера скоро появится.'}</RoomDescription>
-                  <RoomPrice>
-                    {room.price}
-                  </RoomPrice>
+                  <RoomDescription>
+                    {room.description || 'Комфортный номер для вашего отдыха в Лесном дворике.'}
+                  </RoomDescription>
+                  
+                  {/* --- БЛОК С УДОБСТВАМИ --- */}
+                  {(room.features || typeof room.features === 'string') && (
+                    <RoomFeatures>
+                      {/* Вместимость */}
+                      <span>
+                        <i className="fas fa-users"></i> {room.capacity} {room.capacity > 1 ? 'гостя' : 'гость'}
+                      </span>
+                      {/* Парсим и мапим */}
+                      {(() => {
+                        let featuresArray: string[] = [];
+                        const featuresRaw = room.features;
+
+                        if (Array.isArray(featuresRaw)) {
+                          featuresArray = featuresRaw.map(String);
+                        } else if (typeof featuresRaw === 'string' && (featuresRaw as string).trim().startsWith('[')) {
+                          try {
+                            const parsed = JSON.parse(featuresRaw as string);
+                            if (Array.isArray(parsed)) {
+                              featuresArray = parsed.map(String);
+                            }
+                          } catch (e) {
+                            console.error('Ошибка парсинга features JSON:', featuresRaw, e);
+                          }
+                        } else if (typeof featuresRaw === 'string') {
+                          console.warn('Features не является JSON-массивом, пытаемся разбить строку:', featuresRaw);
+                          featuresArray = (featuresRaw as string).split(',').map((f: string) => f.trim()).filter(Boolean);
+                        }
+
+                        return featuresArray.map((feature: string, fIndex: number) => {
+                          const iconClass = getFeatureIcon(feature);
+                          return iconClass ? (
+                            <span key={fIndex}>
+                              <i className={iconClass}></i> {feature}
+                            </span>
+                          ) : null;
+                        });
+                      })()}
+                    </RoomFeatures>
+                  )}
+                  
+                  {/* --- БЛОК С ЦЕНОЙ И КНОПКОЙ --- */}
                   <RoomActions>
-                    <BookingButton to={`/booking?roomid=${room._id}`}>Забронировать</BookingButton>
+                    <RoomPrice>
+                      {room.pricePerNight} ₽ <small>за ночь</small>
+                    </RoomPrice>
+                    {/* Группируем ссылку и кнопку справа */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}> 
+                      <DetailsLink to={`/room/${room._id}`}> 
+                        Подробнее
+                      </DetailsLink>
+                      <BookingButton to={`/booking?roomId=${room._id}`}>
+                        Забронировать
+                      </BookingButton>
+                    </div>
                   </RoomActions>
                 </RoomContent>
               </RoomCard>
             ))}
           </RoomsList>
         )}
+        
+        {!isLoading && !error && rooms.length === 0 && (
+          <p style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-secondary)' }}>
+            Доступных номеров для отображения нет.
+          </p>
+        )}
+        
       </RoomsContainer>
     </RoomsSection>
   );
 };
 
-export default RoomsPage; 
+export default RoomsPage;

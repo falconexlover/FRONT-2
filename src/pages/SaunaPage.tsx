@@ -83,15 +83,29 @@ const DescriptionSection = styled.section`
   }
   
   li {
-    margin-bottom: 0.8rem; // Уменьшим отступ
-    padding-left: 1.5rem;
-    position: relative;
-    &::before {
-      content: '-'; // Используем тире вместо галочки
+    margin-bottom: 0.8rem; 
+    padding-left: 0; 
+    position: relative; 
+    display: flex; 
+    align-items: center; 
+    gap: 0.8rem; 
+    
+    /* Удаляем псевдоэлемент с тире */
+    /* &::before {
+      content: '-'; 
       position: absolute;
       left: 0;
-      color: var(--text-color); // Основной цвет текста
+      color: var(--text-color); 
       font-weight: bold;
+    } */
+
+    /* Стили для иконки (добавим в JSX) */
+    i {
+      color: var(--primary-color); 
+      font-size: 1.1em; 
+      width: 1.2em; 
+      text-align: center; 
+      /* margin-top: 0.1em; */ /* Убираем или комментируем старую коррекцию */
     }
   }
 `;
@@ -105,36 +119,81 @@ const WorkingHours = styled.p`
 
 const BookingInfo = styled.div`
   text-align: center;
-  font-size: 1.1rem; // Чуть меньше
-  font-weight: 500; // Не такой жирный
-  color: var(--dark-color);
-  margin-top: 2rem;
-  padding: 1.5rem;
-  background-color: var(--bg-light-accent, #f8f9fa); // Очень светлый фон для выделения
-  border-radius: var(--radius-md);
-  // Убираем тень
-  // box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-color-light, #eee);
+  margin-top: 3rem; /* Больше отступ сверху */
+  padding: 2rem; /* Больше внутренние отступы */
+  background-color: var(--bg-primary); /* Более заметный фон */
+  border-radius: var(--radius-lg); /* Большее скругление */
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md); /* Добавим тень */
+
+  h3 {
+    font-size: 1.3rem;
+    color: var(--dark-color);
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+
+  p {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
 
   strong {
-      display: block; // Номер телефона на новой строке
-      margin-top: 0.5rem; // Отступ для номера
-      font-size: 1.5rem; // Крупнее номер
-      font-weight: 600;
+      display: block; 
+      margin-top: 0.5rem; 
+      font-size: 1.8rem; /* Еще крупнее номер */
+      font-weight: 700;
       color: var(--primary-color);
+      margin-bottom: 1.5rem; /* Отступ снизу для кнопки */
   }
   
-  a {
+  /* Удаляем общие стили для 'a', так как они конфликтуют с кнопкой */
+  /* a {
     color: var(--primary-color);
     text-decoration: none;
-    // font-size: 1.4rem; // Удаляем, т.к. задано в strong
-    // margin-left: 0.5rem; // Удаляем, т.к. номер на новой строке
     transition: var(--transition);
 
     &:hover {
         color: var(--secondary-color);
         text-decoration: underline;
     }
+  } */
+`;
+
+// --- Стили для кнопки бронирования --- 
+const BookingButton = styled.a`
+  display: inline-block;
+  background-color: var(--primary-color);
+  color: var(--white-color); 
+  padding: 0.8rem 2rem;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  text-align: center;
+  cursor: pointer;
+  border: 2px solid transparent;
+  box-shadow: var(--shadow-xs); /* Легкая тень в обычном состоянии */
+  /* Уточняем transition */
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  
+  i {
+    margin-right: 0.6rem; /* Чуть больше отступ справа */
+    font-size: 0.9em; /* Иконка чуть меньше текста */
+    vertical-align: middle; /* Выравниваем иконку по центру текста */
+  }
+
+  &:hover {
+    background-color: var(--secondary-color);
+    color: var(--white-color); 
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm); /* Тень побольше при наведении */
+  }
+  
+  &:active {
+    transform: translateY(0);
+    box-shadow: none;
   }
 `;
 
@@ -276,16 +335,17 @@ const SaunaPage: React.FC = () => {
       {/* --- Обертка для текстового контента --- */} 
       <TextContentWrapper>
         <DescriptionSection>
+          <h2>Наша сауна предлагает:</h2>
           <ul>
-            {/* Список преимуществ */}
-            <li>2 парилки - сухая и мокрая, под венички - выбирайте, что хочется;</li>
-            <li>Купель с температурой воды 18 - 20 градусов;</li>
-            <li>Комната отдыха с телевизором, Wi-Fi, удобным диваном и местом для застолья;</li>
-            <li>Возможность заказать вкусную еду;</li>
-            <li>Если пар утомил и ехать домой не хочется, можно снять номер и остаться на ночь;</li>
-            <li>Парковка на территории - удобно, быстро, безопасно;</li>
-            <li>Парковая территория создаст настроение и возможность подышать свежим лесным воздухом;</li>
-            <li>Администратор предложит по очень приемлемой цене правильные веники, ароматические масла, прекрасный травяной чай.</li>
+            {/* Список преимуществ с иконками */}
+            <li><i className="fas fa-temperature-high"></i>2 парилки - сухая и мокрая, под венички - выбирайте, что хочется;</li>
+            <li><i className="fas fa-tint"></i>Купель с температурой воды 18 - 20 градусов;</li>
+            <li><i className="fas fa-tv"></i>Комната отдыха с телевизором, Wi-Fi, удобным диваном и местом для застолья;</li>
+            <li><i className="fas fa-utensils"></i>Возможность заказать вкусную еду;</li>
+            <li><i className="fas fa-bed"></i>Если пар утомил и ехать домой не хочется, можно снять номер и остаться на ночь;</li>
+            <li><i className="fas fa-parking"></i>Парковка на территории - удобно, быстро, безопасно;</li>
+            <li><i className="fas fa-tree"></i>Парковая территория создаст настроение и возможность подышать свежим лесным воздухом;</li>
+            <li><i className="fas fa-leaf"></i>Администратор предложит по очень приемлемой цене правильные веники, ароматические масла, прекрасный травяной чай.</li>
           </ul>
         </DescriptionSection>
 
@@ -294,8 +354,13 @@ const SaunaPage: React.FC = () => {
         </WorkingHours>
 
         <BookingInfo>
-          Для бронирования сауны звоните:
+          <h3>Забронировать сауну</h3>
+          <p>Планируете отдых? Зарезервируйте сауну заранее по телефону:</p>
           <a href="tel:+79151201744"><strong>8 (915) 120 17 44</strong></a>
+          <BookingButton href="tel:+79151201744">
+            <i className="fas fa-phone-alt"></i>
+             Позвонить и забронировать
+          </BookingButton>
         </BookingInfo>
       </TextContentWrapper>
 

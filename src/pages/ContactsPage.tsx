@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
+import ActionButton from '../components/ui/ActionButton';
+import YandexMap from '../components/YandexMap';
 import ContactForm from '../components/ContactForm';
 // import PageContainer from '../components/ui/PageContainer'; // Закомментировано, пока компонент не создан
 // import PageTitle from '../components/ui/PageTitle'; // Закомментировано, пока компонент не создан
-import YandexMap from '../components/YandexMap';
 
 // Временная обертка и заголовок
 const TempPageContainer = styled.div`
@@ -43,20 +44,35 @@ const ContactInfo = styled.div`
   p {
     color: var(--text-secondary);
     line-height: 1.7;
-    margin-bottom: 1rem;
+    margin-bottom: 1.2rem;
     font-size: 1rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.8rem;
 
     strong {
         color: var(--text-primary);
         font-weight: 500;
+        display: block;
+        margin-bottom: 0.3rem;
+        width: 100%;
     }
-  }
-
-  a {
-    color: var(--primary-color);
-    text-decoration: none;
-    &:hover {
-        text-decoration: underline;
+    
+    span {
+        line-height: 1.6;
+    }
+    
+    a {
+        display: block;
+        margin-bottom: 0.2rem;
+    }
+    
+    i {
+        color: var(--primary-color);
+        font-size: 1.2em;
+        width: 1.3em;
+        text-align: center;
+        margin-top: 0.1em;
     }
   }
 `;
@@ -70,46 +86,62 @@ const EMAIL = "info@lesnoydvorik.ru"; // Используем email из фут�
 
 const ContactsPage: React.FC = () => {
   return (
-    <TempPageContainer> {/* Используем временный контейнер */}
-      <TempPageTitle>Контакты</TempPageTitle> {/* Используем временный заголовок */}
+    <TempPageContainer> {/* Заменить на PageContainer? */}
+      <TempPageTitle>Контакты</TempPageTitle> {/* Заменить на PageTitle? */}
+
       <ContentWrapper>
+        {/* Колонка с контактной информацией */} 
         <ContactInfo>
           <h3>Наши контакты</h3>
           <p>
-            <strong>Адрес:</strong> <br />
-            {ZHUKOVSKY_ADDRESS}
+            <i className="fas fa-map-marker-alt"></i> 
+            <span> {/* Обертка для текста */} 
+              <strong>Адрес:</strong>
+              {ZHUKOVSKY_ADDRESS}
+            </span>
           </p>
           <p>
-            <strong>Телефоны:</strong> <br />
-            <a href={`tel:+${PHONE_1.replace(/\D/g, '')}`}>{PHONE_1}</a><br/>
-            <a href={`tel:+${PHONE_2.replace(/\D/g, '')}`}>{PHONE_2}</a>
+            <i className="fas fa-phone-alt"></i> 
+            <span> {/* Обертка для текста */} 
+              <strong>Телефон:</strong>
+              <a href={`tel:${PHONE_1.replace(/\D/g, '')}`}>{PHONE_1}</a>
+              <a href={`tel:${PHONE_2.replace(/\D/g, '')}`}>{PHONE_2}</a>
+            </span>
           </p>
           <p>
-            <strong>Email:</strong> <br />
-            <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
+            <i className="fas fa-envelope"></i> 
+            <span> {/* Обертка для текста */} 
+              <strong>Email:</strong>
+              <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
+            </span>
           </p>
-          {/* Можно добавить актуальные часы работы, если они известны */}
+          {/* Можно добавить часы работы с иконкой */}
           <p>
-            <strong>Часы работы:</strong><br/>
-            Круглосуточно (уточните по телефону)
+            <i className="fas fa-clock"></i>
+            <span>
+              <strong>Часы работы:</strong>
+              Круглосуточно (ресепшн)
+            </span>
           </p>
-          
-          <div style={{ marginTop: '2rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}> 
-             <YandexMap 
-                address={ZHUKOVSKY_ADDRESS} // Адрес Жуковского
-                coordinates={ZHUKOVSKY_COORDINATES} // Координаты Жуковского
-                zoom={16} // Можно настроить масштаб
-                height="350px"
-              />
-          </div>
-
         </ContactInfo>
 
-        <div>
-          <h3>Отправьте нам сообщение</h3>
-          <ContactForm /> 
+        {/* Колонка с картой */}
+        <div> {/* Добавим обертку для заголовка и карты */} 
+          <h3>Как нас найти</h3>
+          <YandexMap 
+            address={ZHUKOVSKY_ADDRESS} 
+            coordinates={ZHUKOVSKY_COORDINATES} 
+            height="450px" // Увеличим высоту карты
+          />
         </div>
       </ContentWrapper>
+
+      {/* Секция с формой обратной связи */} 
+      <div style={{marginTop: '3rem'}}> {/* Добавим отступ */} 
+        <h3>Напишите нам</h3>
+        <ContactForm />
+      </div>
+
     </TempPageContainer>
   );
 };

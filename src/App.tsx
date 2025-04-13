@@ -7,6 +7,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLoginForm from './components/AdminLoginForm';
+import ScrollToTop from './components/ScrollToTop';
 
 // Ленивая загрузка страниц
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -33,6 +34,7 @@ const LoadingFallback = () => <div style={{ textAlign: 'center', padding: '50px'
 const App: React.FC = () => {
   return (
     <Router>
+      <ScrollToTop />
       <GlobalStyle />
       <Header />
       {/* Обертка Suspense для ленивой загрузки */}

@@ -179,17 +179,28 @@ const ContactInfo = styled.div`
 `;
 const ContactDetail = styled.div`
     display: flex;
-    align-items: start; 
+    align-items: flex-start;
     gap: 1.5rem;
     margin-bottom: 1.5rem;
-    // text-align: center;
-    // justify-content: center;
-    
-    h4 { margin: 0 0 0.3rem 0; }
-    p { margin: 0; color: #555; }
+    transition: var(--transition);
+
+    &:hover {
+        transform: translateY(-3px);
+    }
+
+    h4 { margin: 0 0 0.3rem 0; color: var(--primary-color); }
+    p { margin: 0; color: var(--text-secondary); transition: var(--transition); }
+    a { color: var(--primary-color); text-decoration: none; transition: var(--transition); }
+    a:hover { color: var(--secondary-color); text-decoration: underline; }
 `;
 const Icon = styled.i`
-    // ... стили ...
+    font-size: 1.8rem;
+    color: var(--primary-color);
+    transition: var(--transition);
+
+    &:hover {
+        color: var(--secondary-color);
+    }
 `;
 
 export default HomePage; 

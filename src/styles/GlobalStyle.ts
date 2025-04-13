@@ -138,13 +138,13 @@ const GlobalStyle = createGlobalStyle`
     text-decoration: none;
     transition: var(--transition);
     text-align: center;
+    box-shadow: var(--shadow-sm);
   }
 
   .btn:hover {
     background-color: var(--secondary-color);
-    /* Убираем transform и тень, т.к. на темном фоне они могут мешать */
-    /* transform: translateY(-3px); */
-    /* box-shadow: var(--shadow-md); */
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
   }
 
   /* Стили секций и заголовков секций тоже адаптируем */

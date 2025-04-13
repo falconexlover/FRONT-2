@@ -47,6 +47,18 @@ const NavLinkStyled = styled.button<{ $isActive: boolean }>`
   border-radius: var(--radius-sm); /* Добавим небольшое скругление */
   margin: 0 0.5rem; /* Небольшие отступы по бокам */
   width: calc(100% - 1rem); /* Учитываем отступы */
+  position: relative;
+
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: ${props => props.$isActive ? '100%' : '0'};
+    height: 2px;
+    background-color: var(--secondary-color);
+    transition: width 0.2s ease;
+  }
 
   &:hover {
     background-color: ${props => props.$isActive ? 'var(--primary-color)' : 'var(--bg-tertiary)'}; 
