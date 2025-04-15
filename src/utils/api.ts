@@ -11,7 +11,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 
 // API сервис для взаимодействия с бэкендом
-const API_BASE_URL: string = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+export const API_BASE_URL: string = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
 // Создаем экземпляр axios
 const axiosInstance = axios.create({

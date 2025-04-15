@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../utils/api';
 
 const BookingSection = styled.section`
   padding: var(--space-xxxl) 0; /* Увеличим вертикальный отступ секции */
@@ -228,17 +229,33 @@ const BookingPage: React.FC = () => {
             notes: ''
         };
 
-        const response = await fetch('/api/bookings', {
+        const response = await fetch(`${API_BASE_URL}/bookings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(bookingPayload),
         });
 
-        const data = await response.json();
-
+        // Сначала проверяем статус ответа
         if (!response.ok) {
-            throw new Error(data.message || 'Ошибка при создании бронирования.');
+            // Попытаемся прочитать текст ошибки, если он есть
+            let errorText = response.statusText; // Стандартный текст статуса
+            try {
+                const errorBody = await response.text(); // Читаем тело как текст
+                // Можно добавить логику, чтобы извлечь сообщение из HTML или текста,
+                // но пока просто добавим тело ответа к сообщению ошибки.
+                if (errorBody) {
+                   errorText += `: ${errorBody}`;
+                }
+            } catch (readError) {
+                // Ошибка чтения тела ответа - игнорируем
+                console.error("Could not read error response body:", readError);
+            }
+            // Выбрасываем ошибку с более подробным сообщением
+            throw new Error(`Ошибка ${response.status}: ${errorText}`);
         }
+
+        // Если response.ok === true, то пытаемся парсить JSON
+        const data = await response.json();
 
         if (data.confirmationUrl) {
             window.location.href = data.confirmationUrl;
@@ -249,6 +266,7 @@ const BookingPage: React.FC = () => {
     } catch (error) {
         console.error('Booking submission error:', error);
         const errorMessage = error instanceof Error ? error.message : String(error);
+        // Используем оригинальное сообщение ошибки, которое теперь будет более информативным
         toast.error(`Ошибка бронирования: ${errorMessage}`);
         setIsSubmitting(false);
     }
