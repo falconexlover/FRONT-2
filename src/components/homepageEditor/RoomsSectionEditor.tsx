@@ -79,7 +79,7 @@ const RoomsSectionEditor: React.FC<RoomsSectionEditorProps> = ({
   // Обработчик для полей конкретной комнаты
   const handleRoomInputChange = (
     index: number, 
-    field: keyof RoomPreview, 
+    field: keyof RoomPreview,
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     onRoomChange(index, field, e.target.value);
@@ -112,7 +112,7 @@ const RoomsSectionEditor: React.FC<RoomsSectionEditorProps> = ({
 
       <h3>Список номеров (превью для главной)</h3>
       <p style={{fontSize: '0.9rem', color: '#555', marginBottom: '1.5rem'}}>
-        Примечание: здесь редактируются только данные, которые показываются на главной странице (название, описание, цена). Полное управление номерами должно быть в отдельном разделе админ-панели.
+        Примечание: здесь редактируются только данные, которые показываются на главной странице (название, цена).
       </p>
 
       {(content.roomsData || []).map((room, index) => (
@@ -129,16 +129,7 @@ const RoomsSectionEditor: React.FC<RoomsSectionEditorProps> = ({
             />
           </FormGroup>
           
-          <FormGroup>
-            <label htmlFor={`room-${index}-description`}>Описание:</label>
-            <textarea 
-              id={`room-${index}-description`}
-              value={room.description || ''}
-              onChange={(e) => handleRoomInputChange(index, 'description', e)}
-            />
-          </FormGroup>
-          
-          <FormGroup style={{marginBottom: 0}}> {/* Уберем отступ у последнего элемента в карточке */}
+          <FormGroup style={{marginBottom: 0}}>
             <label htmlFor={`room-${index}-price`}>Цена (текст):</label>
             <input 
               id={`room-${index}-price`}

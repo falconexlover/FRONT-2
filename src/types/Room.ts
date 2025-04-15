@@ -12,7 +12,6 @@ export interface RoomType {
   pricePerNight: number; // Числовое значение цены для расчетов (переименовал из priceValue)
   capacity: number;
   features: string[];
-  description?: string; // Добавим опциональное описание
   isAvailable?: boolean; // Доступность номера
   displayOrder?: number; // Добавляем поле для порядка
   createdAt?: string; // Дата создания (опционально)

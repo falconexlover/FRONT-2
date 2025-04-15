@@ -90,7 +90,7 @@ const SuccessMessage = styled.p`
 `;
 
 const ContactForm: React.FC = () => {
-  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  const [formData, setFormData] = useState({ name: '', phone: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
 
@@ -108,7 +108,7 @@ const ContactForm: React.FC = () => {
     await new Promise(resolve => setTimeout(resolve, 1500)); 
     setIsSubmitting(false);
     setSubmitMessage('Сообщение успешно отправлено!'); 
-    setFormData({ name: '', email: '', message: '' }); // Очистка формы
+    setFormData({ name: '', phone: '', message: '' }); // Очистка формы
      // Можно добавить скрытие сообщения через время
     // setTimeout(() => setSubmitMessage(''), 5000);
   };
@@ -116,7 +116,7 @@ const ContactForm: React.FC = () => {
   return (
     <Form onSubmit={handleSubmit}>
       <FormGroup>
-        <Label htmlFor="name">Ваше имя</Label>
+        <Label htmlFor="name">Как к Вам обращаться?</Label>
         <Input 
           type="text" 
           id="name" 
@@ -128,12 +128,12 @@ const ContactForm: React.FC = () => {
         />
       </FormGroup>
       <FormGroup>
-        <Label htmlFor="email">Ваш Email</Label>
+        <Label htmlFor="phone">Ваш телефон</Label>
         <Input 
-          type="email" 
-          id="email" 
-          name="email" 
-          value={formData.email} 
+          type="tel" 
+          id="phone" 
+          name="phone" 
+          value={formData.phone} 
           onChange={handleChange} 
           required 
           disabled={isSubmitting}

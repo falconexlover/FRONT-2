@@ -20,6 +20,7 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { DragEndEvent } from '@dnd-kit/core';
 import ConferencePageEditor from './admin/editors/ConferencePageEditor';
 import PartyPageEditor from './admin/editors/PartyPageEditor';
+import SaunaPageEditor from './admin/editors/SaunaPageEditor';
 import ArticlesAdminPanel from '../components/admin/ArticlesAdminPanel';
 import Modal from './ui/Modal';
 
@@ -62,10 +63,11 @@ const adminTabs: TabItem[] = [
     { id: 'services', label: 'Услуги' },
     { id: 'edit-conference', label: 'Ред. Конференц-зал' }, 
     { id: 'edit-party', label: 'Ред. Детские праздники' }, 
+    { id: 'edit-sauna', label: 'Ред. Сауна' },
     { id: 'gallery', label: 'Галерея' },
     { id: 'upload', label: 'Загрузить фото' },
     { id: 'promotions', label: 'Акции' },
-    { id: 'articles', label: 'Статьи' },
+    { id: 'articles', label: 'Блог' },
 ];
 
 const AdminPanel: React.FC<AdminPanelProps> = () => {
@@ -307,6 +309,8 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
         return <ConferencePageEditor />;
       case 'edit-party':
         return <PartyPageEditor />;
+      case 'edit-sauna':
+        return <SaunaPageEditor />;
       case 'articles':
         return <ArticlesAdminPanel />;
       default:

@@ -276,10 +276,12 @@ const ContactsPage: React.FC = () => {
           )}
           {email && (
             <ContactItem>
-              <i className="fas fa-envelope"></i> 
+              <i className="fab fa-vk"></i> 
               <div> 
-                <strong>Email:</strong>
-                <a href={`mailto:${email}`}>{email}</a>
+                <strong>ВКонтакте:</strong>
+                <a href="https://vk.com/lesnoy_dvorik" target="_blank" rel="noopener noreferrer">
+                  Наша страница ВК
+                </a>
               </div>
             </ContactItem>
           )}

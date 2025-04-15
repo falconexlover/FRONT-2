@@ -16,11 +16,10 @@ export interface AboutContent {
   imagePublicId?: string; // Добавляем ID из Cloudinary
 }
 
-// Экспортируем интерфейс
+// Экспортируем интерфейс для превью комнат на главной
 export interface RoomPreview {
   _id?: string; // Используем ID от MongoDB (может отсутствовать у новых)
   title: string;
-  description: string;
   price: string;
   // imageUrl?: string; // Раскомментируйте, если нужно для редактора
 }
@@ -51,6 +50,7 @@ export interface ContactContent {
   address: string;
   phone: string[];
   email: string;
+  vk?: string;           // Добавляем ссылку на ВКонтакте
   coordinates?: [number, number]; // Добавляем необязательные координаты
   openingHours?: string;          // Добавляем необязательные часы работы
 }

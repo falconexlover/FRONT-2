@@ -455,21 +455,44 @@ const Header: React.FC = () => {
   useEffect(() => {
     const anchor = localStorage.getItem('scrollToAnchor');
     if (anchor && location.pathname === '/' && location.hash === '') {
+      // Функция для попытки прокрутки к элементу
+      const tryScrollToElement = (remainingAttempts = 10) => {
         const element = document.getElementById(anchor);
+        
         if (element) {
-            setTimeout(() => {
-                const headerHeight = headerRef.current?.offsetHeight ?? 80;
-                const scrollOffset = headerHeight + 10;
-                const elementPosition = element.getBoundingClientRect().top;
-                const offsetPosition = elementPosition + window.pageYOffset - scrollOffset;
-                window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-                localStorage.removeItem('scrollToAnchor');
-            }, 100);
+          // Элемент найден - выполняем прокрутку
+          const headerHeight = headerRef.current?.offsetHeight ?? 80;
+          const scrollOffset = headerHeight + 10;
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - scrollOffset;
+          
+          window.scrollTo({ 
+            top: offsetPosition, 
+            behavior: "smooth" 
+          });
+          
+          // Убираем метку из localStorage
+          localStorage.removeItem('scrollToAnchor');
+        } else if (remainingAttempts > 0) {
+          // Элемент не найден, но у нас еще есть попытки
+          // Ждем 100мс и пробуем снова
+          setTimeout(() => {
+            tryScrollToElement(remainingAttempts - 1);
+          }, 100);
         } else {
-             localStorage.removeItem('scrollToAnchor');
+          // Исчерпаны все попытки, элемент не найден
+          console.warn(`Не удалось найти элемент с id "${anchor}" после нескольких попыток`);
+          localStorage.removeItem('scrollToAnchor');
         }
+      };
+      
+      // Запускаем механизм проверки
+      // Небольшая начальная задержка, чтобы страница успела загрузиться
+      setTimeout(() => {
+        tryScrollToElement();
+      }, 200);
     } else if (anchor && location.pathname !== '/') {
-         localStorage.removeItem('scrollToAnchor');
+      localStorage.removeItem('scrollToAnchor');
     }
   }, [location.pathname, location.hash, headerRef]);
 
@@ -554,7 +577,7 @@ const Header: React.FC = () => {
           <NavItem><NavLink to="/sauna" onClick={handleLinkClick}>Сауна</NavLink></NavItem>
           <NavItem><NavLink to="/conference" onClick={handleLinkClick}>Конференц-зал</NavLink></NavItem>
           <NavItem><NavLink to="/party" onClick={handleLinkClick}>Детские праздники</NavLink></NavItem>
-          <NavItem><NavScrollLink href="/#services-section" onClick={(e) => handleScrollLinkClick(e, 'services-section')}>Услуги</NavScrollLink></NavItem>
+          <NavItem><NavScrollLink href="/#services-section" onClick={(e) => handleScrollLinkClick(e, 'services-section')}>Предложения</NavScrollLink></NavItem>
           <NavItem><NavLink to="/promotions" onClick={handleLinkClick}>Акции</NavLink></NavItem>
           <NavItem><NavLink to="/gallery" onClick={handleLinkClick}>Галерея</NavLink></NavItem>
           <NavItem><NavLink to="/blog" onClick={handleLinkClick}>Блог</NavLink></NavItem>
@@ -562,7 +585,7 @@ const Header: React.FC = () => {
           
           {isMobile && (
             <NavItem>
-              <BookButton to="/booking" $mobile={true} onClick={handleLinkClick} data-mobile-button="true">
+              <BookButton to="/rooms" $mobile={true} onClick={handleLinkClick} data-mobile-button="true">
                 Забронировать
               </BookButton>
             </NavItem>
@@ -570,7 +593,7 @@ const Header: React.FC = () => {
         </NavMenu>
         
         {!isMobile && (
-          <BookButton to="/booking">
+          <BookButton to="/rooms">
             Забронировать
           </BookButton>
         )}

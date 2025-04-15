@@ -153,6 +153,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           case 'promotions': return 'fa-tags'; // Добавляем иконку для акций
           case 'edit-conference': return 'fa-chalkboard-teacher'; // Иконка доски
           case 'edit-party': return 'fa-birthday-cake'; // Иконка торта
+          case 'edit-sauna': return 'fa-hot-tub'; // Иконка для сауны
+          case 'articles': return 'fa-blog'; // Иконка для блога
           default: return 'fa-question-circle';
       }
   };

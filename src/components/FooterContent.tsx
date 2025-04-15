@@ -6,6 +6,7 @@ import {
   FooterSection,
   FooterBottom
 } from './styles/FooterStyles';
+import MapPin from '../assets/map-pin.png';
 
 const FooterContent: React.FC = () => {
   return (
@@ -45,15 +46,15 @@ const FooterContent: React.FC = () => {
           <SectionTitle>Свяжитесь с нами</SectionTitle>
           <div className="contact-item">
             <div className="icon"><i className="fas fa-map-marker-alt"></i></div>
-            <div className="content">Московская область, Ногинский район, деревня Жилино, улица Лесная, дом 1</div>
+            <div className="content">санаторий-профилакторий «Лесной дворик», г. Жуковский, ул. Нижегородская, д.4.</div>
           </div>
           <div className="contact-item">
             <div className="icon"><i className="fas fa-phone"></i></div>
             <div className="content"><a href="tel:+79998887766">+7 (999) 888-77-66</a></div>
           </div>
           <div className="contact-item">
-            <div className="icon"><i className="fas fa-envelope"></i></div>
-            <div className="content"><a href="mailto:info@lesnoydvorik.ru">info@lesnoydvorik.ru</a></div>
+            <div className="icon"><i className="fab fa-vk"></i></div>
+            <div className="content"><a href="https://vk.com/lesnoy_dvorik" target="_blank" rel="noopener noreferrer">Наша страница ВК</a></div>
           </div>
         </FooterSection>
       </FooterContainer>

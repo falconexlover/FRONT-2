@@ -7,12 +7,20 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'swiper/css/autoplay';
-// import { RoomType, loadRoomsFromStorage } from '../utils/roomsData'; // Комментируем или удаляем эту строку
-import { RoomType } from '../types/Room'; // Убедимся, что эта строка есть
-import { roomsService } from '../utils/api'; // Новый импорт
-import { toast } from 'react-toastify'; // Убедимся, что эта строка есть
-import { Link } from 'react-router-dom';
-import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils'; // Импортируем утилиту
+import { RoomType } from '../types/Room';
+import { roomsService } from '../utils/api'; 
+import { toast } from 'react-toastify';
+import { Link, useNavigate } from 'react-router-dom';
+import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
+
+// Определяем цвета, которые будем использовать для кнопок и элементов
+const colors = {
+  primary: 'var(--primary-color)',
+  secondary: 'var(--secondary-color)',
+  accent: 'var(--accent-color)',
+  primaryLight: 'rgba(33, 113, 72, 0.1)',  // Светло-зеленый цвет для hover
+  bgColor: 'var(--bg-color, #fff)'
+};
 
 /**
  * Стили для секции номеров
@@ -88,44 +96,33 @@ const RoomsList = styled.div`
   gap: var(--space-xl); /* 32px */
 `;
 
+// Основная карточка
 const RoomCard = styled(motion.div)`
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: 1fr 2fr; // Оставляем грид для фото и контента
   background-color: white;
   border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: var(--shadow-md); /* Улучшенная тень */
-  border: 1px solid var(--border-color-light, #e0e0e0); /* Добавляем тонкую рамку с fallback */
-  transition: transform 0.3s ease, box-shadow 0.3s ease; /* Добавляем transition */
-  
-  /* Убираем разделительную линию */
-  /* border-right: 1px solid var(--border-color-light, #e0e0e0); */
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color-light, #e0e0e0);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   
   &:hover {
-      transform: translateY(-5px); /* Подъем при наведении */
-      box-shadow: var(--shadow-lg); /* Усиленная тень при наведении */
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-lg);
   }
   
   @media (max-width: 992px) {
     grid-template-columns: 1fr;
-    /* Убираем разделительную линию */
-    /* border-right: none; */
-    /* border-bottom: 1px solid var(--border-color-light, #e0e0e0); */
   }
 `;
 
+// Слайдер
 const SliderWrapper = styled.div`
   position: relative;
   overflow: hidden;
-  height: 100%; /* Заставляем занимать всю высоту ячейки грида */
-  /* Убираем фиксированное соотношение сторон, чтобы слайдер занимал всю высоту */
-  /* aspect-ratio: 4 / 3; */ 
-  /* Убираем специфичное скругление, полагаемся на RoomCard */
-  /* @media (max-width: 992px) {
-    border-radius: var(--radius-sm) var(--radius-sm) 0 0; 
-  } */
+  height: 100%; 
   
-  /* Добавляем стили для Swiper и Slide, чтобы они занимали всю высоту */
   .swiper,
   .swiper-slide {
     height: 100%;
@@ -136,10 +133,10 @@ const SliderWrapper = styled.div`
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.4s ease; /* Плавный переход для zoom */
+    transition: transform 0.4s ease;
   }
   
-  &:hover .swiper-slide img { /* Применяем scale при наведении на весь слайдер */
+  &:hover .swiper-slide img {
     transform: scale(1.05); 
   }
   
@@ -151,53 +148,15 @@ const SliderWrapper = styled.div`
     background-color: white;
     opacity: 1;
   }
-
-  /* Убираем медиа-запрос для высоты отсюда, т.к. высота определяется соотношением сторон */
-  /* @media (max-width: 992px) { ... } */
 `;
 
+// Контент карточки (без описания)
 const RoomContent = styled.div`
-  padding: var(--space-xl); /* 32px */
+  padding: var(--space-xl);
   display: flex;
   flex-direction: column;
   position: relative;
-  
-  h3 {
-    color: var(--dark-color);
-    font-family: 'Playfair Display', serif;
-    margin-bottom: 0.8rem;
-    font-size: 1.6rem;
-    font-weight: 600;
-    line-height: 1.4;
-    @media (max-width: 768px) {
-      font-size: 1.4rem;
-    }
-    @media (max-width: 576px) {
-      font-size: 1.3rem;
-    }
-  }
-  
-  p {
-    color: var(--text-secondary);
-    margin-bottom: var(--space-lg); /* 24px */
-    line-height: 1.6;
-    flex-grow: 1;
-    font-size: 0.95rem;
-    @media (max-width: 768px) {
-      font-size: 0.9rem;
-    }
-    @media (max-width: 576px) {
-      font-size: 0.85rem;
-      line-height: 1.5;
-    }
-  }
-
-  @media (max-width: 768px) {
-      padding: var(--space-lg); /* 24px */
-  }
-  @media (max-width: 576px) {
-      padding: calc(var(--space-md) + var(--space-xs)); /* ~20px */
-  }
+  // Убираем flex-grow: 1 из p, т.к. p удален
 `;
 
 const RoomTitle = styled.h3`
@@ -207,14 +166,6 @@ const RoomTitle = styled.h3`
   font-size: 1.6rem; /* Немного уменьшаем размер */
   font-weight: 600; /* Немного уменьшаем жирность */
   line-height: 1.4; /* Уменьшаем высоту строки для компактности */
-`;
-
-const RoomDescription = styled.p`
-  color: var(--text-secondary); /* Делаем текст описания светлее */
-  margin-bottom: var(--space-lg); /* 24px */
-  line-height: 1.6; /* Слегка увеличиваем интервал */
-  flex-grow: 1; /* Позволяем описанию занимать доступное пространство */
-  font-size: 0.95rem; /* Делаем чуть меньше основного */
 `;
 
 const RoomPrice = styled.div`
@@ -256,6 +207,35 @@ const RoomActions = styled.div`
   }
 `;
 
+// --- СТИЛИ ДЛЯ КНОПОК ---
+const ActionButton = styled.button`
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s ease;
+  text-align: center;
+  display: inline-block;
+  border: none;
+  color: var(--text-primary);
+  background-color: #f5f5f5;
+  
+  &:hover {
+    background-color: #e0e0e0;
+  }
+`;
+
+// --- НОВЫЙ СТИЛЬ ДЛЯ КНОПКИ "ПОДРОБНЕЕ" ---
+const DetailsButton = styled(ActionButton)`
+  background-color: transparent;
+  border: 1px solid ${colors.primary};
+  color: ${colors.primary};
+  
+  &:hover {
+    background-color: ${colors.primaryLight};
+  }
+`;
+
 // --- НОВЫЙ СТИЛЬ ДЛЯ ССЫЛКИ "ПОДРОБНЕЕ" ---
 const DetailsLink = styled(Link)`
   color: var(--primary-color);
@@ -275,7 +255,6 @@ const DetailsLink = styled(Link)`
     margin-bottom: var(--space-sm); /* 8px */
   }
 `;
-// --- КОНЕЦ НОВОГО СТИЛЯ ---
 
 const BookingButton = styled(Link)`
   display: inline-block;
@@ -391,25 +370,20 @@ const RoomFeatures = styled.div`
  * Компонент страницы с номерами
  */
 const RoomsPage: React.FC = () => {
-  // Состояния для управления данными, загрузкой и ошибками
   const [rooms, setRooms] = useState<RoomType[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
   
-  // Загрузка номеров при монтировании
   useEffect(() => {
     const fetchRooms = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Используем импортированный roomsService из api.ts
         const data = await roomsService.getAllRooms();
         const fetchedRooms = Array.isArray(data) ? data : [];
         setRooms(fetchedRooms);
-        // Убираем лог отсюда
-        // console.log("Загруженные номера (rooms state):", fetchedRooms);
       } catch (err: any) {
-        console.error("Ошибка загрузки номеров:", err);
         const message = err.message || 'Не удалось загрузить информацию о номерах.';
         setError(message);
         toast.error(message);
@@ -423,7 +397,7 @@ const RoomsPage: React.FC = () => {
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     const target = e.target as HTMLImageElement;
     target.onerror = null;
-    target.src = './placeholder-image.jpg';
+    target.src = '/placeholder-image.jpg'; 
   };
 
   // --- Варианты анимации --- 
@@ -445,151 +419,116 @@ const RoomsPage: React.FC = () => {
       })
   };
 
-  // --- ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ ИКОНОК --- 
-  const getFeatureIcon = (feature: string): string | null => {
-    const lowerFeature = feature.toLowerCase().trim(); 
-    
-    if (lowerFeature.includes('wi-fi') || lowerFeature.includes('wifi') || lowerFeature.includes('вай фай') || lowerFeature.includes('интернет')) return 'fas fa-wifi';
-    if (lowerFeature.includes('кондиционер')) return 'fas fa-snowflake';
-    if (lowerFeature.includes('телевизор') || lowerFeature.includes('tv')) return 'fas fa-tv';
-    if (lowerFeature.includes('холодильник')) return 'fas fa-temperature-low';
-    if (lowerFeature.includes('бутилированная вода')) return 'fas fa-wine-bottle'; // Возвращаем иконку бутылки
-    if (lowerFeature.includes('душ')) return 'fas fa-shower';
-    if (lowerFeature.includes('ванна')) return 'fas fa-bath';
-    if (lowerFeature.includes('балкон') || lowerFeature.includes('лоджия')) return 'fas fa-archway';
-    if (lowerFeature.includes('чайник')) return 'fas fa-mug-hot';
-    if (lowerFeature.includes('фен')) return 'fas fa-wind';
-    if (lowerFeature.includes('сейф')) return 'fas fa-lock';
-    return null;
+  // Функция парсинга особенностей номера
+  const parseFeatures = (featuresRaw: string | string[] | undefined): string[] => {
+    if (Array.isArray(featuresRaw)) {
+      return featuresRaw.map(String);
+    } else if (typeof featuresRaw === 'string') {
+      try {
+        const parsed = JSON.parse(featuresRaw);
+        if (Array.isArray(parsed)) {
+          return parsed.map(String);
+        }
+      } catch {}
+      // Если не JSON-массив, пробуем разбить строку
+      return featuresRaw.split(',').map((f: string) => f.trim()).filter(Boolean);
+    }
+    return []; // Возвращаем пустой массив по умолчанию
+  };
+
+  // Функция для обработки клика по кнопке Забронировать
+  const handleBookClick = (room: RoomType) => {
+    navigate('/booking', {
+      state: {
+        roomId: room._id,
+        roomPrice: room.pricePerNight, // Передаем ЧИСЛОВОЕ значение цены
+        roomTitle: room.title
+      }
+    });
   };
 
   return (
     <RoomsSection id="rooms">
       <RoomsContainer>
-        {/* Анимация для заголовка */}
         <motion.div initial="hidden" animate="visible" variants={titleVariants}>
-            <SectionTitle>
-                <h1>Наши Номера</h1>
-                <p>Выберите идеальный вариант для вашего комфортного отдыха</p>
-            </SectionTitle>
+          <SectionTitle>
+            <h1>Наши Номера</h1>
+            <p>Выберите идеальный вариант для вашего комфортного отдыха</p>
+          </SectionTitle>
         </motion.div>
         
         {isLoading && (
-          <LoadingContainer>
-            <LoadingSpinner />
-          </LoadingContainer>
+          <LoadingContainer><LoadingSpinner /></LoadingContainer>
         )}
-        
         {error && (
           <ErrorMessage>{error}</ErrorMessage>
         )}
         
         {!isLoading && !error && rooms.length > 0 && (
           <RoomsList>
-            {rooms.map((room, index) => (
-              <RoomCard 
-                key={room._id}
-                variants={cardVariants} // Анимация для карточки
-                initial="hidden"
-                animate="visible"
-                custom={index} // Задержка на основе индекса
-              >
-                <SliderWrapper>
-                  <Swiper
-                    modules={[Navigation, Pagination, Autoplay, A11y]}
-                    spaceBetween={0}
-                    slidesPerView={1}
-                    navigation
-                    pagination={{ clickable: true }}
-                    autoplay={{ delay: 5000, disableOnInteraction: true }}
-                    loop={room.imageUrls.length > 1}
-                  >
-                    {room.imageUrls.map((url, imgIndex) => (
-                      <SwiperSlide key={imgIndex}>
-                        <img 
-                          src={optimizeCloudinaryImage(url, 'f_auto,q_auto,w_600,h_450,c_fill')}
-                          alt={`${room.title} - изображение ${imgIndex + 1}`}
-                          onError={handleImageError}
-                          loading="lazy"
-                        />
-                      </SwiperSlide>
-                    ))}
-                    {room.imageUrls.length === 0 && (
-                      <SwiperSlide> {/* Слайд-заглушка */} 
-                        <img src="./placeholder-image.jpg" alt={`${room.title} - нет изображения`} />
-                      </SwiperSlide>
+            {rooms.map((room, index) => {
+              const featuresArray = parseFeatures(room.features);
+              return (
+                <RoomCard 
+                  key={room._id}
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  custom={index}
+                >
+                  <SliderWrapper>
+                    <Swiper
+                      modules={[Navigation, Pagination, Autoplay, A11y]}
+                      spaceBetween={0}
+                      slidesPerView={1}
+                      navigation
+                      pagination={{ clickable: true }}
+                      autoplay={{ delay: 5000, disableOnInteraction: true }}
+                      loop={room.imageUrls.length > 1}
+                    >
+                      {room.imageUrls.map((url, imgIndex) => (
+                        <SwiperSlide key={imgIndex}>
+                          <img 
+                            src={optimizeCloudinaryImage(url, 'f_auto,q_auto,w_600,h_450,c_fill')}
+                            alt={`${room.title} - изображение ${imgIndex + 1}`}
+                            onError={handleImageError}
+                            loading="lazy"
+                          />
+                        </SwiperSlide>
+                      ))}
+                      {room.imageUrls.length === 0 && (
+                        <SwiperSlide>
+                          <img src="/placeholder-image.jpg" alt={`${room.title} - нет изображения`} />
+                        </SwiperSlide>
+                      )}
+                    </Swiper>
+                  </SliderWrapper>
+                  <RoomContent>
+                    <RoomTitle>{room.title}</RoomTitle>
+                    {/* Описание удалено */}
+                    {featuresArray.length > 0 && (
+                      <RoomFeatures>
+                        <span><i className="fas fa-users"></i> {room.capacity} {room.capacity > 1 ? 'гостя' : 'гость'}</span>
+                        {featuresArray.map((feature, fIndex) => (
+                          <span key={fIndex}>{feature}</span>
+                        ))}
+                      </RoomFeatures>
                     )}
-                  </Swiper>
-                </SliderWrapper>
-                <RoomContent>
-                  <RoomTitle>{room.title}</RoomTitle>
-                  <RoomDescription>
-                    {room.description || 'Комфортный номер для вашего отдыха в Лесном дворике.'}
-                  </RoomDescription>
-                  
-                  {/* --- БЛОК С УДОБСТВАМИ --- */}
-                  {(room.features || typeof room.features === 'string') && (
-                    <RoomFeatures>
-                      {/* Вместимость */}
-                      <span>
-                        <i className="fas fa-users"></i> {room.capacity} {room.capacity > 1 ? 'гостя' : 'гость'}
-                      </span>
-                      {/* Парсим и мапим */}
-                      {(() => {
-                        let featuresArray: string[] = [];
-                        const featuresRaw = room.features;
-
-                        if (Array.isArray(featuresRaw)) {
-                          featuresArray = featuresRaw.map(String);
-                        } else if (typeof featuresRaw === 'string' && (featuresRaw as string).trim().startsWith('[')) {
-                          try {
-                            const parsed = JSON.parse(featuresRaw as string);
-                            if (Array.isArray(parsed)) {
-                              featuresArray = parsed.map(String);
-                            }
-                          } catch (e) {
-                            console.error('Ошибка парсинга features JSON:', featuresRaw, e);
-                          }
-                        } else if (typeof featuresRaw === 'string') {
-                          console.warn('Features не является JSON-массивом, пытаемся разбить строку:', featuresRaw);
-                          featuresArray = (featuresRaw as string).split(',').map((f: string) => f.trim()).filter(Boolean);
-                        }
-
-                        return featuresArray.map((feature: string, fIndex: number) => {
-                          const iconClass = getFeatureIcon(feature);
-                          return iconClass ? (
-                            <span key={fIndex}>
-                              <i className={iconClass}></i> {feature}
-                            </span>
-                          ) : null;
-                        });
-                      })()}
-                    </RoomFeatures>
-                  )}
-                  
-                  {/* --- БЛОК С ЦЕНОЙ И КНОПКОЙ --- */}
-                  <RoomActions>
-                    <RoomPrice>
-                      {room.pricePerNight} ₽ <small>за ночь</small>
-                    </RoomPrice>
-                    {/* Группируем ссылку и кнопку справа */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}> 
-                      <DetailsLink to={`/room/${room._id}`}> 
-                        Подробнее
-                      </DetailsLink>
-                      <BookingButton to={`/booking?roomId=${room._id}`}>
+                    <RoomActions>
+                      <RoomPrice>{room.pricePerNight} ₽ <small>за ночь</small></RoomPrice>
+                      <BookingButtonAsButton type="button" onClick={() => handleBookClick(room)}>
                         Забронировать
-                      </BookingButton>
-                    </div>
-                  </RoomActions>
-                </RoomContent>
-              </RoomCard>
-            ))}
+                      </BookingButtonAsButton>
+                    </RoomActions>
+                  </RoomContent>
+                </RoomCard>
+              );
+            })}
           </RoomsList>
         )}
         
         {!isLoading && !error && rooms.length === 0 && (
-          <p style={{ textAlign: 'center', marginTop: 'var(--space-xl)', color: 'var(--text-secondary)' }}> {/* 32px */}
+          <p style={{ textAlign: 'center', marginTop: 'var(--space-xl)', color: 'var(--text-secondary)' }}>
             Доступных номеров для отображения нет.
           </p>
         )}
@@ -598,5 +537,43 @@ const RoomsPage: React.FC = () => {
     </RoomsSection>
   );
 };
+
+// Переименуем стилизованный Link и сделаем его button
+const BookingButtonAsButton = styled.button`
+  display: inline-block;
+  padding: var(--space-sm) var(--space-xl); /* 8px 32px */
+  background-color: var(--primary-color);
+  color: var(--text-on-primary-bg);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: var(--transition), transform 0.2s ease, box-shadow 0.2s ease;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  font-size: 0.95rem;
+
+  &:hover {
+    background-color: var(--secondary-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  &:active {
+      transform: translateY(0);
+      box-shadow: var(--shadow-sm);
+  }
+
+  @media (max-width: 768px) {
+    padding: var(--space-sm) var(--space-lg); /* 8px 24px */
+    font-size: 0.9rem;
+  }
+  @media (max-width: 576px) {
+    padding: var(--space-sm) var(--space-md); /* 8px 16px */
+    font-size: 0.85rem;
+    width: 100%;
+  }
+`;
 
 export default RoomsPage;

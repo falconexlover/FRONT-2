@@ -63,7 +63,7 @@ type ContactContent = HomePageContent['contact'];
 
 interface ContactSectionEditorProps {
   content: NonNullable<ContactContent>;
-  onSectionChange: (field: 'title' | 'address' | 'email', value: string) => void;
+  onSectionChange: (field: 'title' | 'address' | 'email' | 'vk', value: string) => void;
   onPhoneChange: (index: number, value: string) => void;
   // addPhone: () => void; // Добавление происходит через onPhoneChange, когда меняется последнее пустое поле
   removePhone: (index: number) => void;
@@ -81,7 +81,7 @@ const ContactSectionEditor: React.FC<ContactSectionEditorProps> = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    if (name === 'title' || name === 'address' || name === 'email') {
+    if (name === 'title' || name === 'address' || name === 'email' || name === 'vk') {
       onSectionChange(name, value);
     }
   };
@@ -148,7 +148,20 @@ const ContactSectionEditor: React.FC<ContactSectionEditorProps> = ({
       ))}
       
       <FormGroup style={{marginTop: '1.5rem'}}> {/* Добавим отступ сверху */} 
-        <label htmlFor="contact-email">Email:</label>
+        <label htmlFor="contact-vk">ВКонтакте (ссылка):</label>
+        <input 
+          id="contact-vk"
+          name="vk"
+          type="url"
+          value={content.vk || ''}
+          onChange={handleInputChange}
+          disabled={isSaving}
+          placeholder="https://vk.com/lesnoy_dvorik"
+        />
+      </FormGroup>
+      
+      <FormGroup style={{marginTop: '1.5rem'}}> {/* Оставляем email для внутренних целей */} 
+        <label htmlFor="contact-email">Email (для системы):</label>
         <input 
           id="contact-email"
           name="email"

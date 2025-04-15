@@ -151,7 +151,6 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ rooms, selectedRoomId, on
               <div className="price">
                 {room.price}
               </div>
-              {room.description && <p>{room.description}</p>}
               <ul className="features">
                 {room.features?.slice(0, 3).map((feature: string, idx: number) => (
                   <li key={idx}><i className="fas fa-star"></i> {feature}</li>

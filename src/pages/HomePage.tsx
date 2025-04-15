@@ -111,7 +111,9 @@ const HomePage: React.FC = () => {
             <SlidingPromoBanner />
 
             <Banner content={banner} />
-            <About content={about} />
+            <div id="about-section">
+                <About content={about} />
+            </div>
             <Rooms title={rooms?.title} subtitle={rooms?.subtitle} />
             <div id="services-section">
                 <Services title={services?.title} subtitle={services?.subtitle} />

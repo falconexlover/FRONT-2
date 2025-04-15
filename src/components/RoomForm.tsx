@@ -177,25 +177,18 @@ const ErrorText = styled.p`
 // Заменяем priceValue на pricePerNight
 const DEFAULT_ROOM: Omit<RoomType, '_id'> = {
   title: "",
-  // imageUrl: "", // Удалено
-  imageUrls: [], // Добавлено
-  cloudinaryPublicIds: [], // Добавлено
-  price: "", // Пользователь введет строку
-  // priceValue: 0, // Удалено
-  pricePerNight: 0, // Добавлено и переименовано
+  imageUrls: [], 
+  cloudinaryPublicIds: [], 
+  price: "", 
+  pricePerNight: 0, 
   capacity: 2,
   features: [],
-  description: "", // Добавлено для полноты
-  isAvailable: true // Добавлено для полноты
+  isAvailable: true 
 };
 
-// Тип для состояния формы, может включать _id для редактирования
-// Используем pricePerNight вместо priceValue
-// Не храним imageUrls/cloudinaryPublicIds в состоянии формы напрямую, используем initialData
-// Переопределяем тип для большей ясности и исправления ошибки с _id
-// Сначала берем все поля ИЗ RoomType, КРОМЕ массивов изображений
+// Типы для состояния формы
 type RoomFormFields = Omit<RoomType, 'imageUrls' | 'cloudinaryPublicIds'>;
-// Затем делаем _id опциональным для состояния формы
+// Теперь RoomFormData соответствует RoomFormFields + опциональный _id
 type RoomFormData = Omit<RoomFormFields, '_id'> & { _id?: string };
 
 // --- Стили для блока Особенностей --- 
@@ -320,19 +313,17 @@ const FileInput = styled.input`
 `;
 
 const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) => {
-  // Инициализируем состояние формы без полей изображений
-  // Теперь тип RoomFormData корректно обрабатывает опциональный _id
+  // Инициализируем состояние формы
   const [formData, setFormData] = useState<RoomFormData>(() => {
     const data = initialData || DEFAULT_ROOM;
     return {
-      _id: initialData?._id, // Добавляем _id если редактируем
+      _id: initialData?._id,
       title: data.title || '',
       price: data.price || '',
-      pricePerNight: data.pricePerNight || 0, // Используем pricePerNight
+      pricePerNight: data.pricePerNight || 0, 
       capacity: data.capacity || 2,
       features: data.features || [],
-      description: data.description || '', // Добавлено
-      isAvailable: data.isAvailable !== undefined ? data.isAvailable : true // Добавлено
+      isAvailable: data.isAvailable !== undefined ? data.isAvailable : true 
     };
   });
   
@@ -541,13 +532,13 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
     if (!validateForm()) {
       return;
     }
+    // Собираем данные для отправки, убираем fullDescription
     const dataToSend: Omit<RoomType, '_id' | 'imageUrls' | 'cloudinaryPublicIds'> = {
       title: formData.title,
       price: formData.price,
       pricePerNight: formData.pricePerNight, 
       capacity: formData.capacity,
       features: formData.features,
-      description: formData.description,
       isAvailable: formData.isAvailable
     };
     try {
@@ -685,32 +676,20 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
           </FormGroup>
         </Grid>
 
-        {/* Поле Description */}
-         <FormGroup>
-           <Label htmlFor="description">Описание</Label>
-           <TextArea
-             id="description"
-             name="description"
-             value={formData.description || ''}
-             onChange={handleChange}
-             placeholder="Подробное описание номера..."
-           />
-         </FormGroup>
-        
-         {/* Поле Is Available */}
-         <FormGroup>
-           <div className="checkbox-group">
-             <input
-               type="checkbox"
-               id="isAvailable"
-               name="isAvailable"
-               checked={formData.isAvailable}
-               onChange={handleChange}
-             />
-             {/* Используем обычный label, т.к. стили внутри FormGroup */} 
-             <label htmlFor="isAvailable">Номер доступен для бронирования</label>
-           </div>
-         </FormGroup>
+        {/* Поле Is Available */}
+        <FormGroup>
+          <div className="checkbox-group">
+            <input
+              type="checkbox"
+              id="isAvailable"
+              name="isAvailable"
+              checked={formData.isAvailable}
+              onChange={handleChange}
+            />
+            {/* Используем обычный label, т.к. стили внутри FormGroup */} 
+            <label htmlFor="isAvailable">Номер доступен для бронирования</label>
+          </div>
+        </FormGroup>
 
         {/* Поле Features */}
         <FeaturesContainer>

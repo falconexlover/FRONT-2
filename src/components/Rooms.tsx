@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
 import { roomsService } from '../utils/api';
 import { RoomType } from '../types/Room';
@@ -188,17 +188,6 @@ const RoomDetails = styled.div`
       font-size: 1.2rem;
     }
   }
-  
-  p {
-    color: var(--text-secondary);
-    margin-bottom: var(--space-lg); /* 24px */
-    line-height: 1.6;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
 
   @media screen and (max-width: 576px) {
     padding: var(--space-lg); /* 24px */
@@ -215,11 +204,12 @@ const RoomButtons = styled.div`
   }
 `;
 
-const BookButton = styled(Link)`
+const DetailsButton = styled(Link)`
   flex: 1;
   padding: var(--space-sm) var(--space-md); /* 8px 16px */
-  background-color: var(--primary-color);
-  color: white;
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
   border-radius: var(--radius-sm);
   text-align: center;
   font-weight: 600;
@@ -227,7 +217,26 @@ const BookButton = styled(Link)`
   transition: all 0.3s;
   
   &:hover {
-    background-color: var(--dark-color);
+    background-color: var(--primary-color-light);
+    color: white;
+    border-color: var(--primary-color-light);
+  }
+`;
+
+const BookButtonAsButton = styled.button` 
+  padding: 0.6rem 1.2rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+  font-size: 0.9rem;
+
+  &:hover {
+    background-color: var(--secondary-color);
   }
 `;
 
@@ -290,25 +299,22 @@ const Rooms: React.FC<RoomsProps> = ({
   title = 'Наши номера',
   subtitle = 'Выберите идеальный номер для вашего отдыха' 
 }) => {
-  const [roomsData, setRoomsData] = useState<RoomType[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [rooms, setRooms] = useState<RoomType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchRooms = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const data = await roomsService.getAllRooms();
-        setRoomsData(data || []);
-      } catch (err) {
-        console.error("Ошибка загрузки номеров:", err);
-        let message = 'Не удалось загрузить информацию о номерах.';
-        if (err instanceof Error) {
-          message = err.message;
-        }
-        setError(message);
-        toast.error(message);
+        const fetchedRooms = await roomsService.getAllRooms();
+        setRooms(fetchedRooms.slice(0, 2));
+      } catch (err: any) {
+        setError('Не удалось загрузить номера.');
+        console.error('Ошибка загрузки номеров для главной:', err);
+        toast.error('Ошибка загрузки номеров.');
       } finally {
         setIsLoading(false);
       }
@@ -316,41 +322,59 @@ const Rooms: React.FC<RoomsProps> = ({
     fetchRooms();
   }, []);
 
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.target as HTMLImageElement;
+    target.onerror = null;
+    target.src = '/placeholder-image.jpg';
+  };
+
+  const handleBookClick = (room: RoomType) => {
+    navigate('/booking', {
+      state: {
+        roomId: room._id,
+        roomPrice: room.pricePerNight,
+        roomTitle: room.title
+      }
+    });
+  };
+
   return (
-    <RoomsSection id="rooms-section">
+    <RoomsSection>
       <SectionTitle>
         <h2>{title}</h2>
-        {subtitle && <p>{subtitle}</p>}
+        <p>{subtitle}</p>
       </SectionTitle>
-      
-      {isLoading ? (
-        <LoadingPlaceholder>Загрузка номеров...</LoadingPlaceholder>
-      ) : error ? (
-        <ErrorPlaceholder>
-          <ErrorMessage>{error}</ErrorMessage>
-        </ErrorPlaceholder>
-      ) : roomsData.length === 0 ? (
-        <LoadingPlaceholder>Нет доступных номеров для отображения.</LoadingPlaceholder>
-      ) : (
+
+      {isLoading && <p>Загрузка номеров...</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
+      {!isLoading && !error && rooms.length > 0 && (
         <RoomsGrid>
-          {roomsData.map((room: RoomType, index: number) => (
-            <RoomCard 
+          {rooms.map((room, index) => (
+            <RoomCard
               key={room._id}
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
             >
               <RoomImage>
-                <img src={optimizeCloudinaryImage(room.imageUrls?.[0] || '/placeholder-room.jpg', 'f_auto,q_auto,w_500')} alt={room.title} loading="lazy" />
                 <RoomPrice>{room.price}</RoomPrice>
+                <img 
+                  src={optimizeCloudinaryImage(room.imageUrls[0], 'f_auto,q_auto,w_600')}
+                  alt={room.title}
+                  loading="lazy"
+                  onError={handleImageError}
+                />
               </RoomImage>
               <RoomDetails>
                 <h3>{room.title}</h3>
-                <p>{room.description || 'Описание номера скоро появится...'}</p>
                 <RoomButtons>
-                  <BookButton to="/booking">
+                  <DetailsButton to={`/rooms/${room._id}`}>
+                    Подробнее
+                  </DetailsButton>
+                  <BookButtonAsButton type="button" onClick={() => handleBookClick(room)}>
                     Забронировать
-                  </BookButton>
+                  </BookButtonAsButton>
                 </RoomButtons>
               </RoomDetails>
             </RoomCard>
@@ -358,9 +382,9 @@ const Rooms: React.FC<RoomsProps> = ({
         </RoomsGrid>
       )}
       
-      {!isLoading && !error && roomsData.length > 0 && (
+      {!isLoading && !error && (
         <ViewAllButton to="/rooms">
-          Посмотреть все номера
+           Посмотреть все номера
         </ViewAllButton>
       )}
     </RoomsSection>

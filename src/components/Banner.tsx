@@ -65,6 +65,9 @@ const BannerContent = styled(motion.div)`
   position: relative;
   z-index: 2;
   max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
 const BannerTitle = styled.h1`
@@ -75,6 +78,7 @@ const BannerTitle = styled.h1`
   font-weight: 700;
   line-height: 1.2;
   color: white;
+  white-space: pre-line;
   
   @media screen and (max-width: 992px) {
     font-size: 3rem;
@@ -96,6 +100,7 @@ const BannerText = styled.p`
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
   color: white;
   opacity: 0.9;
+  text-align: center;
   
   @media screen and (max-width: 992px) {
     font-size: 1.1rem;
