@@ -594,68 +594,82 @@ interface ServiceType {
 */ 
 
 // --- Promotions Service --- 
+// Тип для данных, отправляемых при создании/обновлении акции
+// Может быть либо FormData, либо объект с частичными данными
+type PromotionPayload = FormData | Partial<Omit<PromotionType, '_id' | 'createdAt' | 'updatedAt'>>;
+
 export const promotionsService = {
-  getAllPromotions: async (): Promise<PromotionType[]> => {
-    const token = authService.getToken();
-    const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
-    const response = await fetch(`${API_BASE_URL}/promotions`, { headers });
-    return handleResponse<PromotionType[]>(response);
+  // Получить все акции
+  async getAllPromotions(): Promise<PromotionType[]> {
+    try {
+      const response = await axiosInstance.get('/promotions');
+      return response.data;
+    } catch (error) {
+      console.error("Ошибка при получении акций:", error);
+      throw error; // Перебрасываем ошибку для обработки в компоненте
+    }
   },
 
-  getPromotionById: async (id: string): Promise<PromotionType> => {
+  // Создать новую акцию
+  async createPromotion(promotionData: PromotionPayload): Promise<PromotionType> {
     const token = authService.getToken();
-    const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
-    const response = await fetch(`${API_BASE_URL}/promotions/${id}`, { headers });
-    return handleResponse<PromotionType>(response);
-  },
-
-  createPromotion: async (promotionData: Omit<PromotionType, '_id' | 'createdAt' | 'updatedAt'>): Promise<PromotionType> => {
-    const token = authService.getToken();
-    if (!token) throw new Error('Требуется аутентификация');
-    const response = await fetch(`${API_BASE_URL}/promotions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(promotionData),
-    });
-    return handleResponse<PromotionType>(response);
-  },
-
-  updatePromotion: async (id: string, promotionData: Partial<Omit<PromotionType, '_id' | 'createdAt' | 'updatedAt'>>): Promise<PromotionType> => {
-    const token = authService.getToken();
-    if (!token) throw new Error('Требуется аутентификация');
-    const response = await fetch(`${API_BASE_URL}/promotions/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(promotionData),
-    });
-    return handleResponse<PromotionType>(response);
-  },
-
-  deletePromotion: async (id: string): Promise<{ message: string }> => {
-    const token = authService.getToken();
-    if (!token) throw new Error('Требуется аутентификация');
-    const response = await fetch(`${API_BASE_URL}/promotions/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: response.statusText }));
-        throw new Error(errorData.message || `Ошибка удаления: ${response.status}`);
+    if (!token) {
+      throw new Error('Требуется аутентификация');
     }
     try {
-      return await response.json();
-    } catch (e) {
-      return { message: 'Акция успешно удалена' }; 
+      const headers: Record<string, string> = {
+        'Authorization': `Bearer ${token}`
+      };
+      // Не устанавливаем Content-Type, если это FormData, axios сделает это сам
+      if (!(promotionData instanceof FormData)) {
+          headers['Content-Type'] = 'application/json';
+      }
+      const response = await axiosInstance.post('/promotions', promotionData, { headers });
+      return response.data;
+    } catch (error) {
+      console.error("Ошибка при создании акции:", error);
+      throw error;
     }
   },
+
+  // Обновить акцию
+  async updatePromotion(id: string, promotionData: PromotionPayload): Promise<PromotionType> {
+    const token = authService.getToken();
+    if (!token) {
+      throw new Error('Требуется аутентификация');
+    }
+    try {
+      const headers: Record<string, string> = {
+          'Authorization': `Bearer ${token}`
+      };
+      // Не устанавливаем Content-Type, если это FormData
+      if (!(promotionData instanceof FormData)) {
+          headers['Content-Type'] = 'application/json';
+      }
+      const response = await axiosInstance.put(`/promotions/${id}`, promotionData, { headers });
+      return response.data;
+    } catch (error) {
+      console.error(`Ошибка при обновлении акции ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // Удалить акцию
+  async deletePromotion(id: string): Promise<{ message: string }> {
+    const token = authService.getToken();
+    if (!token) {
+      throw new Error('Требуется аутентификация');
+    }
+    try {
+      const response = await axiosInstance.delete(`/promotions/${id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      return response.data; // Ожидаем объект с сообщением
+    } catch (error) {
+      console.error(`Ошибка при удалении акции ${id}:`, error);
+      throw error;
+    }
+  }
 };
 
 // --- Page Service ---
@@ -665,7 +679,7 @@ const PAGES_API_URL = `${API_BASE_URL}/pages`;
 interface PageApiResponse {
   _id?: string;
   pageId: string;
-  content: any; // Тип контента будет разный для разных страниц
+  content: any; 
   createdAt?: string;
   updatedAt?: string;
 }
@@ -674,73 +688,85 @@ export const pageService = {
   // Получить контент страницы по ID
   getPageContent: async (pageId: string): Promise<PageApiResponse> => {
     console.log(`[API] Fetching content for page: ${pageId}`);
-    const response = await fetch(`${PAGES_API_URL}/${pageId}`);
-    return handleResponse<PageApiResponse>(response);
+    // Используем axiosInstance для консистентности и обработки ошибок
+    try {
+        const response = await axiosInstance.get(`/pages/${pageId}`);
+        return response.data;
+    } catch (error) {
+        console.error(`[API] Error fetching content for page ${pageId}:`, error);
+        // Можно вернуть null или пробросить ошибку
+        // Если возвращаем null, компоненты должны это обрабатывать
+        // Пробрасывание ошибки позволит использовать try/catch в компонентах
+        throw error; // Пробрасываем для обработки в компоненте
+    }
   },
 
   // Обновить контент страницы по ID
   updatePageContent: async (pageId: string, content: any): Promise<PageApiResponse> => {
     console.log(`[API] Updating content for page: ${pageId}`);
     const token = authService.getToken();
-    const response = await fetch(`${PAGES_API_URL}/${pageId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ content }),
-    });
-    return handleResponse<PageApiResponse>(response);
+    if (!token) throw new Error('Требуется аутентификация');
+    // Используем axiosInstance
+    try {
+        const response = await axiosInstance.put(`/pages/${pageId}`, { content }, {
+             headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`[API] Error updating content for page ${pageId}:`, error);
+        throw error;
+    }
   },
 
   /**
-   * ЗАГЛУШКА: Добавить изображение на страницу (требует реализации на бэкенде)
-   * Ожидаемый эндпоинт: POST /api/pages/:pageId/image
+   * Добавить изображение на страницу
+   * Запрос: POST /api/pages/:pageId/image
+   * Тело: FormData с полем 'image' (файл)
+   * Ответ: Обновленный документ Page
    */
   addPageImage: async (pageId: string, file: File): Promise<PageApiResponse> => {
-    console.warn(`[API ЗАГЛУШКА] Вызов addPageImage для pageId=${pageId}, file=${file.name}. Бэкенд не реализован.`);
-    // --- Пример реализации после доработки бэкенда ---
-    /*
+    console.log(`[API] Добавление изображения для pageId=${pageId}, file=${file.name}`);
     const token = authService.getToken();
     if (!token) throw new Error('Требуется аутентификация');
 
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('image', file); 
 
-    const response = await fetch(`${PAGES_API_URL}/${pageId}/image`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-      body: formData,
-    });
-    return handleResponse<PageApiResponse>(response); // Ожидаем полный объект страницы в ответе
-    */
-    return Promise.reject(new Error('API метод addPageImage не реализован на бэкенде'));
+    try {
+        const response = await axiosInstance.post(`/pages/${pageId}/image`, formData, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                // Content-Type не указываем, axios сделает это для FormData
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`[API] Ошибка добавления изображения для pageId=${pageId}:`, error);
+        throw error;
+    }
   },
 
   /**
-   * ЗАГЛУШКА: Удалить изображение со страницы (требует реализации на бэкенде)
-   * Ожидаемый эндпоинт: DELETE /api/pages/:pageId/image
+   * Удалить изображение со страницы
+   * Запрос: DELETE /api/pages/:pageId/image
+   * Тело: { publicId: string }
+   * Ответ: Обновленный документ Page
    */
   deletePageImage: async (pageId: string, publicId: string): Promise<PageApiResponse> => {
-    console.warn(`[API ЗАГЛУШКА] Вызов deletePageImage для pageId=${pageId}, publicId=${publicId}. Бэкенд не реализован.`);
-    // --- Пример реализации после доработки бэкенда ---
-    /*
+    console.log(`[API] Удаление изображения для pageId=${pageId}, publicId=${publicId}`);
     const token = authService.getToken();
     if (!token) throw new Error('Требуется аутентификация');
 
-    const response = await fetch(`${PAGES_API_URL}/${pageId}/image`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ publicId }),
-    });
-    return handleResponse<PageApiResponse>(response); // Ожидаем полный объект страницы в ответе
-    */
-     return Promise.reject(new Error('API метод deletePageImage не реализован на бэкенде'));
+    try {
+        const response = await axiosInstance.delete(`/pages/${pageId}/image`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+            data: { publicId } // Передаем publicId в теле запроса
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`[API] Ошибка удаления изображения для pageId=${pageId}:`, error);
+        throw error;
+    }
   },
 };
 

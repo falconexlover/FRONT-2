@@ -1,6 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
+import { pageService } from '../utils/api';
+import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
+import { toast } from 'react-toastify';
+import { LoadingSpinner } from '../components/AdminPanel';
+import { useNavigate } from 'react-router-dom';
+import Lightbox from 'yet-another-react-lightbox';
+import 'yet-another-react-lightbox/styles.css';
+import Zoom from 'yet-another-react-lightbox/plugins/zoom';
 
 // --- ОПРЕДЕЛЕНИЯ СТИЛЕЙ --- 
 const PageWrapper = styled.div`
@@ -106,37 +114,6 @@ const ImageGridContainer = styled.div`
   background-color: var(--bg-primary);
 `;
 
-const Skeleton = styled.div`
-  width: 100%;
-  height: 220px;
-  background-color: var(--bg-secondary, #f0f0f0); /* Базовый цвет фона */
-  background-image: linear-gradient(
-    90deg,
-    var(--bg-secondary, #f0f0f0) 0px,
-    var(--border-color-light, #e0e0e0) 40px,
-    var(--bg-secondary, #f0f0f0) 80px
-  ); /* Градиент для мерцания */
-  background-size: 600px; /* Ширина градиента */
-  border-radius: var(--radius-sm);
-  animation: shimmer 1.8s infinite linear; /* Новая анимация */
-  position: relative; /* Для overflow */
-  overflow: hidden; /* Скрываем градиент за пределами */
-  transition: background-color 0.2s ease; /* Для ховера */
-
-  @keyframes shimmer {
-    0% {
-      background-position: -600px 0; /* Начало градиента слева */
-    }
-    100% {
-      background-position: 600px 0; /* Конец градиента справа */
-    }
-  }
-  
-  &:hover {
-      background-color: var(--border-color-light, #e0e0e0); /* Слегка темнее при наведении */
-  }
-`;
-
 const ContactInfo = styled.div`
   margin-top: 3rem;
   padding: 2rem;
@@ -225,16 +202,79 @@ const sectionVariants = {
 // --- Константы --- 
 const CONTACT_PHONE_NUMBER = '+79169266514';
 const CONTACT_PHONE_NUMBER_DISPLAY = '8 (916) 926-65-14';
-const SKELETON_COUNT = 4;
+const PAGE_ID = 'conference';
+
+// --- Интерфейс для контента (согласуем с редактором) --- 
+interface PageContentData {
+  description: string;
+  features: string[];
+  imageUrls?: string[];
+  cloudinaryPublicIds?: string[];
+}
 
 // --- Основной компонент страницы --- 
 const ConferencePage: React.FC = () => {
+  const [content, setContent] = useState<PageContentData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const pageData = await pageService.getPageContent(PAGE_ID);
+        if (pageData && pageData.content && typeof pageData.content === 'object') {
+           // Добавляем проверку типов для полей
+           const loadedContent: PageContentData = {
+              description: typeof pageData.content.description === 'string' ? pageData.content.description : '',
+              features: Array.isArray(pageData.content.features) ? pageData.content.features : [],
+              imageUrls: Array.isArray(pageData.content.imageUrls) ? pageData.content.imageUrls : [],
+              cloudinaryPublicIds: Array.isArray(pageData.content.cloudinaryPublicIds) ? pageData.content.cloudinaryPublicIds : [],
+           };
+           setContent(loadedContent);
+        } else {
+          console.warn(`Контент для страницы '${PAGE_ID}' не найден или имеет неверный формат.`);
+          setContent({ description: 'Информация о конференц-зале скоро появится...', features: [], imageUrls: [] });
+        }
+      } catch (err) {
+        console.error(`Ошибка загрузки данных страницы ${PAGE_ID}:`, err);
+        setError("Не удалось загрузить информацию о конференц-зале.");
+        toast.error("Не удалось загрузить информацию о конференц-зале.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
 
   const handleBookClick = () => {
-    console.log('Клик по кнопке "Забронировать зал". Логика не реализована.');
-    // TODO: Реализовать логику бронирования (модальное окно, переход и т.д.)
+    navigate('/booking');
   };
 
+  // Состояния загрузки и ошибки
+  if (isLoading) {
+    return (
+      <PageWrapper style={{ textAlign: 'center', minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка информации...</LoadingSpinner>
+      </PageWrapper>
+    );
+  }
+
+  if (error || !content) {
+    return (
+      <PageWrapper style={{ textAlign: 'center' }}>
+        <PageTitle>Конференц-зал</PageTitle>
+        <p style={{ color: 'var(--danger-color)' }}>{error || 'Не удалось загрузить контент страницы.'}</p>
+      </PageWrapper>
+    );
+  }
+
+  // Рендеринг с данными
   return (
     <PageWrapper>
       <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={0}>
@@ -245,53 +285,68 @@ const ConferencePage: React.FC = () => {
         {/* Разметка описания и преимуществ в две колонки */}
         <TwoColumnLayout>
           <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={1}>
-            <Description>
-              Ищете удобное и современное пространство для проведения деловых встреч,
-              семинаров, тренингов или презентаций в Жуковском? Наш конференц-зал
-              в санатории-профилактории «Лесной дворик» идеально подойдет для ваших мероприятий.
-            </Description>
+             {/* Отображаем описание из content */}
+             {content.description ? (
+                content.description.split('\n').map((paragraph, index) => (
+                    <Description key={index}>{paragraph || '\u00A0'}</Description>
+                ))
+             ) : (
+                 <Description>Описание конференц-зала скоро появится...</Description>
+             )}
           </motion.div>
-
-          <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={1.2}>
-            <h3>Наши преимущества:</h3>
-            <FeaturesList>
-              <FeatureItem><i className="fas fa-users"></i>Просторный зал с гибкой рассадкой (до 50 человек).</FeatureItem>
-              <FeatureItem><i className="fas fa-tv"></i>Современное оборудование: проектор, экран, флипчарт, звуковая система.</FeatureItem>
-              <FeatureItem><i className="fas fa-wifi"></i>Стабильный Wi-Fi доступ для всех участников.</FeatureItem>
-              <FeatureItem><i className="fas fa-coffee"></i>Возможность организации кофе-брейков и комплексных обедов.</FeatureItem>
-              <FeatureItem><i className="fas fa-tree"></i>Комфортная атмосфера и живописная территория для перерывов.</FeatureItem>
-              <FeatureItem><i className="fas fa-parking"></i>Удобное расположение и собственная парковка.</FeatureItem>
-            </FeaturesList>
+          
+          <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={1.5}>
+             {/* Отображаем список преимуществ из content */}
+             {content.features && content.features.length > 0 ? (
+                <FeaturesList>
+                  <h3>Наши преимущества:</h3>
+                  {content.features.map((feature, index) => (
+                    <FeatureItem key={index}><i className="fas fa-check-circle"></i>{feature}</FeatureItem>
+                  ))}
+                </FeaturesList>
+             ) : (
+                 <p>Информация о преимуществах зала скоро появится...</p>
+             )}
           </motion.div>
         </TwoColumnLayout>
 
-        {/* Разметка галереи */}
-        <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={2}>
-          <h3>Фотогалерея зала:</h3>
-          <ImageGridContainer>
-            <ImageGrid>
-              {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
-                <Skeleton key={index} />
-              ))}
-            </ImageGrid>
-          </ImageGridContainer>
-        </motion.div>
+        {/* Отображаем изображения из content.imageUrls */}
+        {content.imageUrls && content.imageUrls.length > 0 && (
+            <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={2}>
+              <ImageGridContainer>
+                <h3>Галерея</h3>
+                 <ImageGrid>
+                  {content.imageUrls.map((url, index) => (
+                    <motion.img 
+                      key={content.cloudinaryPublicIds?.[index] || url}
+                      src={optimizeCloudinaryImage(url, 'w_400,h_300,c_fill,q_auto')}
+                      alt={`Конференц-зал - Фото ${index + 1}`}
+                      loading="lazy"
+                      whileHover={{ scale: 1.03 }}
+                      transition={{ duration: 0.2 }}
+                    />
+                  ))}
+                </ImageGrid>
+              </ImageGridContainer>
+            </motion.div>
+        )}
 
-        {/* Разметка контактов */}
+        {/* Контактная информация и кнопка бронирования остаются статическими */}
         <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={3}>
           <ContactInfo>
-            <p className="call-to-action">Планируете мероприятие?</p>
+            <p className="call-to-action">Готовы провести мероприятие?</p>
+            <p>Свяжитесь с нами для уточнения деталей и бронирования:</p>
             <p>
-              Свяжитесь с нами для уточнения деталей, доступности и бронирования зала:
-              <br />
-              <i className="fas fa-phone-alt" style={{ marginRight: '0.5rem', color: 'var(--primary-color)' }}></i>
-              <a href={`tel:${CONTACT_PHONE_NUMBER}`}>{CONTACT_PHONE_NUMBER_DISPLAY}</a>
+                <i className="fas fa-phone-alt" style={{ marginRight: '0.5rem' }}></i>
+                Телефон: <a href={`tel:${CONTACT_PHONE_NUMBER}`}>{CONTACT_PHONE_NUMBER_DISPLAY}</a>
             </p>
-            <BookButton onClick={handleBookClick}>Забронировать зал</BookButton>
+            {/* Можно добавить Email, если он релевантен */}
+            <BookButton onClick={handleBookClick}>
+               Забронировать зал
+            </BookButton>
           </ContactInfo>
         </motion.div>
       </ContentSection>
-
     </PageWrapper>
   );
 };

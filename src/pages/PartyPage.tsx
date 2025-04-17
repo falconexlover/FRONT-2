@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion'; // <-- Импортируем motion
-import { IMAGES } from '../assets/placeholders'; // Импортируем плейсхолдеры
+import { homePageService } from '../utils/api'; // Импортируем сервис API
+import { HomePageContent } from '../types/HomePage'; // Импортируем тип
+import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils'; // Импортируем оптимизатор
+import { toast } from 'react-toastify'; // Для сообщений об ошибках
+import { LoadingSpinner } from '../components/AdminPanel'; // Импортируем спиннер загрузки
 
 // --- Стили ---
 // Используем стили, похожие на другие страницы, например, SaunaPage или ConferencePage
@@ -91,34 +95,6 @@ const ImageGrid = styled.div`
   }
 `;
 
-// Улучшенный Skeleton с анимацией shimmer (как в ConferencePage)
-const Skeleton = styled.div`
-  width: 100%;
-  height: 200px; 
-  background-color: var(--bg-secondary, #f0f0f0);
-  background-image: linear-gradient(
-    90deg,
-    var(--bg-secondary, #f0f0f0) 0px,
-    var(--border-color-light, #e0e0e0) 40px,
-    var(--bg-secondary, #f0f0f0) 80px
-  ); 
-  background-size: 600px; 
-  border-radius: var(--radius-sm);
-  animation: shimmer 1.8s infinite linear;
-  position: relative;
-  overflow: hidden;
-  transition: background-color 0.2s ease;
-
-  @keyframes shimmer {
-    0% { background-position: -600px 0; }
-    100% { background-position: 600px 0; }
-  }
-  
-  &:hover {
-      background-color: var(--border-color-light, #e0e0e0);
-  }
-`;
-
 // Улучшенный ContactInfo (как в ConferencePage)
 const ContactInfo = styled.div`
   margin-top: 3rem;
@@ -192,24 +168,76 @@ const VK_LINK = "https://vk.com/lesnoy_dvorik";
 // --- Компонент страницы ---
 
 const PartyPage: React.FC = () => {
+  const [content, setContent] = useState<HomePageContent['party'] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const homeData = await homePageService.getHomePage();
+        if (homeData && homeData.party) {
+          setContent(homeData.party);
+        } else {
+          // Устанавливаем дефолтные значения, если секция не найдена
+          setContent({ title: 'Детские праздники', content: 'Информация скоро появится...', imageUrls: [], cloudinaryPublicIds: [] });
+          console.warn("Секция 'party' не найдена в данных главной страницы.");
+        }
+      } catch (err) {
+        console.error("Ошибка загрузки данных страницы Детских праздников:", err);
+        setError("Не удалось загрузить информацию о странице.");
+        toast.error("Не удалось загрузить информацию о странице.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
+
+  // Обработка состояний загрузки и ошибки
+  if (isLoading) {
+    return (
+      <PageWrapper style={{ textAlign: 'center', minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка страницы...</LoadingSpinner>
+      </PageWrapper>
+    );
+  }
+
+  if (error || !content) {
+    return (
+      <PageWrapper style={{ textAlign: 'center' }}>
+        <PageTitle>Детские праздники</PageTitle>
+        <p style={{ color: 'var(--danger-color)'}}>{error || 'Не удалось загрузить контент страницы.'}</p>
+      </PageWrapper>
+    );
+  }
+
+  // Рендеринг компонента с загруженными данными
   return (
     <PageWrapper>
       <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={0}>
-        <PageTitle>Детские праздники в "Лесном дворике"</PageTitle>
+         {/* Используем title из контента */}
+        <PageTitle>{content.title || 'Детские праздники в "Лесном дворике"'}</PageTitle>
       </motion.div>
 
       <ContentSection>
         <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={1}>
-          <Description>
-            Друзья, рады сообщить вам, что санаторий-профилакторий «Лесной дворик» в г. Жуковский 
-            предлагает проведение детских мероприятий и не только... Хотите устроить ребенку 
-            настоящий праздник? Давайте вместе сделаем его незабываемым!
-          </Description>
+           {/* Используем content из контента, разбиваем на параграфы для стилизации */}
+           {content.content ? (
+               content.content.split('\n').map((paragraph, index) => (
+                   <Description key={index}>{paragraph || '\u00A0'}</Description> // \u00A0 для пустых строк
+               ))
+           ) : (
+               <Description>Описание скоро появится...</Description>
+           )}
         </motion.div>
         
-        <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={1.5}> {/* Задержка для следующего блока */}
+        <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={1.5}> 
           <h3>Что мы предлагаем:</h3>
-          {/* Используем FeatureItem с иконками */}
+          {/* Этот список можно оставить статическим или перенести в админку */}
           <FeaturesList>
             <FeatureItem><i className="fas fa-utensils"></i>Собственная кухня с детским и взрослым меню - вкусно будет всем!</FeatureItem>
             <FeatureItem><i className="fas fa-gifts"></i>Праздничное оформление мероприятия.</FeatureItem>
@@ -221,39 +249,44 @@ const PartyPage: React.FC = () => {
           </FeaturesList>
         </motion.div>
 
-        <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={2}>
-          <ImageGridContainer>
-            <ImageGrid>
-              {/* Используем улучшенный Skeleton */}
-              {IMAGES.GALLERY.PARTY.map((_, index) => (
-                <Skeleton key={index} />
-              ))}
-            </ImageGrid>
-          </ImageGridContainer>
-        </motion.div>
+        {/* Отображаем изображения из content.imageUrls */}
+        {(content.imageUrls && content.imageUrls.length > 0) && (
+           <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={2}>
+             <ImageGridContainer>
+               <ImageGrid>
+                 {content.imageUrls.map((url, index) => (
+                   <motion.img 
+                     key={content.cloudinaryPublicIds?.[index] || url} // Используем publicId для ключа, если есть
+                     src={optimizeCloudinaryImage(url, 'w_400,h_300,c_fill,q_auto')} 
+                     alt={`${content.title || 'Детский праздник'} - Фото ${index + 1}`}
+                     loading="lazy"
+                     whileHover={{ scale: 1.03 }}
+                     transition={{ duration: 0.2 }}
+                   />
+                 ))}
+               </ImageGrid>
+             </ImageGridContainer>
+           </motion.div>
+        )}
 
         <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={3}>
           <ContactInfo>
-            {/* Добавляем класс и иконку телефону */}
+            {/* Контактная информация остается статической */}
             <p className="call-to-action">Скорее звоните и узнавайте подробности!</p>
             <p>
               <i className="fas fa-phone-alt" style={{ marginRight: '0.5rem' }}></i>
               Телефон: <a href={`tel:${PARTY_PHONE_NUMBER}`}>{PARTY_PHONE_NUMBER_DISPLAY}</a> 
             </p>
-            <p style={{ fontSize: '1rem' }}> {/* Немного уменьшаем шрифт адреса */} 
+            <p style={{ fontSize: '1rem' }}> 
               Наш адрес: г. Жуковский, ул. Нижегородская, д. 4, санаторий-профилакторий «Лесной дворик».
             </p>
-            <p style={{ fontSize: '1rem' }}> {/* Немного уменьшаем шрифт VK */} 
+            <p style={{ fontSize: '1rem' }}> 
               А в нашем сообществе ВК много интересного и полезного для отдыха и работы: 
               <VKLink href={VK_LINK} target="_blank" rel="noopener noreferrer">@lesnoy_dvorik</VKLink> - подписывайтесь!
             </p>
           </ContactInfo>
         </motion.div>
-
       </ContentSection>
-
-      {/* Можно добавить другие секции: отзывы, варианты программ и т.д. */}
-
     </PageWrapper>
   );
 };

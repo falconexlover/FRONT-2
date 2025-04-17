@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { PromotionType } from '../../types/Promotion';
 import ActionButton from '../ui/ActionButton';
+import { toast } from 'react-toastify';
 
 interface PromotionFormProps {
   initialData?: PromotionType | null;
-  onSave: (formData: Omit<PromotionType, '_id' | 'createdAt' | 'updatedAt'> | Partial<PromotionType>) => Promise<void>; // Возвращает Promise для отслеживания сохранения
+  onSave: (formData: Omit<PromotionType, '_id' | 'createdAt' | 'updatedAt'> | Partial<PromotionType>, imageFile?: File | null) => Promise<void>;
   onCancel: () => void;
   isSaving?: boolean;
 }
@@ -142,8 +143,48 @@ const FormActions = styled.div`
   border-top: 1px solid var(--border-color);
 `;
 
+const FileInput = styled.input`
+    display: block;
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+
+    &::file-selector-button {
+        padding: 0.6rem 1rem;
+        margin-right: 1rem;
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+            background-color: var(--primary-light-bg);
+            color: var(--primary-color);
+        }
+    }
+`;
+
+const ImagePreview = styled.img`
+    display: block;
+    max-width: 200px;
+    max-height: 150px;
+    margin-top: 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+`;
+
 // Убираем applicableTo и minPurchaseAmount из типа состояния
-type PromotionFormData = Omit<PromotionType, '_id' | 'createdAt' | 'updatedAt' | 'applicableTo' | 'minPurchaseAmount'>;
+// Добавляем imageUrl
+type PromotionFormData = Omit<PromotionType, '_id' | 'createdAt' | 'updatedAt' | 'applicableTo' | 'minPurchaseAmount'> & {
+  imageUrl?: string; // Добавляем imageUrl
+};
 
 const PromotionForm: React.FC<PromotionFormProps> = ({ initialData, onSave, onCancel, isSaving }) => {
     const [formData, setFormData] = useState<PromotionFormData>({
@@ -155,7 +196,11 @@ const PromotionForm: React.FC<PromotionFormProps> = ({ initialData, onSave, onCa
         endDate: '',
         isActive: true,
         code: '',
+        imageUrl: '', // Инициализируем imageUrl
     });
+    const [imageFile, setImageFile] = useState<File | null>(null); // Состояние для файла
+    const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null); // Состояние для превью
+    const fileInputRef = useRef<HTMLInputElement>(null); // Ref для сброса инпута
 
     useEffect(() => {
         if (initialData) {
@@ -169,14 +214,72 @@ const PromotionForm: React.FC<PromotionFormProps> = ({ initialData, onSave, onCa
                 endDate: formatInputDate(initialData.endDate),
                 isActive: initialData.isActive === undefined ? true : initialData.isActive,
                 code: initialData.code || '',
+                imageUrl: initialData.imageUrl || '', // Устанавливаем imageUrl из initialData
             });
+             // Устанавливаем превью для существующего изображения
+             setImagePreviewUrl(initialData.imageUrl || null);
+             setImageFile(null); // Сбрасываем файл при редактировании
+             if (fileInputRef.current) {
+                 fileInputRef.current.value = ""; // Сброс значения input file
+             }
         } else {
              setFormData({
                 title: '', description: '', discountType: 'percentage', discountValue: 0,
-                startDate: '', endDate: '', isActive: true, code: ''
+                startDate: '', endDate: '', isActive: true, code: '', imageUrl: '' // Сбрасываем imageUrl
              });
+             setImageFile(null); // Сбрасываем файл при создании новой
+             setImagePreviewUrl(null); // Сбрасываем превью
+              if (fileInputRef.current) {
+                 fileInputRef.current.value = ""; // Сброс значения input file
+             }
         }
     }, [initialData]);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            // Простая валидация типа файла
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+            if (!allowedTypes.includes(file.type)) {
+                toast.error('Пожалуйста, выберите изображение (JPEG, PNG, WEBP, GIF).');
+                // Сброс input file
+                if (fileInputRef.current) {
+                   fileInputRef.current.value = "";
+                }
+                setImageFile(null);
+                setImagePreviewUrl(initialData?.imageUrl || null); // Возвращаем старое превью, если было
+                return;
+            }
+             // Валидация размера файла (например, 5MB)
+            const maxSize = 5 * 1024 * 1024;
+            if (file.size > maxSize) {
+                toast.error('Файл слишком большой. Максимальный размер: 5MB.');
+                 // Сброс input file
+                 if (fileInputRef.current) {
+                   fileInputRef.current.value = "";
+                 }
+                setImageFile(null);
+                setImagePreviewUrl(initialData?.imageUrl || null); // Возвращаем старое превью, если было
+                return;
+            }
+
+            setImageFile(file);
+            // Создаем URL для превью
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreviewUrl(reader.result as string);
+            }
+            reader.readAsDataURL(file);
+        } else {
+            // Если файл не выбран (например, пользователь нажал отмену),
+            // сбрасываем файл и превью к исходному состоянию
+            setImageFile(null);
+            setImagePreviewUrl(initialData?.imageUrl || null);
+             if (fileInputRef.current) {
+                fileInputRef.current.value = ""; // Сброс значения input file
+            }
+        }
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
@@ -193,7 +296,8 @@ const PromotionForm: React.FC<PromotionFormProps> = ({ initialData, onSave, onCa
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(formData);
+        // Передаем formData и imageFile в onSave
+        onSave(formData, imageFile);
     };
 
     return (
@@ -208,6 +312,22 @@ const PromotionForm: React.FC<PromotionFormProps> = ({ initialData, onSave, onCa
             <FormGroup>
                 <Label htmlFor="description">Описание</Label>
                 <TextArea id="description" name="description" value={formData.description} onChange={handleChange} />
+            </FormGroup>
+
+            {/* Поле для загрузки изображения */}
+            <FormGroup>
+                <Label htmlFor="image">Изображение акции</Label>
+                <FileInput
+                    type="file"
+                    id="image"
+                    name="image"
+                    accept="image/png, image/jpeg, image/webp, image/gif"
+                    onChange={handleImageChange}
+                    ref={fileInputRef} // Добавляем ref
+                />
+                 {imagePreviewUrl && (
+                    <ImagePreview src={imagePreviewUrl} alt="Превью акции" />
+                 )}
             </FormGroup>
 
             <FormGroup style={{ display: 'flex', gap: '1rem' }}>

@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { toast } from 'react-toastify';
 import ActionButton from '../ui/ActionButton';
 import { ServiceType } from '../../types/Service';
+import Modal from '../ui/Modal';
 
 // Тип для состояния редактируемых полей
 interface EditingServiceState {
@@ -18,6 +19,33 @@ interface ServiceFormData {
   icon?: string;
   price?: string; // Цена в форме всегда строка
 }
+
+// Список иконок Font Awesome для выбора
+const availableIcons = [
+  { name: 'Не выбрано', class: '' },
+  { name: 'Wi-Fi', class: 'fas fa-wifi' },
+  { name: 'Парковка', class: 'fas fa-parking' },
+  { name: 'Ресторан/Кафе', class: 'fas fa-utensils' },
+  { name: 'Бар', class: 'fas fa-glass-martini-alt' },
+  { name: 'Завтрак', class: 'fas fa-coffee' },
+  { name: 'Трансфер', class: 'fas fa-shuttle-van' },
+  { name: 'Бассейн', class: 'fas fa-swimmer' },
+  { name: 'Спортзал', class: 'fas fa-dumbbell' },
+  { name: 'Конференц-зал', class: 'fas fa-users' },
+  { name: 'Бизнес-центр', class: 'fas fa-briefcase' },
+  { name: 'Прачечная', class: 'fas fa-tshirt' },
+  { name: 'Кондиционер', class: 'fas fa-wind' },
+  { name: 'Сейф', class: 'fas fa-shield-alt' },
+  { name: 'Телефон', class: 'fas fa-phone' },
+  { name: 'Телевизор', class: 'fas fa-tv' },
+  { name: 'Холодильник', class: 'fas fa-snowflake' }, // Пример иконки для холодильника
+  { name: 'Обслуживание номеров', class: 'fas fa-concierge-bell' },
+  { name: 'Услуги для инвалидов', class: 'fas fa-wheelchair' },
+  { name: 'Разрешено с животными', class: 'fas fa-paw' },
+  { name: 'Место для курения', class: 'fas fa-smoking' },
+  { name: 'Запрещено курить', class: 'fas fa-smoking-ban' },
+  { name: 'Другое (Колокольчик)', class: 'fas fa-bell' },
+];
 
 // --- Styled Components (восстанавливаем определения) ---
 const FormContainer = styled.div`
@@ -49,6 +77,32 @@ const ServiceHeader = styled.h3`
   margin-bottom: 1rem;
   font-size: 1.2rem;
   color: var(--text-primary);
+  display: flex; /* Добавляем flex для расположения кнопки */
+  justify-content: space-between; /* Разносим название и кнопку */
+  align-items: center; /* Выравниваем по центру */
+`;
+
+// Добавляем кнопку для редактирования в заголовке
+const EditNameButton = styled.button`
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.9rem; /* Меньше основного заголовка */
+  padding: 0.2rem 0.4rem;
+  margin-left: 0.5rem; /* Небольшой отступ слева */
+  line-height: 1;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s ease, background-color 0.2s ease;
+  
+  &:hover {
+    color: var(--primary-color);
+    background-color: var(--bg-secondary);
+  }
+
+  i { /* Стиль для иконки внутри кнопки */
+    pointer-events: none; /* Чтобы клик проходил на button */
+  }
 `;
 
 const FormGroup = styled.div`
@@ -114,12 +168,7 @@ const DeleteButton = styled(ActionButton)`
 
 // Добавляем стили для новой формы и ее элементов
 const AddEditFormWrapper = styled.div`
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
     padding: 1.5rem 2rem;
-    margin-bottom: 2rem;
-    box-shadow: var(--shadow-sm);
 `;
 
 const FormActions = styled.div`
@@ -179,7 +228,7 @@ const EditServicesForm: React.FC<EditServicesFormProps> = ({
     };
 
     // Обработчик изменения полей в ФОРМЕ добавления/редактирования
-    const handleFormInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleFormInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         // Теперь setFormData работает с простым типом ServiceFormData
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -284,10 +333,13 @@ const EditServicesForm: React.FC<EditServicesFormProps> = ({
               </ActionButton>
             )}
 
-            {/* Форма добавления/редактирования */} 
-            {currentEditId !== null && (
+            {/* Модальное окно для формы добавления/редактирования */}
+            <Modal 
+                isOpen={currentEditId !== null} 
+                onClose={handleCancelEdit} 
+                title={currentEditId === 'new' ? "Новая услуга" : "Редактировать услугу"}
+            >
                 <AddEditFormWrapper>
-                    <h3>{currentEditId === 'new' ? "Новая услуга" : "Редактировать услугу"}</h3>
                     <form onSubmit={handleFormSubmit}>
                          <FormGroup>
                            <Label htmlFor="serviceName">Название*</Label>
@@ -312,16 +364,27 @@ const EditServicesForm: React.FC<EditServicesFormProps> = ({
                            />
                          </FormGroup>
                          <FormGroup>
-                           <Label htmlFor="serviceIcon">Иконка (FontAwesome класс)</Label>
-                           <Input 
-                              type="text" 
-                              id="serviceIcon" 
-                              name="icon" 
-                              value={formData.icon || ''} 
-                              onChange={handleFormInputChange} 
-                              placeholder="напр., fas fa-wifi"
-                              disabled={isSaving}
-                           />
+                           <Label htmlFor="serviceIcon">Иконка</Label>
+                           {/* Заменяем Input на Select */}
+                           <Select 
+                             id="serviceIcon" 
+                             name="icon" 
+                             value={formData.icon || ''} // Используем пустую строку, если иконка не задана
+                             onChange={handleFormInputChange} 
+                             disabled={isSaving}
+                           >
+                             {availableIcons.map(icon => (
+                               <option key={icon.class} value={icon.class}>
+                                 {icon.name} ({icon.class || '-'})
+                               </option>
+                             ))}
+                           </Select>
+                           {/* Отображаем выбранную иконку для предпросмотра */}
+                           {formData.icon && (
+                             <div style={{ marginTop: '0.5rem', fontSize: '1.5rem' }}>
+                               <i className={formData.icon}></i>
+                             </div>
+                           )}
                          </FormGroup>
                          <FormGroup>
                            <Label htmlFor="servicePrice">Цена (₽)</Label>
@@ -345,13 +408,18 @@ const EditServicesForm: React.FC<EditServicesFormProps> = ({
                          </FormActions>
                     </form>
                 </AddEditFormWrapper>
-            )}
+            </Modal>
           
             {/* Список существующих услуг (карточки) */}
             {services.map(service => (
                 service._id ? (
                     <ServiceCard key={service._id}>
-                        <ServiceHeader>{service.name}</ServiceHeader>
+                        <ServiceHeader>
+                            {service.name}
+                            <EditNameButton onClick={() => handleEditClick(service)} title="Редактировать услугу">
+                                <i className="fas fa-pencil-alt"></i>
+                            </EditNameButton>
+                        </ServiceHeader>
                         {/* Поля для быстрого редактирования описания/цены */}
                         <FormGroup>
                             <Label htmlFor={`description-${service._id}`}>Описание:</Label>
@@ -405,5 +473,29 @@ const EditServicesForm: React.FC<EditServicesFormProps> = ({
         </FormContainer>
     );
 };
+
+// Добавляем стилизованный Select, если его нет
+const Select = styled.select`
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  background-color: var(--bg-secondary); /* Фон поля */
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+
+  &:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(42, 167, 110, 0.3);
+  }
+  &:disabled {
+      background-color: var(--bg-tertiary);
+      opacity: 0.7;
+      cursor: not-allowed;
+  }
+`;
 
 export default EditServicesForm; 

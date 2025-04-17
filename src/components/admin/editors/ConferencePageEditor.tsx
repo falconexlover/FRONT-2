@@ -71,18 +71,23 @@ const FeaturesList = styled.ul`
   list-style: none;
   padding: 0;
   margin-top: 0.5rem;
+  margin-bottom: 1rem;
 `;
 
 const FeatureItem = styled.li`
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem 0;
-  border-bottom: 1px dashed var(--border-color-light);
+  gap: 0.8rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem;
+  background-color: var(--bg-primary);
   font-size: 0.95rem;
+  max-width: 200px;
 
-  &:last-child {
-    border-bottom: none;
+  span {
+    flex-grow: 1;
   }
 `;
 
@@ -92,9 +97,18 @@ const RemoveButton = styled.button`
   color: var(--danger-color);
   cursor: pointer;
   font-size: 1.2rem;
-  padding: 0.2rem 0.5rem;
+  padding: 0.3rem;
   line-height: 1;
-  &:hover { color: var(--danger-dark); }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+
+  &:hover { 
+    color: var(--danger-dark); 
+    background-color: rgba(var(--danger-rgb), 0.1);
+  }
 `;
 
 const AddFeatureWrapper = styled.div`
@@ -309,7 +323,7 @@ const ConferencePageEditor: React.FC = () => {
                 disabled={isSaving}
                 title="Удалить пункт"
               >
-                &times;
+                <i className="fas fa-times"></i>
               </RemoveButton>
             </FeatureItem>
           ))}

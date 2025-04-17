@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { motion, AnimatePresence } from 'framer-motion';
-import { galleryService } from '../utils/api';
-import { GalleryImageItem } from '../types/GalleryImage';
+import { motion } from 'framer-motion';
+import { pageService } from '../utils/api';
 import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
 import { toast } from 'react-toastify';
+import { LoadingSpinner } from '../components/AdminPanel';
 
 // Используем стили, похожие на GalleryPage, но адаптируем
 const PageContainer = styled.div`
@@ -282,276 +282,165 @@ const BookingButton = styled.a`
   }
 `;
 
-// Стили для лайтбокса (можно вынести в отдельный компонент позже)
-// ... (Копируем стили Lightbox, LightboxContent, LightboxImage, LightboxControls, LightboxButton, LightboxClose из GalleryPage) ...
-const Lightbox = styled(motion.div)`
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0,0,0,0.9); z-index: 1000; display: flex;
-  align-items: center; justify-content: center; padding: 2rem;
-`;
-const LightboxContent = styled(motion.div)`
-  position: relative; max-width: 90%; max-height: 90%; display: flex;
-  flex-direction: column; align-items: center;
-`;
-const LightboxImage = styled.img`
-  max-width: 100%; max-height: 90vh; border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-lg);
-`;
-const LightboxControls = styled.div`
-  position: absolute; width: 100%; display: flex; justify-content: space-between;
-  align-items: center; top: 50%; transform: translateY(-50%); padding: 0 1rem;
-`;
-const LightboxButton = styled.button`
-  background-color: rgba(255,255,255,0.2); color: white; width: 40px; height: 40px;
-  border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  border: none; cursor: pointer; transition: var(--transition);
-  &:hover { background-color: var(--primary-color); }
-`;
-const LightboxClose = styled.button`
-  position: absolute; top: -40px; right: -40px; background: none; border: none;
-  color: white; font-size: 2rem; cursor: pointer; transition: var(--transition);
-  &:hover { color: var(--accent-color); transform: rotate(90deg); }
-  @media screen and (max-width: 768px) { top: -40px; right: 0; }
-`;
+// --- Интерфейс контента (согласуем с редактором) --- 
+interface SaunaPageContentData {
+  title: string;
+  subtitle: string;
+  description: string;
+  features: string[];
+  workingHours: string;
+  contactPhone: string;
+  bookingButtonText: string;
+  imageUrls?: string[];
+  cloudinaryPublicIds?: string[];
+}
 
-// Декоративный разделитель
-const Divider = styled.hr`
-  border: none;
-  border-top: 1px solid var(--border-color);
-  margin: var(--space-xxl) auto; /* 48px */
-  max-width: 300px;
-  position: relative;
+const PAGE_ID = 'sauna';
 
-  &::after { /* Центральный элемент */
-    content: '\f1bb'; /* Иконка листа Font Awesome (или другая) */
-    font-family: 'Font Awesome 6 Free';
-    font-weight: 900;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: var(--bg-secondary); /* Цвет фона под иконкой (должен совпадать с фоном секции) */
-    padding: 0 var(--space-sm);
-    color: var(--primary-color);
-    font-size: 1.2rem;
-  }
-`;
-
-// Стили для загрузки/ошибки (аналогично другим страницам)
-const LoadingContainer = styled.div`
-  display: flex;
-  flex-direction: column; /* Чтобы текст был под спиннером */
-  justify-content: center;
-  align-items: center;
-  min-height: 300px; 
-  padding: 2rem;
-  text-align: center;
-  color: var(--text-secondary);
-`;
-
-const LoadingSpinner = styled.div`
-  margin-bottom: var(--space-md); /* Отступ под спиннером */
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-top: 4px solid var(--primary-color);
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-`;
-
-const ErrorMessage = styled.div`
-  margin: var(--space-xxl) auto; 
-  padding: var(--space-lg) var(--space-xl); 
-  background-color: rgba(var(--danger-color-rgb, 229, 57, 53), 0.1); 
-  border: 1px solid var(--danger-color, #e53935);
-  border-radius: var(--radius-md);
-  color: var(--danger-color, #b71c1c); 
-  text-align: center;
-  max-width: 600px;
-  font-weight: 500;
-
-  &::before { 
-    content: '\f071'; 
-    font-family: 'Font Awesome 6 Free'; 
-    font-weight: 900;
-    margin-right: var(--space-sm); 
-    font-size: 1.2em;
-  }
-`;
-
+// --- Компонент страницы --- 
 const SaunaPage: React.FC = () => {
-  const [images, setImages] = useState<GalleryImageItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Состояния для контента страницы
+  const [content, setContent] = useState<SaunaPageContentData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [currentImage, setCurrentImage] = useState<GalleryImageItem | null>(null);
 
-  const loadSaunaImages = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Загружаем изображения ТОЛЬКО для категории 'sauna'
-      const saunaImages = await galleryService.getAllImages('sauna');
-      setImages(saunaImages);
-    } catch (err) {
-      console.error("Ошибка загрузки изображений сауны:", err);
-      setError("Не удалось загрузить фотографии сауны.");
-      toast.error("Не удалось загрузить фотографии сауны.");
-    } finally {
-      setLoading(false);
-    }
+  // Загрузка данных страницы
+  useEffect(() => {
+    const loadPageContent = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const pageData = await pageService.getPageContent(PAGE_ID);
+        if (pageData && pageData.content && typeof pageData.content === 'object') {
+          // Валидируем и устанавливаем контент
+          setContent({
+            title: pageData.content.title || 'Наша Сауна', // Дефолтные значения
+            subtitle: pageData.content.subtitle || 'Идеальное место для отдыха...',
+            description: pageData.content.description || '',
+            features: Array.isArray(pageData.content.features) ? pageData.content.features : [],
+            workingHours: pageData.content.workingHours || 'Ежедневно с 10:00 до 23:00',
+            contactPhone: pageData.content.contactPhone || '+7 (XXX) XXX-XX-XX',
+            bookingButtonText: pageData.content.bookingButtonText || 'Позвонить для бронирования',
+            imageUrls: Array.isArray(pageData.content.imageUrls) ? pageData.content.imageUrls : [],
+            cloudinaryPublicIds: Array.isArray(pageData.content.cloudinaryPublicIds) ? pageData.content.cloudinaryPublicIds : []
+          });
+        } else {
+          console.warn(`Контент для страницы '${PAGE_ID}' не найден.`);
+          setError('Не удалось загрузить содержимое страницы.');
+        }
+      } catch (err) {
+        console.error(`Ошибка загрузки страницы ${PAGE_ID}:`, err);
+        setError("Не удалось загрузить информацию о сауне.");
+        toast.error("Не удалось загрузить информацию о сауне.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadPageContent();
   }, []);
 
-  useEffect(() => {
-    loadSaunaImages();
-  }, [loadSaunaImages]);
+  // Рендеринг состояний загрузки/ошибки
+  if (isLoading) {
+    return (
+      <PageContainer style={{ textAlign: 'center', minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка информации о сауне...</LoadingSpinner>
+      </PageContainer>
+    );
+  }
 
-  // Функции для лайтбокса (похожи на GalleryPage)
-  const openLightbox = (image: GalleryImageItem) => {
-    setCurrentImage(image);
-    setLightboxOpen(true);
-    document.body.style.overflow = 'hidden';
-  };
-  
-  const closeLightbox = () => {
-    setLightboxOpen(false);
-    setCurrentImage(null);
-    document.body.style.overflow = 'auto';
-  };
-  
-  // Навигация в лайтбоксе по загруженным картинкам сауны
-  const handlePrevImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!currentImage) return;
-    const currentIndex = images.findIndex(img => img._id === currentImage._id);
-    if (currentIndex === -1) return;
-    const newIndex = (currentIndex - 1 + images.length) % images.length;
-    setCurrentImage(images[newIndex]);
-  };
+  if (error || !content) {
+    return (
+      <PageContainer style={{ textAlign: 'center' }}>
+        <PageHeader>
+          <h1>Сауна</h1>
+          <p style={{ color: 'var(--danger-color)' }}>{error || 'Не удалось загрузить информацию о странице.'}</p>
+        </PageHeader>
+      </PageContainer>
+    );
+  }
 
-  const handleNextImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!currentImage) return;
-    const currentIndex = images.findIndex(img => img._id === currentImage._id);
-    if (currentIndex === -1) return;
-    const newIndex = (currentIndex + 1) % images.length;
-    setCurrentImage(images[newIndex]);
-  };
-
+  // --- Основной рендеринг компонента ---
   return (
     <PageContainer>
       <PageHeader>
-        <h1>Наша Сауна</h1>
-        <p>Идеальное место для отдыха и восстановления сил. Насладитесь паром, бассейном и уютной атмосферой.</p>
+        {/* Используем title и subtitle из content */}
+        <h1>{content.title}</h1>
+        <p>{content.subtitle}</p>
       </PageHeader>
 
-      {/* Фотографии */} 
-      {loading ? (
-        <LoadingContainer>
-          <LoadingSpinner />
-          <p>Загрузка фотографий...</p>
-        </LoadingContainer>
-      ) : error ? (
-        <ErrorMessage>{error}</ErrorMessage>
-      ) : images.length > 0 ? (
-        <>
-          <SectionTitle>Фотогалерея</SectionTitle>
-          <PhotoGrid
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            {images.map((image) => (
-              <PhotoItem
-                key={image._id}
-                layoutId={image._id} // Для анимации лайтбокса
-                onClick={() => openLightbox(image)}
-                whileHover={{ scale: 1.03 }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <img src={optimizeCloudinaryImage(image.imageUrl, 'f_auto,q_auto,w_400,h_300,c_fill')} alt={image.description || 'Сауна'} loading="lazy" />
-              </PhotoItem>
-            ))}
-          </PhotoGrid>
-        </>
-      ) : (
-        <p style={{textAlign: 'center', marginBottom: '3rem'}}>Фотографии сауны скоро появятся.</p>
+      {/* Отображаем галерею из content.imageUrls */}
+      {content.imageUrls && content.imageUrls.length > 0 && (
+        <PhotoGrid layout>
+          {content.imageUrls.map((url, index) => (
+            <PhotoItem
+              key={content.cloudinaryPublicIds?.[index] || url}
+              layoutId={content.cloudinaryPublicIds?.[index] || url}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ cursor: 'default' }}
+            >
+              <img 
+                src={optimizeCloudinaryImage(url, 'w_400,h_300,c_fill,q_auto')} 
+                alt={`${content.title} - Фото ${index + 1}`}
+                loading="lazy"
+              />
+            </PhotoItem>
+          ))}
+        </PhotoGrid>
       )}
 
-      {/* --- Обертка для текстового контента --- */} 
-      <Divider /> {/* Добавляем разделитель */} 
+      {/* Секция с описанием, часами работы и бронированием */}
       <TextContentWrapper>
-        <Section> {/* Оборачиваем описание */} 
-          <SectionTitle>Описание</SectionTitle> 
-          <DescriptionSection>
-            {/* Пример улучшенного текста, замени на реальный */} 
-            <p>
-              Наша просторная сауна - идеальное место для расслабления после насыщенного дня или для проведения времени в компании друзей. К вашим услугам жаркая парная, освежающий бассейн и уютная зона отдыха.
-            </p>
-            <h3>Что включено:</h3>
-            <ul>
-              <li><i className="fas fa-check"></i> Пользование парной (до 6 человек)</li>
-              <li><i className="fas fa-check"></i> Бассейн с подогревом</li>
-              <li><i className="fas fa-check"></i> Зона отдыха с удобными диванами и столом</li>
-              <li><i className="fas fa-check"></i> Простыни и полотенца</li>
-              <li><i className="fas fa-check"></i> Чайник и чайный набор</li>
-            </ul>
-            {/* Добавь другие параграфы или секции по необходимости */} 
-          </DescriptionSection>
-        </Section>
+        <Section>
+           <SectionTitle>Описание</SectionTitle>
+           {/* Используем description из content */}
+           <DescriptionSection>
+              {content.description ? (
+                  content.description.split('\n').map((paragraph, index) => (
+                      <p key={index}>{paragraph || '\u00A0'}</p>
+                  ))
+              ) : (
+                  <p>Подробное описание сауны скоро появится...</p>
+              )}
 
-        <Section> {/* Оборачиваем часы работы */} 
-          {/* <SectionTitle>Часы работы</SectionTitle> - Можно добавить, если нужно */} 
-          <WorkingHours>
-            <i className="fas fa-clock"></i> 
-            <span>Часы работы: Ежедневно с 10:00 до 23:00 (по предварительной записи)</span>
-          </WorkingHours>
+              {/* Отображаем features из content */} 
+              {content.features && content.features.length > 0 && (
+                  <>
+                      <h3>К вашим услугам:</h3>
+                      <ul>
+                          {content.features.map((feature, index) => (
+                              <li key={index}><i className="fas fa-check"></i>{feature}</li>
+                          ))}
+                      </ul>
+                  </>
+              )}
+           </DescriptionSection>
         </Section>
-
-        <Section> {/* Оборачиваем блок бронирования */} 
-          <BookingInfo>
-            <SectionTitle>Забронировать сауну</SectionTitle> {/* Используем SectionTitle */} 
-            <p>Чтобы забронировать сауну или узнать подробности, пожалуйста, свяжитесь с нами по телефону:</p>
-            <a href="tel:+79151201744" className="phone-link">+7 (915) 120-17-44</a> 
-            <BookingButton href="tel:+79151201744">
-              <i className="fas fa-phone-alt"></i>Позвонить для бронирования
-            </BookingButton>
-          </BookingInfo>
+        
+        <Section>
+           {/* Используем workingHours из content */}
+           <WorkingHours>
+                <i className="fas fa-clock"></i>
+                <span>{content.workingHours}</span>
+           </WorkingHours>
+        </Section>
+        
+        <Section>
+            <BookingInfo>
+               <SectionTitle>Бронирование</SectionTitle>
+               <p>Для бронирования сауны и уточнения деталей, пожалуйста, свяжитесь с нами по телефону:</p>
+                {/* Используем contactPhone из content */}
+               <a href={`tel:${content.contactPhone.replace(/\s|\(|\)|-/g, '')}`} className="phone-link">
+                  {content.contactPhone}
+               </a>
+               {/* Используем bookingButtonText из content */}
+               <BookingButton href={`tel:${content.contactPhone.replace(/\s|\(|\)|-/g, '')}`}>
+                 {content.bookingButtonText}
+               </BookingButton>
+            </BookingInfo>
         </Section>
       </TextContentWrapper>
-
-      {/* Лайтбокс */}
-      <AnimatePresence>
-        {lightboxOpen && currentImage && (
-          <Lightbox key="lightbox" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeLightbox}>
-            <LightboxContent initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} onClick={(e) => e.stopPropagation()}>
-              <LightboxClose onClick={closeLightbox} aria-label="Закрыть">&times;</LightboxClose>
-              <LightboxImage 
-                src={optimizeCloudinaryImage(currentImage.imageUrl, 'f_auto,q_auto,w_1200')} 
-                alt={currentImage.title || 'Сауна'} 
-              />
-              {images.length > 1 && (
-                <LightboxControls>
-                  <LightboxButton onClick={handlePrevImage} aria-label="Предыдущее изображение">
-                    <i className="fas fa-chevron-left"></i>
-                  </LightboxButton>
-                  <LightboxButton onClick={handleNextImage} aria-label="Следующее изображение">
-                    <i className="fas fa-chevron-right"></i>
-                  </LightboxButton>
-                </LightboxControls>
-              )}
-            </LightboxContent>
-          </Lightbox>
-        )}
-      </AnimatePresence>
-
     </PageContainer>
   );
 };

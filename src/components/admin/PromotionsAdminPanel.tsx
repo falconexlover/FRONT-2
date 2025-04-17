@@ -172,19 +172,50 @@ const PromotionsAdminPanel: React.FC = () => {
     setEditingPromotion(null);
   };
 
-  const handleSave = async (formData: Omit<PromotionType, '_id' | 'createdAt' | 'updatedAt'> | Partial<PromotionType>) => {
+  const handleSave = async (formData: Omit<PromotionType, '_id' | 'createdAt' | 'updatedAt'> | Partial<PromotionType>, imageFile?: File | null) => {
     setIsSaving(true);
     try {
       let savedPromotion: PromotionType;
+      // Используем FormData, если есть файл
+      const dataToSend: FormData | Partial<PromotionType> | Omit<PromotionType, '_id' | 'createdAt' | 'updatedAt'> = new FormData();
+
+      // Добавляем данные формы в FormData
+      Object.entries(formData).forEach(([key, value]) => {
+        // Пропускаем null/undefined значения, кроме isActive (может быть false)
+        if (value !== null && value !== undefined) {
+           // Преобразуем булевы значения в строки 'true'/'false', если нужно для бэкенда
+           // Если бэкэнд ожидает булевы, эту строку можно убрать
+           if (typeof value === 'boolean') {
+               dataToSend.append(key, String(value));
+           } else {
+               dataToSend.append(key, value as string | Blob); // Допускаем Blob для файлов
+           }
+        }
+      });
+
+      // Добавляем файл, если он есть
+      if (imageFile) {
+        dataToSend.append('image', imageFile); // 'image' - ключ для файла на бэкенде
+      }
+
       if (editingPromotion && editingPromotion._id) {
-        savedPromotion = await promotionsService.updatePromotion(editingPromotion._id, formData as Partial<PromotionType>); 
+         // При обновлении, если есть imageFile, передаем FormData, иначе - обычный объект
+         const payload = imageFile ? dataToSend : formData;
+         // Если файл не меняется, и imageUrl уже есть, добавляем его явно (если бэк не сохраняет старый)
+         if (!imageFile && formData.imageUrl && payload instanceof FormData) {
+             payload.append('imageUrl', formData.imageUrl);
+         } else if (!imageFile && formData.imageUrl && !(payload instanceof FormData)) {
+             (payload as Partial<PromotionType>).imageUrl = formData.imageUrl;
+         }
+        savedPromotion = await promotionsService.updatePromotion(editingPromotion._id, payload);
         toast.success(`Акция "${savedPromotion.title}" успешно обновлена!`);
       } else {
-        savedPromotion = await promotionsService.createPromotion(formData as Omit<PromotionType, '_id' | 'createdAt' | 'updatedAt'>);
+         // При создании всегда передаем FormData, т.к. может быть файл
+        savedPromotion = await promotionsService.createPromotion(dataToSend); 
         toast.success(`Акция "${savedPromotion.title}" успешно создана!`);
       }
-      fetchPromotions();
-      handleFormCancel();
+      fetchPromotions(); // Обновляем список после сохранения
+      handleFormCancel(); // Закрываем форму
     } catch (err) {
       console.error("Ошибка сохранения акции:", err);
       const message = err instanceof Error ? err.message : 'Не удалось сохранить акцию';
@@ -288,8 +319,9 @@ const PromotionsAdminPanel: React.FC = () => {
                   <TableHeader>Название</TableHeader>
                   <TableHeader>Код</TableHeader>
                   <TableHeader>Скидка</TableHeader>
-                  <TableHeader>Начало</TableHeader>
-                  <TableHeader>Конец</TableHeader>
+                  <TableHeader>Изображение</TableHeader>
+                  <TableHeader>Дата начала</TableHeader>
+                  <TableHeader>Дата окончания</TableHeader>
                   <TableHeader>Статус</TableHeader>
                   <TableHeader>Действия</TableHeader>
                 </tr>
@@ -300,6 +332,14 @@ const PromotionsAdminPanel: React.FC = () => {
                     <TableCell>{promo.title}</TableCell>
                     <TableCell>{promo.code || '-'}</TableCell>
                     <TableCell>{formatDiscount(promo.discountType, promo.discountValue)}</TableCell>
+                    <TableCell>
+                       {/* Показываем изображение, если оно есть */}
+                       {promo.imageUrl ? (
+                         <img src={promo.imageUrl} alt={promo.title} style={{ width: '60px', height: 'auto', borderRadius: '4px' }} />
+                       ) : (
+                         <span>Нет фото</span>
+                       )}
+                    </TableCell>
                     <TableCell>{formatDate(promo.startDate)}</TableCell>
                     <TableCell>{formatDate(promo.endDate)}</TableCell>
                     <TableCell>
