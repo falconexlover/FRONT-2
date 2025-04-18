@@ -340,10 +340,7 @@ const EditServicesForm: React.FC<EditServicesFormProps> = ({
                 title={currentEditId === 'new' ? "Новая услуга" : "Редактировать услугу"}
             >
                 <AddEditFormWrapper>
-<<<<<<< HEAD
-=======
                     <h3>{currentEditId === 'new' ? "Новое преимущество" : "Редактировать преимущество"}</h3>
->>>>>>> 40bc94b (feat: полный пуш всех изменений в подмодуле FRONT-2)
                     <form onSubmit={handleFormSubmit}>
                          <FormGroup>
                            <Label htmlFor="serviceName">Название преимущества*</Label>

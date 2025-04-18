@@ -84,7 +84,7 @@ const ArticlesAdminPanel: React.FC = () => {
     setIsSaving(false); // Сбрасываем флаг сохранения
   };
 
-  const handleFormSave = async (articleData: Partial<ArticleType>) => {
+  const handleFormSave = async (articleData: Partial<ArticleType>, imageFile?: File | null) => {
     setIsSaving(true);
     setError(null);
     const isEditing = !!editingArticle?._id;
@@ -100,7 +100,8 @@ const ArticlesAdminPanel: React.FC = () => {
       } else {
         // Убираем поля, генерируемые бэком
         const { _id, imageUrl, imagePublicId, slug, createdAt, updatedAt, ...createData } = articleData;
-        savedArticle = await articleService.createArticle(createData);
+        const createPayload = imageFile ? { ...createData, imageFile } : { ...createData };
+        savedArticle = await articleService.createArticle(createPayload);
         toast.success(`Статья "${savedArticle.title}" создана.`);
       }
       

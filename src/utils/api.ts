@@ -1,4 +1,3 @@
-// Импорт необходимых типов
 import { RoomType } from '../types/Room'; // Раскомментируем импорт
 import { ServiceType } from '../types/Service';
 import { HomePageContent } from '../types/HomePage'; // Импортируем тип для главной страницы
@@ -792,26 +791,55 @@ export const articleService = {
   },
 
   // Создать новую статью (админка)
-  // Принимаем Partial<ArticleType>, так как _id и другие поля генерируются на бэке
-  // Убедимся, что передаем contentBlocks
-  async createArticle(articleData: Partial<Omit<ArticleType, '_id' | 'slug' | 'createdAt' | 'updatedAt'>>): Promise<ArticleType> {
+  // Теперь поддерживается загрузка фото сразу при создании
+  async createArticle(articleData: Partial<Omit<ArticleType, '_id' | 'slug' | 'createdAt' | 'updatedAt'>> & { imageFile?: File }): Promise<ArticleType> {
     const token = authService.getToken();
     if (!token) {
       return Promise.reject(new Error('Требуется аутентификация'));
     }
 
-    // Проверяем наличие обязательных полей (хотя бы title и contentBlocks)
     if (!articleData.title || !articleData.contentBlocks) {
-        return Promise.reject(new Error('Заголовок и контент статьи обязательны'));
+      return Promise.reject(new Error('Заголовок и контент статьи обязательны'));
     }
 
+    const content = Array.isArray(articleData.contentBlocks)
+      ? (
+          articleData.contentBlocks.find(
+            (b) => b.type === 'intro'
+          ) as { text: string } | undefined
+        )?.text || ''
+      : '';
+
+    // Если есть файл изображения — отправляем FormData
+    if (articleData.imageFile) {
+      const formData = new FormData();
+      formData.append('title', articleData.title);
+      formData.append('content', content);
+      formData.append('contentBlocks', JSON.stringify(articleData.contentBlocks));
+      formData.append('image', articleData.imageFile);
+      // Добавить остальные поля, если нужно
+      if (articleData.excerpt) formData.append('excerpt', articleData.excerpt);
+      if (articleData.author) formData.append('author', articleData.author);
+      // ... другие поля по необходимости
+
+      const response = await fetch(`${API_BASE_URL}/articles`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      return handleResponse<ArticleType>(response);
+    }
+
+    // Если файла нет — отправляем JSON
     const response = await fetch(`${API_BASE_URL}/articles`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify(articleData)
+      body: JSON.stringify({ ...articleData, content }),
     });
     return handleResponse<ArticleType>(response);
   },

@@ -119,7 +119,7 @@ const DeleteButton = styled.button`
 interface ArticleFormProps {
   initialData?: ArticleType | null;
   // onSave теперь ожидает Partial<ArticleType>, который будет включать contentBlocks
-  onSave: (articleData: Partial<ArticleType>) => Promise<void>;
+  onSave: (articleData: Partial<ArticleType>, imageFile?: File | null) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -129,6 +129,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({ initialData, onSave, onCancel
   // Один intro-блок для простого текста
   const [introText, setIntroText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (initialData) {
@@ -158,33 +159,8 @@ const ArticleForm: React.FC<ArticleFormProps> = ({ initialData, onSave, onCancel
     setIntroText(e.target.value);
   };
 
-  const handleImageChange = async (file: File | null) => {
-    if (isSaving) return;
-    const articleId = formData._id;
-    if (file) {
-      if (!articleId) {
-        toast.error("Сначала нужно сохранить статью, чтобы загрузить изображение.");
-        return;
-      }
-      setIsSaving(true);
-      try {
-        const updatedArticle = await articleService.uploadArticleImage(articleId, file);
-        setFormData(prev => ({
-            ...prev,
-            imageUrl: updatedArticle.imageUrl,
-            imagePublicId: updatedArticle.imagePublicId
-        }));
-        toast.success("Изображение загружено.");
-      } catch (err: any) {
-        toast.error(`Ошибка загрузки изображения: ${err.message}`);
-      } finally {
-        setIsSaving(false);
-      }
-    } else {
-      // Удаление изображения
-      setFormData(prev => ({ ...prev, imageUrl: undefined, imagePublicId: undefined }));
-      toast.info("Изображение будет удалено при следующем сохранении (нужен API endpoint).");
-    }
+  const handleImageChange = (file: File | null) => {
+    setImageFile(file);
   };
 
   const handleSaveClick = async () => {
@@ -204,7 +180,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({ initialData, onSave, onCancel
         contentBlocks: [
           { type: 'intro', text: introText }
         ]
-      } as any);
+      } as any, imageFile);
     } catch (error) {
       console.error("Ошибка при вызове onSave:", error);
     } finally {
