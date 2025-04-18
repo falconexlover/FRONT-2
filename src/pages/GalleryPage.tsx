@@ -370,6 +370,7 @@ const GalleryPage: React.FC = () => {
   const [currentImage, setCurrentImage] = useState<GalleryImageItem | null>(null); // Храним сам объект картинки
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [brokenImages, setBrokenImages] = useState<string[]>([]);
 
   const loadGallery = useCallback(async () => {
     setLoading(true);
@@ -500,7 +501,9 @@ const GalleryPage: React.FC = () => {
               
               {/* --- ДЕСКТОПНАЯ СЕТКА --- */}
               <GalleryGrid>
-                {groupedImages[categoryKey].map((image, index) => (
+                {groupedImages[categoryKey]
+                  .filter(image => !brokenImages.includes(image._id))
+                  .map((image, index) => (
                   <GalleryItem
                     key={image._id}
                     variants={imageVariants}
@@ -515,6 +518,7 @@ const GalleryPage: React.FC = () => {
                       src={optimizeCloudinaryImage(image.imageUrl, 'f_auto,q_auto,w_400')} // Оптимизация с шириной
                       alt={image.title || image.category}
                       loading="lazy"
+                      onError={e => setBrokenImages(prev => [...prev, image._id])}
                     />
                     <div className="image-overlay">
                       <i className="fas fa-search-plus"></i>
@@ -532,7 +536,9 @@ const GalleryPage: React.FC = () => {
                   pagination={{ clickable: true }}
                   grabCursor={true}
                 >
-                  {groupedImages[categoryKey].map((image, index) => (
+                  {groupedImages[categoryKey]
+                    .filter(image => !brokenImages.includes(image._id))
+                    .map((image, index) => (
                     <SwiperSlide key={image._id}>
                       <GalleryItem
                         // Убираем анимацию для слайдов, она может конфликтовать со свайпером
@@ -548,6 +554,7 @@ const GalleryPage: React.FC = () => {
                           src={optimizeCloudinaryImage(image.imageUrl, 'f_auto,q_auto,w_400')} 
                           alt={image.title || image.category}
                           loading="lazy"
+                          onError={e => setBrokenImages(prev => [...prev, image._id])}
                         />
                         <div className="image-overlay">
                           <i className="fas fa-search-plus"></i>

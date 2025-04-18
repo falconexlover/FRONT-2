@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../utils/api';
+import { API_BASE_URL, roomsService } from '../utils/api';
 
 const BookingSection = styled.section`
   padding: var(--space-xxxl) 0; /* Увеличим вертикальный отступ секции */
@@ -182,6 +182,7 @@ const BookingPage: React.FC = () => {
     children: 0
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [roomCapacity, setRoomCapacity] = useState<number | null>(null);
 
   useEffect(() => {
     if (!roomId) {
@@ -189,6 +190,14 @@ const BookingPage: React.FC = () => {
       navigate('/');
     }
   }, [roomId, navigate]);
+
+  useEffect(() => {
+    if (roomId) {
+      roomsService.getRoomById(roomId).then(room => {
+        setRoomCapacity(room?.capacity ?? null);
+      });
+    }
+  }, [roomId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -212,6 +221,13 @@ const BookingPage: React.FC = () => {
     if (formData.adults < 1) {
         toast.error('Должен быть хотя бы 1 взрослый.');
         return;
+    }
+
+    // Проверка вместимости
+    const totalGuests = formData.adults + formData.children;
+    if (roomCapacity !== null && totalGuests > roomCapacity) {
+      toast.error(`Максимальное количество гостей для этого номера: ${roomCapacity}`);
+      return;
     }
 
     setIsSubmitting(true);
@@ -302,12 +318,17 @@ const BookingPage: React.FC = () => {
           <GuestInputs>
               <FormGroup>
                   <Label htmlFor="adults">Взрослые</Label>
-                  <Input type="number" id="adults" name="adults" value={formData.adults} onChange={handleChange} required min="1" />
+                  <Input type="number" id="adults" name="adults" value={formData.adults} onChange={handleChange} required min="1" max={roomCapacity ?? undefined} />
               </FormGroup>
               <FormGroup>
                   <Label htmlFor="children">Дети</Label>
-                  <Input type="number" id="children" name="children" value={formData.children} onChange={handleChange} required min="0" />
+                  <Input type="number" id="children" name="children" value={formData.children} onChange={handleChange} required min="0" max={roomCapacity !== null ? Math.max(0, roomCapacity - formData.adults) : undefined} />
               </FormGroup>
+              {roomCapacity !== null && (
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: 8 }}>
+                  Максимум гостей для этого номера: {roomCapacity}
+                </div>
+              )}
           </GuestInputs>
           <SubmitButton type="submit" disabled={isSubmitting || !roomId}>
             {isSubmitting ? 'Обработка...' : 'Перейти к оплате'}

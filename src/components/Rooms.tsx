@@ -310,7 +310,7 @@ const Rooms: React.FC<RoomsProps> = ({
       setError(null);
       try {
         const fetchedRooms = await roomsService.getAllRooms();
-        setRooms(fetchedRooms.slice(0, 2));
+        setRooms(fetchedRooms);
       } catch (err: any) {
         setError('Не удалось загрузить номера.');
         console.error('Ошибка загрузки номеров для главной:', err);

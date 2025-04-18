@@ -24,18 +24,19 @@ interface ImageCardProps {
   image: GalleryImageItem;
   onEdit: (image: GalleryImageItem) => void;
   onDelete: (id: string) => void;
+  isEditing?: boolean;
 }
 
 // Добавляем isDragging пропс для стилизации во время перетаскивания
-const Card = styled.div<{ $isDragging?: boolean }>`
+const Card = styled.div<{ $isDragging?: boolean; $isEditing?: boolean }>`
   position: relative;
   border-radius: var(--radius-md);
   background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  border: 2px solid ${props => props.$isEditing ? 'var(--primary-color)' : 'var(--border-color)'};
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border 0.2s;
   cursor: grab;
   touch-action: none; // Для мобильных устройств
 
@@ -56,6 +57,17 @@ const CardImage = styled.img`
   height: 100%;
   object-fit: cover;
   display: block;
+`;
+
+const ImagePlaceholder = styled.div`
+  width: 100%;
+  height: 100%;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
 `;
 
 // Добавляем "ручку" для перетаскивания
@@ -124,7 +136,7 @@ const CardActions = styled.div`
   margin-top: auto; // Прижимаем к низу
 `;
 
-const ImageCard: React.FC<ImageCardProps> = ({ image, onEdit, onDelete }) => {
+const ImageCard: React.FC<ImageCardProps> = ({ image, onEdit, onDelete, isEditing }) => {
     
     // --- DND Kit Hooks ---
     const { 
@@ -142,8 +154,14 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onEdit, onDelete }) => {
     };
     // ---------------------
 
+    const [imgError, setImgError] = React.useState(false);
+    const [showConfirm, setShowConfirm] = React.useState(false);
+
+    // Если картинка битая — не рендерим карточку вообще
+    if (imgError) return null;
+
     return (
-        <Card ref={setNodeRef} style={style} $isDragging={isDragging}>
+        <Card ref={setNodeRef} style={style} $isDragging={isDragging} $isEditing={isEditing}>
             <CardImageContainer>
                 {/* Передаем listeners и attributes ручке */}
                 <DragHandle {...listeners} {...attributes} title="Перетащить для сортировки">
@@ -153,7 +171,8 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onEdit, onDelete }) => {
                     src={optimizeCloudinaryImage(image.imageUrl, 'f_auto,q_auto,w_400')} 
                     alt={image.title || 'Gallery image'} 
                     loading="lazy" 
-                 />
+                    onError={() => setImgError(true)}
+                />
             </CardImageContainer>
             <CardContent>
                 <CardTitle title={image.title || '(без названия)'}>{image.title || '(без названия)'}</CardTitle>
@@ -169,12 +188,39 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onEdit, onDelete }) => {
                     </ActionButton>
                     <ActionButton 
                         className="danger small" 
-                        onClick={() => onDelete(image._id)}
+                        onClick={() => setShowConfirm(true)}
                         title="Удалить"
                     >
                          <i className="fas fa-trash-alt"></i>
                     </ActionButton>
                 </CardActions>
+                {showConfirm && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    background: 'rgba(0,0,0,0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 20
+                  }}>
+                    <div style={{
+                      background: 'white',
+                      borderRadius: 8,
+                      padding: 24,
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                      textAlign: 'center',
+                      minWidth: 220
+                    }}>
+                      <p style={{marginBottom: 16}}>Удалить изображение?</p>
+                      <button style={{marginRight: 12, padding: '6px 18px', borderRadius: 6, border: '1px solid var(--border-color)', background: 'var(--danger-color)', color: 'white', cursor: 'pointer'}} onClick={() => { onDelete(image._id); setShowConfirm(false); }}>Удалить</button>
+                      <button style={{padding: '6px 18px', borderRadius: 6, border: '1px solid var(--border-color)', background: 'var(--bg-primary)', cursor: 'pointer'}} onClick={() => setShowConfirm(false)}>Отмена</button>
+                    </div>
+                  </div>
+                )}
             </CardContent>
         </Card>
     );

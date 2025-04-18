@@ -32,7 +32,7 @@ const BannerSection = styled.section<{
   justify-content: center;
   text-align: center;
   padding: var(--space-xxxl) var(--space-xl); /* 64px 32px */
-  background: ${props => props.$backgroundImage ? `url(${props.$backgroundImage})` : 'var(--primary-color)'} center center / cover no-repeat;
+  background: ${props => props.$backgroundImage ? `url(${props.$backgroundImage})` : '#fff'} center center / cover no-repeat;
   color: white;
 
   &::before {

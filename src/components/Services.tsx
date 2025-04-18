@@ -139,36 +139,37 @@ const ServiceCard = styled(motion.div)`
 `;
 
 const ServiceIcon = styled.div`
-  width: 200px;
-  height: 150px;
-  background-color: #f5f5f5;
-  border: 2px dashed var(--primary-color);
+  width: 56px;
+  height: 56px;
+  background: none;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 1.8rem;
-  font-size: 1.6rem;
+  margin: 0 auto 1.2rem;
+  font-size: 2.2rem;
   color: var(--primary-color);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
+  border-radius: 50%;
+  overflow: visible;
+  box-shadow: none;
   
   img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
   }
 
   @media screen and (max-width: 768px) {
-    width: 150px;
-    height: 110px;
-    margin-bottom: 1.5rem;
-    font-size: 1.4rem;
+    width: 44px;
+    height: 44px;
+    margin-bottom: 1rem;
+    font-size: 1.7rem;
   }
   @media screen and (max-width: 576px) {
-    width: 120px;
-    height: 90px;
-    margin-bottom: 1.2rem;
-    font-size: 1.2rem;
+    width: 36px;
+    height: 36px;
+    margin-bottom: 0.8rem;
+    font-size: 1.3rem;
   }
 `;
 

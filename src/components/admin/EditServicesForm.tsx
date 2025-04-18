@@ -324,12 +324,12 @@ const EditServicesForm: React.FC<EditServicesFormProps> = ({
 
     return (
         <FormContainer>
-            <Title>Управление Услугами</Title>
+            <Title>Управление Преимуществами</Title>
             
             {/* Кнопка Добавить новую */}
             {!currentEditId && (
               <ActionButton onClick={handleAddNewClick} className="primary" style={{ marginBottom: '1.5rem' }}>
-                 <i className="fas fa-plus" style={{ marginRight: '0.5rem' }}></i> Добавить услугу
+                 <i className="fas fa-plus" style={{ marginRight: '0.5rem' }}></i> Добавить преимущество
               </ActionButton>
             )}
 
@@ -340,9 +340,13 @@ const EditServicesForm: React.FC<EditServicesFormProps> = ({
                 title={currentEditId === 'new' ? "Новая услуга" : "Редактировать услугу"}
             >
                 <AddEditFormWrapper>
+<<<<<<< HEAD
+=======
+                    <h3>{currentEditId === 'new' ? "Новое преимущество" : "Редактировать преимущество"}</h3>
+>>>>>>> 40bc94b (feat: полный пуш всех изменений в подмодуле FRONT-2)
                     <form onSubmit={handleFormSubmit}>
                          <FormGroup>
-                           <Label htmlFor="serviceName">Название*</Label>
+                           <Label htmlFor="serviceName">Название преимущества*</Label>
                            <Input 
                               type="text" 
                               id="serviceName" 
@@ -354,7 +358,7 @@ const EditServicesForm: React.FC<EditServicesFormProps> = ({
                            />
                          </FormGroup>
                          <FormGroup>
-                           <Label htmlFor="serviceDesc">Описание</Label>
+                           <Label htmlFor="serviceDesc">Описание преимущества</Label>
                            <TextArea 
                               id="serviceDesc" 
                               name="description" 
@@ -389,12 +393,12 @@ const EditServicesForm: React.FC<EditServicesFormProps> = ({
                          <FormGroup>
                            <Label htmlFor="servicePrice">Цена (₽)</Label>
                            <Input 
-                              type="text" // Используем text для гибкости ввода
+                              type="text"
                               id="servicePrice" 
                               name="price" 
-                              value={formData.price ?? ''} // Используем ?? для пустого значения
-                              onChange={handleFormPriceChange} // Специальный обработчик для цены
-                              placeholder="Оставьте пустым для бесплатной услуги"
+                              value={formData.price ?? ''}
+                              onChange={handleFormPriceChange}
+                              placeholder="Оставьте пустым для бесплатного преимущества"
                               disabled={isSaving}
                            />
                          </FormGroup>
@@ -403,7 +407,7 @@ const EditServicesForm: React.FC<EditServicesFormProps> = ({
                                  Отмена
                              </ActionButton>
                              <ActionButton type="submit" className="primary" disabled={isSaving}>
-                                 {isSaving ? 'Сохранение...' : (currentEditId === 'new' ? 'Добавить услугу' : 'Сохранить изменения')}
+                                 {isSaving ? 'Сохранение...' : (currentEditId === 'new' ? 'Добавить преимущество' : 'Сохранить изменения')}
                              </ActionButton>
                          </FormActions>
                     </form>

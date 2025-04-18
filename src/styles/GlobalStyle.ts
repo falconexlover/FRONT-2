@@ -97,7 +97,7 @@ const GlobalStyle = createGlobalStyle`
   body::before,
   body::after {
       content: '';
-      position: fixed;
+      position: absolute;
       top: 0;
       bottom: 0;
       width: 1px;

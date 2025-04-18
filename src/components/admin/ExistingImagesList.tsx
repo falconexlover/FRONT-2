@@ -43,7 +43,8 @@ const CATEGORIES = [
   { id: 'sauna', label: 'Сауна' },
   { id: 'conference', label: 'Конференц-зал' },
   { id: 'territory', label: 'Территория' },
-  { id: 'party', label: 'Детские праздники' }
+  { id: 'party', label: 'Детские праздники' },
+  { id: 'food', label: 'Питание' },
 ];
 
 const SearchFilterContainer = styled.div`
@@ -90,7 +91,7 @@ const CategoryFilter = styled.select`
   }
 `;
 
-const ExistingImagesList: React.FC<ExistingImagesListProps> = ({ images, onEdit, onDelete, onDragEnd }) => {
+const ExistingImagesList: React.FC<ExistingImagesListProps & { onRefresh?: () => void }> = ({ images, onEdit, onDelete, onDragEnd, onRefresh }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   
@@ -98,70 +99,92 @@ const ExistingImagesList: React.FC<ExistingImagesListProps> = ({ images, onEdit,
   const filteredImages = images.filter(image => {
     const matchesSearch = (image.title && image.title.toLowerCase().includes(searchTerm.toLowerCase())) || 
                          (image.description && image.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory = selectedCategory === '' || image.category === selectedCategory;
+    // Если категория не выбрана, показываем все, включая без категории
+    const matchesCategory = selectedCategory === '' || image.category === selectedCategory || (!image.category && selectedCategory === '');
     return matchesSearch && matchesCategory;
   });
-  
-    // --- DND Kit Sensors ---
-    const sensors = useSensors(
-        useSensor(PointerSensor, {
-            // Настройка для предотвращения срабатывания drag при клике на кнопки
-            activationConstraint: {
-                distance: 8, // Начать перетаскивание только после смещения на 8px
-            },
-        }),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
-    );
-    // ---------------------
 
-    if (!images || images.length === 0) {
-        return <NoImagesMessage>Нет загруженных изображений в этой категории.</NoImagesMessage>;
-    }
+  // Фото без категории для отдельного отображения
+  const uncategorizedImages = filteredImages.filter(img => !img.category);
+  const categorizedImages = filteredImages.filter(img => !!img.category);
 
-    return (
-        <>
-            <SearchFilterContainer>
-                <SearchInput 
-                    type="text" 
-                    placeholder="Поиск по названию или описанию..." 
-                    value={searchTerm} 
-                    onChange={(e) => setSearchTerm(e.target.value)} 
-                />
-                <CategoryFilter 
-                    value={selectedCategory} 
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                    <option value="">Все категории</option>
-                    {CATEGORIES.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.label}</option>
-                    ))}
-                </CategoryFilter>
-            </SearchFilterContainer>
-            <DndContext 
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={onDragEnd}
-            >
-                <SortableContext 
-                    items={filteredImages.map(img => img._id)}
-                    strategy={rectSortingStrategy}
-                >
-                    <ImageGrid>
-                        {filteredImages.map((image) => (
-                            <ImageCard 
-                                key={image._id} 
-                                image={image} 
-                                onEdit={onEdit} 
-                                onDelete={onDelete} 
-                            />
-                        ))}
-                    </ImageGrid>
-                </SortableContext>
-            </DndContext>
-        </>
-    );
+  // --- DND Kit Sensors ---
+  const sensors = useSensors(
+      useSensor(PointerSensor, {
+          activationConstraint: {
+              distance: 8,
+          },
+      }),
+      useSensor(KeyboardSensor, {
+          coordinateGetter: sortableKeyboardCoordinates,
+      })
+  );
+  // ---------------------
+
+  if (!images || images.length === 0) {
+      return <NoImagesMessage>Нет загруженных изображений в этой категории.</NoImagesMessage>;
+  }
+
+  return (
+      <>
+          <SearchFilterContainer>
+              <SearchInput 
+                  type="text" 
+                  placeholder="Поиск по названию или описанию..." 
+                  value={searchTerm} 
+                  onChange={(e) => setSearchTerm(e.target.value)} 
+              />
+              <CategoryFilter 
+                  value={selectedCategory} 
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                  <option value="">Все категории</option>
+                  {CATEGORIES.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.label}</option>
+                  ))}
+              </CategoryFilter>
+              {onRefresh && (
+                <button type="button" onClick={onRefresh} style={{padding: '0.5rem 1rem', borderRadius: 6, border: '1px solid var(--border-color)', background: 'var(--bg-primary)', cursor: 'pointer'}}>Обновить список</button>
+              )}
+          </SearchFilterContainer>
+          {uncategorizedImages.length > 0 && selectedCategory === '' && (
+            <div style={{marginBottom: 16}}>
+              <strong style={{color: 'var(--danger-color)'}}>Без категории:</strong>
+              <ImageGrid>
+                {uncategorizedImages.map((image) => (
+                  <ImageCard 
+                    key={image._id} 
+                    image={image} 
+                    onEdit={onEdit} 
+                    onDelete={onDelete} 
+                  />
+                ))}
+              </ImageGrid>
+            </div>
+          )}
+          <DndContext 
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={onDragEnd}
+          >
+              <SortableContext 
+                  items={categorizedImages.map(img => img._id)}
+                  strategy={rectSortingStrategy}
+              >
+                  <ImageGrid>
+                      {categorizedImages.map((image) => (
+                          <ImageCard 
+                              key={image._id} 
+                              image={image} 
+                              onEdit={onEdit} 
+                              onDelete={onDelete} 
+                          />
+                      ))}
+                  </ImageGrid>
+              </SortableContext>
+          </DndContext>
+      </>
+  );
 }
 
 export default ExistingImagesList; 

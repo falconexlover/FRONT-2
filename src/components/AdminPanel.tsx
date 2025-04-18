@@ -21,8 +21,10 @@ import { DragEndEvent } from '@dnd-kit/core';
 import ConferencePageEditor from './admin/editors/ConferencePageEditor';
 import PartyPageEditor from './admin/editors/PartyPageEditor';
 import SaunaPageEditor from './admin/editors/SaunaPageEditor';
-import ArticlesAdminPanel from '../components/admin/ArticlesAdminPanel';
+import ArticlesAdminPanel from './admin/ArticlesAdminPanel';
 import Modal from './ui/Modal';
+import GalleryAdminPanel from './admin/GalleryAdminPanel';
+import ServicesAdminPanel from './admin/ServicesAdminPanel';
 
 interface AdminPanelProps {
   // Пустой интерфейс, т.к. пропсы больше не нужны здесь
@@ -53,19 +55,19 @@ const CATEGORIES = [
   { id: 'sauna', label: 'Сауна' },
   { id: 'conference', label: 'Конференц-зал' },
   { id: 'territory', label: 'Территория' },
-  { id: 'party', label: 'Детские праздники' }
+  { id: 'party', label: 'Детские праздники' },
+  { id: 'food', label: 'Питание' },
 ];
 
 const adminTabs: TabItem[] = [
     { id: 'dashboard', label: 'Дашборд' },
     { id: 'homepage', label: 'Главная страница' },
     { id: 'rooms', label: 'Номера' },
-    { id: 'services', label: 'Услуги' },
+    { id: 'services', label: 'Преимущества' },
     { id: 'edit-conference', label: 'Ред. Конференц-зал' }, 
     { id: 'edit-party', label: 'Ред. Детские праздники' }, 
     { id: 'edit-sauna', label: 'Ред. Сауна' },
     { id: 'gallery', label: 'Галерея' },
-    { id: 'upload', label: 'Загрузить фото' },
     { id: 'promotions', label: 'Акции' },
     { id: 'articles', label: 'Блог' },
 ];
@@ -281,28 +283,9 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
       case 'rooms':
         return <RoomsAdminPanel />;
       case 'services':
-        return (
-          <EditServicesForm
-            services={services}
-            onSave={handleSaveService}
-            onDelete={handleDeleteService}
-            isSaving={isSaving}
-            isDeleting={isDeletingService}
-          />
-        );
+        return <ServicesAdminPanel />;
       case 'gallery':
-        if (isLoading) return <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка...</LoadingSpinner>;
-        if (error) return <p style={{ color: 'red' }}>{error}</p>;
-        return (
-          <ExistingImagesList 
-            images={galleryItems}
-            onEdit={handleEditClick} 
-            onDelete={handleDeleteClick}
-            onDragEnd={handleGalleryDragEnd}
-          />
-        );
-      case 'upload':
-        return <GalleryUploadManager categories={CATEGORIES} onImageUpload={handleImageUpload} />;
+        return <GalleryAdminPanel />;
       case 'promotions':
         return <PromotionsAdminPanel />;
       case 'edit-conference':

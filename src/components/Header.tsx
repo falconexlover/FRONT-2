@@ -79,14 +79,22 @@ const Navigation = styled.nav`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 var(--space-xl); /* 0 32px */
+  padding: 0 var(--space-xl); /* 0 32px - Desktop */
   background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   min-height: 50px;
-  
+  overflow: hidden; /* Возвращаем обрезку */
+
+  @media screen and (max-width: 992px) {
+    padding: 0 var(--space-md); /* 0 16px - Tablet */
+    align-items: flex-start; /* Выравниваем по верху при возможном переносе меню */
+    padding-top: var(--space-sm); /* Добавим небольшой отступ сверху для многострочного меню */
+    padding-bottom: var(--space-sm); /* Добавим небольшой отступ снизу */
+  }
+
   @media screen and (max-width: 768px) {
     justify-content: flex-end;
-    padding: 0 var(--space-md); /* 0 16px */
+    padding: 0 var(--space-md); /* 0 16px - Mobile */
   }
 `;
 
@@ -96,11 +104,13 @@ const NavMenu = styled.ul<{ $isOpen: boolean }>`
   margin: 0;
   padding: 0;
   align-items: center;
+  flex-shrink: 1; /* Разрешаем сжатие */
+  min-width: 0; /* Позволяем сжиматься меньше контента */
 
   @media screen and (max-width: 768px) {
     position: fixed;
     top: 0;
-    left: ${({ $isOpen }) => ($isOpen ? '0' : '-100%')};
+    left: ${({ $isOpen }: { $isOpen: boolean }) => ($isOpen ? '0' : '-100%')};
     width: 80%;
     max-width: 350px;
     height: 100vh;
@@ -159,17 +169,23 @@ const NavItem = styled.li`
 
 const NavLinkStyles = css<{ $isSmall?: boolean }>`
   display: block;
-  padding: ${({ $isSmall }) => $isSmall ? 'calc(var(--space-lg) - var(--space-xs)) var(--space-md)' : 'var(--space-lg) var(--space-lg)'}; /* ~20px 16px : 24px 24px */
+  padding: ${({ $isSmall }: { $isSmall?: boolean }) => $isSmall ? 'calc(var(--space-lg) - var(--space-xs)) var(--space-md)' : 'var(--space-lg) var(--space-lg)'}; /* Desktop */
   text-decoration: none;
   color: rgba(255, 255, 255, 0.9);
   font-weight: 500;
-  font-size: ${({ $isSmall }) => $isSmall ? '0.85rem' : '0.95rem'};
+  font-size: ${({ $isSmall }: { $isSmall?: boolean }) => $isSmall ? '0.85rem' : '0.95rem'}; /* Desktop */
   letter-spacing: 0.5px;
   transition: background-color 0.2s ease, color 0.2s ease, padding-left 0.2s ease;
   text-transform: uppercase;
   position: relative;
   cursor: pointer;
   white-space: nowrap;
+
+  @media screen and (max-width: 992px) {
+    padding: ${({ $isSmall }: { $isSmall?: boolean }) => $isSmall ? 'calc(var(--space-lg) - var(--space-xs)) var(--space-sm)' : 'var(--space-lg) var(--space-md)'}; /* Tablet: Уменьшаем горизонтальные отступы */
+    font-size: ${({ $isSmall }: { $isSmall?: boolean }) => $isSmall ? '0.8rem' : '0.9rem'}; /* Tablet: Чуть меньше шрифт */
+    white-space: normal; /* Разрешаем перенос текста на планшетах */
+  }
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
@@ -198,9 +214,9 @@ const NavLinkStyles = css<{ $isSmall?: boolean }>`
   }
   
   @media screen and (max-width: 768px) {
-    font-size: ${({ $isSmall }) => $isSmall ? '1.0rem' : '1.1rem'};
+    font-size: ${({ $isSmall }: { $isSmall?: boolean }) => $isSmall ? '1.0rem' : '1.1rem'}; /* Mobile */
     width: 100%;
-    padding: calc(var(--space-lg) - var(--space-xs)) 0; /* ~20px 0 */
+    padding: calc(var(--space-lg) - var(--space-xs)) 0; /* Mobile */
     color: #f0f0f0;
     position: relative;
 
@@ -244,16 +260,23 @@ const BookButton = styled(Link)<{ $mobile?: boolean }>`
   background-color: white;
   color: var(--primary-color);
   font-weight: 600;
-  padding: var(--space-sm) var(--space-lg); /* 8px 24px */
+  padding: var(--space-sm) var(--space-lg); /* 8px 24px - Desktop */
   border-radius: var(--radius-sm);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   border: none;
   transition: var(--transition);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-size: 0.9rem;
+  font-size: 0.9rem; /* Desktop */
   text-decoration: none;
   display: inline-block;
+  flex-shrink: 1; /* Разрешаем сжатие кнопки */
+  min-width: 0;   /* Позволяем сжиматься меньше контента */
+  
+  @media screen and (max-width: 992px) {
+    padding: var(--space-sm) var(--space-md); /* 8px 16px - Tablet */
+    font-size: 0.85rem; /* Tablet: Чуть меньше шрифт */
+  }
   
   @media (hover: hover) and (pointer: fine) {
     &:hover {
@@ -271,7 +294,7 @@ const BookButton = styled(Link)<{ $mobile?: boolean }>`
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   }
 
-  ${({ $mobile }) => $mobile && `
+  ${({ $mobile }: { $mobile?: boolean }) => $mobile && `
     background-color: #fff;
     color: var(--primary-color);
     width: calc(100% - calc(var(--space-lg) * 2)); /* 100% - 48px */
@@ -326,7 +349,7 @@ const MobileMenuButton = styled.button<{ $isOpen: boolean }>`
     transform-origin: center;
   }
 
-  ${({ $isOpen }) => $isOpen && `
+  ${({ $isOpen }: { $isOpen: boolean }) => $isOpen && `
     background-color: var(--secondary-color);
 
     span:nth-child(1) {
@@ -360,8 +383,8 @@ const MobileMenuOverlay = styled.div<{ $isOpen: boolean }>`
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
     z-index: 98;
-    opacity: ${({ $isOpen }) => ($isOpen ? 1 : 0)};
-    visibility: ${({ $isOpen }) => ($isOpen ? 'visible' : 'hidden')};
+    opacity: ${({ $isOpen }: { $isOpen: boolean }) => ($isOpen ? 1 : 0)};
+    visibility: ${({ $isOpen }: { $isOpen: boolean }) => ($isOpen ? 'visible' : 'hidden')};
     transition: opacity 0.4s ease, visibility 0.4s ease;
   }
 `;
@@ -572,12 +595,12 @@ const Header: React.FC = () => {
           )}
 
           <NavItem><NavLink to="/" onClick={handleLinkClick}>Главная</NavLink></NavItem>
-          <NavItem><NavScrollLink href="/#about-section" onClick={(e) => handleScrollLinkClick(e, 'about-section')}>О нас</NavScrollLink></NavItem>
+          <NavItem><NavScrollLink href="/#about-section" onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleScrollLinkClick(e, 'about-section')}>О нас</NavScrollLink></NavItem>
           <NavItem><NavLink to="/rooms" onClick={handleLinkClick}>Номера</NavLink></NavItem>
           <NavItem><NavLink to="/sauna" onClick={handleLinkClick}>Сауна</NavLink></NavItem>
           <NavItem><NavLink to="/conference" onClick={handleLinkClick}>Конференц-зал</NavLink></NavItem>
           <NavItem><NavLink to="/party" onClick={handleLinkClick}>Детские праздники</NavLink></NavItem>
-          <NavItem><NavScrollLink href="/#services-section" onClick={(e) => handleScrollLinkClick(e, 'services-section')}>Предложения</NavScrollLink></NavItem>
+          <NavItem><NavScrollLink href="/#services-section" onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleScrollLinkClick(e, 'services-section')}>Преимущества</NavScrollLink></NavItem>
           <NavItem><NavLink to="/promotions" onClick={handleLinkClick}>Акции</NavLink></NavItem>
           <NavItem><NavLink to="/gallery" onClick={handleLinkClick}>Галерея</NavLink></NavItem>
           <NavItem><NavLink to="/blog" onClick={handleLinkClick}>Блог</NavLink></NavItem>
