@@ -295,14 +295,39 @@ const ErrorMessage = styled.p`
   font-size: 0.9rem;
 `;
 
+// Добавляем стили для расширенного контента карточки
+const DetailsContent = styled.div`
+  border: 1px dashed var(--border-color);
+  padding: var(--space-md);
+  margin-top: var(--space-md);
+`;
+
+const FeatureList = styled.ul`
+  margin: 0;
+  padding-left: 1.2rem;
+  li {
+    margin-bottom: 0.5rem;
+  }
+`;
+
+const Description = styled.p`
+  margin-top: var(--space-md);
+  color: var(--text-secondary);
+`;
+
 const Rooms: React.FC<RoomsProps> = ({ 
   title = 'Наши номера',
   subtitle = 'Выберите идеальный номер для вашего отдыха' 
 }) => {
   const [rooms, setRooms] = useState<RoomType[]>([]);
+  const [expandedRoomId, setExpandedRoomId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const toggleExpand = (id: string) => {
+    setExpandedRoomId(prev => (prev === id ? null : id));
+  };
 
   useEffect(() => {
     const fetchRooms = async () => {
@@ -350,35 +375,48 @@ const Rooms: React.FC<RoomsProps> = ({
 
       {!isLoading && !error && rooms.length > 0 && (
         <RoomsGrid>
-          {rooms.map((room, index) => (
-            <RoomCard
-              key={room._id}
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-            >
-              <RoomImage>
-                <RoomPrice>{room.price}</RoomPrice>
-                <img 
-                  src={optimizeCloudinaryImage(room.imageUrls[0], 'f_auto,q_auto,w_600')}
-                  alt={room.title}
-                  loading="lazy"
-                  onError={handleImageError}
-                />
-              </RoomImage>
-              <RoomDetails>
-                <h3>{room.title}</h3>
-                <RoomButtons>
-                  <DetailsButton to={`/rooms/${room._id}`}>
-                    Подробнее
-                  </DetailsButton>
-                  <BookButtonAsButton type="button" onClick={() => handleBookClick(room)}>
-                    Забронировать
-                  </BookButtonAsButton>
-                </RoomButtons>
-              </RoomDetails>
-            </RoomCard>
-          ))}
+          {rooms.map((room, index) => {
+            const isExpanded = expandedRoomId === room._id;
+            return (
+              <RoomCard
+                key={room._id}
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <RoomImage>
+                  <RoomPrice>{room.price}</RoomPrice>
+                  <img 
+                    src={optimizeCloudinaryImage(room.imageUrls[0], 'f_auto,q_auto,w_600')}
+                    alt={room.title}
+                    loading="lazy"
+                    onError={handleImageError}
+                  />
+                </RoomImage>
+                <RoomDetails>
+                  <h3>{room.title}</h3>
+                  <RoomButtons>
+                    <DetailsButton as="button" onClick={() => toggleExpand(room._id)}>
+                      {isExpanded ? 'Свернуть' : 'Подробнее'}
+                    </DetailsButton>
+                    <BookButtonAsButton type="button" onClick={() => handleBookClick(room)}>
+                      Забронировать
+                    </BookButtonAsButton>
+                  </RoomButtons>
+                  {isExpanded && (
+                    <DetailsContent>
+                      <FeatureList>
+                        {room.features.map(feature => (
+                          <li key={feature}>{feature}</li>
+                        ))}
+                      </FeatureList>
+                      {room.description && <Description>{room.description}</Description>}
+                    </DetailsContent>
+                  )}
+                </RoomDetails>
+              </RoomCard>
+            );
+          })}
         </RoomsGrid>
       )}
       
