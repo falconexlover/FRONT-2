@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
 import { roomsService } from '../utils/api';
@@ -223,6 +223,25 @@ const DetailsButton = styled(Link)`
   }
 `;
 
+const ExpandButton = styled.button`
+  flex: 1;
+  padding: var(--space-sm) var(--space-md); /* 8px 16px */
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s;
+  
+  &:hover {
+    background-color: var(--primary-color-light);
+    color: white;
+    border-color: var(--primary-color-light);
+  }
+`;
+
 const BookButtonAsButton = styled.button` 
   padding: 0.6rem 1.2rem;
   background-color: var(--primary-color);
@@ -295,9 +314,11 @@ const ErrorMessage = styled.p`
   font-size: 0.9rem;
 `;
 
-// Добавляем стили для расширенного контента карточки
-const DetailsContent = styled.div`
+// Добавляем стилизованный motion.div для расширенного контента карточки
+const DetailsContent = styled(motion.div)`
+  background-color: white;
   border: 1px dashed var(--border-color);
+  border-radius: var(--radius-sm);
   padding: var(--space-md);
   margin-top: var(--space-md);
 `;
@@ -396,23 +417,30 @@ const Rooms: React.FC<RoomsProps> = ({
                 <RoomDetails>
                   <h3>{room.title}</h3>
                   <RoomButtons>
-                    <DetailsButton as="button" onClick={() => toggleExpand(room._id)}>
+                    <ExpandButton onClick={() => toggleExpand(room._id)}>
                       {isExpanded ? 'Свернуть' : 'Подробнее'}
-                    </DetailsButton>
+                    </ExpandButton>
                     <BookButtonAsButton type="button" onClick={() => handleBookClick(room)}>
                       Забронировать
                     </BookButtonAsButton>
                   </RoomButtons>
-                  {isExpanded && (
-                    <DetailsContent>
-                      <FeatureList>
-                        {room.features.map(feature => (
-                          <li key={feature}>{feature}</li>
-                        ))}
-                      </FeatureList>
-                      {room.description && <Description>{room.description}</Description>}
-                    </DetailsContent>
-                  )}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <DetailsContent
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <FeatureList>
+                          {room.features.map(feature => (
+                            <li key={feature}>{feature}</li>
+                          ))}
+                        </FeatureList>
+                        {room.description && <Description>{room.description}</Description>}
+                      </DetailsContent>
+                    )}
+                  </AnimatePresence>
                 </RoomDetails>
               </RoomCard>
             );
