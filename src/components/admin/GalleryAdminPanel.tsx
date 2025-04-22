@@ -51,11 +51,11 @@ const GalleryAdminPanel: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const loadGalleryItems = useCallback(async () => {
+  const loadGalleryItems = useCallback(async (category?: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const items = await galleryService.getAllImages();
+      const items = await galleryService.getAllImages(category);
       setGalleryItems(items);
     } catch (err) {
       console.error("Ошибка загрузки галереи:", err);
@@ -71,8 +71,8 @@ const GalleryAdminPanel: React.FC = () => {
     loadGalleryItems();
   }, [loadGalleryItems]);
 
-  const handleImageUpload = useCallback(() => {
-    loadGalleryItems();
+  const handleImageUpload = useCallback((category: string) => {
+    loadGalleryItems(category);
   }, [loadGalleryItems]);
 
   const handleEditClick = (image: GalleryImageItem) => {

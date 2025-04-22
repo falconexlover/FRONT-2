@@ -265,41 +265,65 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
   ) => {
     setIsSaving(true);
     setError(null);
-    const formData = new FormData();
-
-    Object.keys(roomData).forEach(key => {
-      const value = roomData[key as keyof typeof roomData];
-      if (key === 'features' && Array.isArray(value)) {
-        formData.append(key, JSON.stringify(value));
-      } else if (value !== undefined && value !== null) {
-        formData.append(key, String(value));
-      }
-    });
-
-    newFiles.forEach(file => {
-      formData.append('imageFiles', file);
-    });
-
-    if (imagesToDelete.length > 0) {
-      formData.append('imagesToDelete', JSON.stringify(imagesToDelete));
-    }
-
+    const isEditing = !!editingRoom?._id;
+    const roomId = editingRoom?._id;
+    
     try {
-      let savedRoom: RoomType;
-      if (editingRoom?._id) {
-        savedRoom = await roomsService.updateRoom(editingRoom._id, formData);
-        toast.success(`Номер "${savedRoom.title}" успешно обновлен!`);
-      } else {
-        savedRoom = await roomsService.createRoom(formData);
-        toast.success(`Номер "${savedRoom.title}" успешно создан!`);
+      // Создаем FormData
+      const formData = new FormData();
+
+      // Добавляем текстовые данные
+      Object.entries(roomData).forEach(([key, value]) => {
+        // Проверяем на null/undefined перед добавлением
+        if (value !== null && value !== undefined) {
+          if (key === 'features' && Array.isArray(value)) {
+            // Если features - массив, отправляем каждый элемент отдельно
+            // Бэкенд должен уметь собирать массив из одинаковых ключей
+            value.forEach(feature => formData.append(key, feature));
+          } else {
+            // Преобразуем другие значения в строку (на всякий случай)
+            formData.append(key, String(value));
+          }
+        }
+      });
+
+      // Добавляем новые файлы
+      newFiles.forEach((file) => {
+        formData.append('images', file); // Ключ 'images' должен совпадать с ожидаемым на бэкенде (multer)
+      });
+
+      // Добавляем ID удаляемых изображений (если они есть и имеют publicId)
+      const deletedPublicIds = imagesToDelete
+        .map(img => img.publicId)
+        .filter((id): id is string => id !== null); // Убираем null и сужаем тип
+        
+      if (deletedPublicIds.length > 0) {
+        // Отправляем как JSON-строку или по одному, зависит от бэкенда
+        // Вариант 1: JSON-строка
+        formData.append('deletedImagePublicIds', JSON.stringify(deletedPublicIds));
+        // Вариант 2: По одному (если бэк умеет собирать массив)
+        // deletedPublicIds.forEach(id => formData.append('deletedImagePublicIds', id));
       }
+
+      // Вызываем API
+      if (isEditing && roomId) {
+        await roomsService.updateRoom(roomId, formData);
+        toast.success(`Номер "${roomData.title}" успешно обновлен!`);
+      } else {
+        await roomsService.createRoom(formData);
+        toast.success(`Номер "${roomData.title}" успешно создан!`);
+      }
+
+      // Обновляем список и закрываем форму
+      await fetchRooms(); 
       handleFormCancel();
-      fetchRooms();
+
     } catch (err: any) {
-      console.error("Ошибка сохранения номера:", err);
-      const message = err.message || 'Не удалось сохранить номер';
+      const message = err.message || (isEditing ? 'Ошибка обновления номера' : 'Ошибка создания номера');
       setError(message);
-      toast.error(`Ошибка сохранения: ${message}`);
+      toast.error(message);
+      console.error("Ошибка сохранения номера:", err);
+      // Не закрываем форму при ошибке
     } finally {
       setIsSaving(false);
     }

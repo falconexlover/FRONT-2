@@ -244,7 +244,7 @@ const ContactsPage: React.FC = () => {
      return <PageContainer><ErrorMessage>Контактная информация недоступна.</ErrorMessage></PageContainer>;
   }
   
-  const { address, phone, email } = content.contact;
+  const { address, phone } = content.contact;
   const coordinates = content.contact.coordinates?.length === 2 ? content.contact.coordinates : ZHUKOVSKY_COORDINATES; // Используем координаты из API или фоллбэк
 
   return (
@@ -274,14 +274,12 @@ const ContactsPage: React.FC = () => {
               </div>
             </ContactItem>
           )}
-          {email && (
+          {content.contact.vk && (
             <ContactItem>
-              <i className="fab fa-vk"></i> 
-              <div> 
+              <i className="fab fa-vk"></i>
+              <div>
                 <strong>ВКонтакте:</strong>
-                <a href="https://vk.com/lesnoy_dvorik" target="_blank" rel="noopener noreferrer">
-                  Наша страница ВК
-                </a>
+                <a href={content.contact.vk} target="_blank" rel="noopener noreferrer">{content.contact.vk}</a>
               </div>
             </ContactItem>
           )}

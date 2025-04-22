@@ -114,7 +114,7 @@ interface FileUploadStatus {
 
 // Добавляем categories в интерфейс пропсов
 interface GalleryUploadManagerProps {
-  onImageUpload: () => void;
+  onImageUpload: (category: string) => void;
   categories: { id: string; label: string; }[]; // Добавляем этот проп
 }
 
@@ -194,7 +194,7 @@ const GalleryUploadManager: React.FC<GalleryUploadManagerProps> = ({ onImageUplo
     }
     
     if (onImageUpload) {
-      onImageUpload();
+      onImageUpload(category);
     }
 
     setTimeout(() => {

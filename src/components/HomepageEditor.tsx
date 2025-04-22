@@ -201,7 +201,7 @@ const HomepageEditor: React.FC<HomepageEditorProps> = ({ onUnsavedChange }) => {
           return {
               ...prev,
               contact: { 
-              ...getNested<ContactContent>(prev, 'contact', { title: '', address: '', phone: [], email: '' }),
+              ...getNested<ContactContent>(prev, 'contact', { title: '', address: '', phone: [] }),
               phone: phones.filter((p, i) => i < phones.length - 1 || p !== '') // Keep last only if not empty
           }
       };
@@ -219,7 +219,7 @@ const HomepageEditor: React.FC<HomepageEditorProps> = ({ onUnsavedChange }) => {
           return {
               ...prev,
           contact: {
-              ...getNested<ContactContent>(prev, 'contact', { title: '', address: '', phone: [], email: '' }),
+              ...getNested<ContactContent>(prev, 'contact', { title: '', address: '', phone: [] }),
               phone: phones
           }
       };
@@ -305,7 +305,7 @@ const HomepageEditor: React.FC<HomepageEditorProps> = ({ onUnsavedChange }) => {
       const dataToSave: Partial<HomePageContent> = {
         banner: getNested<BannerContent>(content, 'banner', { title: '', subtitle: '', buttonText: '', buttonLink: '' }),
         about: getNested<AboutContent>(content, 'about', { title: '', content: '', image: content.about?.image }), // Preserve image
-        contact: getNested<ContactContent>(content, 'contact', { title: '', address: '', phone: [], email: '' }),
+        contact: getNested<ContactContent>(content, 'contact', { title: '', address: '', phone: [] }),
         party: getNested<PartyContent>(content, 'party', { title: '', content: '', imageUrls: content.party?.imageUrls, cloudinaryPublicIds: content.party?.cloudinaryPublicIds }), // Preserve images
         conference: getNested<ConferenceContent>(content, 'conference', { title: '', content: '', imageUrls: content.conference?.imageUrls, cloudinaryPublicIds: content.conference?.cloudinaryPublicIds }), // Preserve images
         // Exclude rooms and services as they might be managed elsewhere
@@ -484,14 +484,6 @@ const HomepageEditor: React.FC<HomepageEditorProps> = ({ onUnsavedChange }) => {
             type="text"
             value={getNested<string>(content, 'contact.address', '')}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('contact', 'address', e.target.value)}
-          />
-        </FormGroup>
-        <FormGroup>
-          <Label>Email</Label>
-          <Input
-            type="email"
-            value={getNested<string>(content, 'contact.email', '')}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('contact', 'email', e.target.value)}
           />
         </FormGroup>
         <FormGroup>

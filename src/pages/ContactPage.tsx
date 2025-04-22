@@ -220,7 +220,6 @@ const ContactPage: React.FC = () => {
             title: 'Контакты', 
             address: 'Московская область, г. Жуковский, ул. Нижегородская, д. 4', 
             phone: ['8 (498) 483 19 41', '8 (915) 120 17 44'], 
-            email: '' 
           });
         }
       } catch (err) {
@@ -229,7 +228,6 @@ const ContactPage: React.FC = () => {
           title: 'Контакты', 
           address: 'Московская область, г. Жуковский, ул. Нижегородская, д. 4', 
           phone: ['8 (498) 483 19 41', '8 (915) 120 17 44'], 
-          email: '' 
         });
       } finally {
         setIsLoading(false);
@@ -296,17 +294,9 @@ const ContactPage: React.FC = () => {
                 <i className="fas fa-phone"></i>
                 <div className="contact-info">
                   <h4>Телефон</h4>
-                  {contactInfo.phone.map((phone, index) => (
+                  {contactInfo.phone.map((phone: string, index: number) => (
                      <p key={index}><a href={`tel:+${phone.replace(/\D/g, '')}`}>{phone}</a></p>
                   ))}
-                </div>
-              </ContactItem>
-              
-              <ContactItem>
-                <i className="fas fa-envelope"></i>
-                <div className="contact-info">
-                  <h4>Email</h4>
-                  <p>{contactInfo.email}</p>
                 </div>
               </ContactItem>
             </>

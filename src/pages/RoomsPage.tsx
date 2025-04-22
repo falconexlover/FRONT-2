@@ -410,7 +410,11 @@ const RoomsPage: React.FC = () => {
                   </SliderWrapper>
                   <RoomContent>
                     <RoomTitle>{room.title}</RoomTitle>
-                    {/* Описание удалено */}
+                    {room.description && (
+                      <div style={{ color: 'var(--text-secondary)', margin: '0.5rem 0 1rem 0', fontSize: '1.05rem', whiteSpace: 'pre-line' }}>
+                        {room.description}
+                      </div>
+                    )}
                     {featuresArray.length > 0 && (
                       <RoomFeatures>
                         <span><i className="fas fa-users"></i> {room.capacity} {room.capacity > 1 ? 'гостя' : 'гость'}</span>

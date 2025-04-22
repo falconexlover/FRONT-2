@@ -125,7 +125,7 @@ const ArticlesAdminPanel: React.FC = () => {
         toast.success(`Статья "${savedArticle.title}" обновлена.`);
       } else {
         // Убираем поля, генерируемые бэком
-        const { _id, imageUrl, imagePublicId, slug, createdAt, updatedAt, ...createData } = articleData;
+        const { _id, imageUrl, imagePublicId, createdAt, updatedAt, ...createData } = articleData;
         const createPayload = imageFile ? { ...createData, imageFile } : { ...createData };
         savedArticle = await articleService.createArticle(createPayload);
         toast.success(`Статья "${savedArticle.title}" создана.`);

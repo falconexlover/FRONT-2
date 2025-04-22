@@ -159,18 +159,6 @@ const ContactSectionEditor: React.FC<ContactSectionEditorProps> = ({
           placeholder="https://vk.com/lesnoy_dvorik"
         />
       </FormGroup>
-      
-      <FormGroup style={{marginTop: '1.5rem'}}> {/* Оставляем email для внутренних целей */} 
-        <label htmlFor="contact-email">Email (для системы):</label>
-        <input 
-          id="contact-email"
-          name="email"
-          type="email"
-          value={content.email || ''}
-          onChange={handleInputChange}
-          disabled={isSaving}
-        />
-      </FormGroup>
     </div>
   );
 };

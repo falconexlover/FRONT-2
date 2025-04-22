@@ -151,7 +151,7 @@ const HomePage: React.FC = () => {
                                     <Icon className="fab fa-vk" />
                                     <div>
                                         <h4>ВКонтакте</h4>
-                                        <p><a href="https://vk.com/lesnoy_dvorik" target="_blank" rel="noopener noreferrer">Наша группа ВКонтакте</a></p>
+                                        <p><a href="https://vk.com/lesnoy_dvorik" target="_blank" rel="noopener noreferrer">Наша группа</a></p>
                                     </div>
                                 </ContactDetail>
                             </ContactInfo>

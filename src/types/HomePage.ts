@@ -49,7 +49,6 @@ export interface ContactContent {
   title: string;
   address: string;
   phone: string[];
-  email: string;
   vk?: string;           // Добавляем ссылку на ВКонтакте
   coordinates?: [number, number]; // Добавляем необязательные координаты
   openingHours?: string;          // Добавляем необязательные часы работы

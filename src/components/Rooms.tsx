@@ -171,22 +171,27 @@ const RoomPrice = styled.div`
 `;
 
 const RoomDetails = styled.div`
-  padding: 20px;
-  flex: 1;
+  padding: var(--space-xl); /* 32px */
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-
+  flex-grow: 1;
+  
   h3 {
-    margin: 0 0 10px 0;
-    font-size: 1.2rem;
-    color: #333;
+    margin-bottom: var(--space-md); /* 16px */
+    color: var(--dark-color);
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+
+    @media screen and (max-width: 768px) {
+      font-size: 1.3rem;
+    }
+    @media screen and (max-width: 576px) {
+      font-size: 1.2rem;
+    }
   }
 
-  p {
-    margin: 0 0 15px 0;
-    color: #666;
-    line-height: 1.4;
+  @media screen and (max-width: 576px) {
+    padding: var(--space-lg); /* 24px */
   }
 `;
 
@@ -344,14 +349,9 @@ const Rooms: React.FC<RoomsProps> = ({
   showAllRoomsLink = false
 }) => {
   const [rooms, setRooms] = useState<RoomType[]>([]);
-  const [expandedRoomId, setExpandedRoomId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-
-  const toggleExpand = (id: string) => {
-    setExpandedRoomId(prev => (prev === id ? null : id));
-  };
 
   useEffect(() => {
     const fetchRooms = async () => {
@@ -400,7 +400,6 @@ const Rooms: React.FC<RoomsProps> = ({
       {!isLoading && !error && rooms.length > 0 && (
         <RoomsGrid>
           {rooms.map((room, index) => {
-            const isExpanded = expandedRoomId === room._id;
             return (
               <RoomCard
                 key={room._id}
@@ -419,52 +418,11 @@ const Rooms: React.FC<RoomsProps> = ({
                 </RoomImage>
                 <RoomDetails>
                   <h3>{room.title}</h3>
-                  {room.description && <p>{room.description}</p>}
                   <RoomButtons>
                     <BookButtonAsButton type="button" onClick={() => handleBookClick(room)}>
                       Забронировать
                     </BookButtonAsButton>
                   </RoomButtons>
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <ExpandedCardLayout
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <ExpandedLeft>
-                          <ExpandedMainImage
-                            src={optimizeCloudinaryImage(room.imageUrls[0], 'f_auto,q_auto,w_600,h_450,c_fill')}
-                            alt={room.title}
-                            onError={handleImageError}
-                          />
-                        </ExpandedLeft>
-                        <ExpandedRight>
-                          <ExpandedTitle>{room.title}</ExpandedTitle>
-                          <ExpandedFeatures>
-                            {room.features.map((feature, i) => (
-                              <li key={i}>{feature}</li>
-                            ))}
-                          </ExpandedFeatures>
-                          {room.description && <ExpandedDescription>{room.description}</ExpandedDescription>}
-                        </ExpandedRight>
-                      </ExpandedCardLayout>
-                    )}
-                  </AnimatePresence>
-                  {/* Галерея всех фото */}
-                  {isExpanded && room.imageUrls.length > 1 && (
-                    <GalleryGrid>
-                      {room.imageUrls.map((url, i) => (
-                        <GalleryImage
-                          key={url + i}
-                          src={optimizeCloudinaryImage(url, 'f_auto,q_auto,w_200,h_120,c_fill')}
-                          alt={room.title + ' фото ' + (i + 1)}
-                          onError={handleImageError}
-                        />
-                      ))}
-                    </GalleryGrid>
-                  )}
                 </RoomDetails>
               </RoomCard>
             );
