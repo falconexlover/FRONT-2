@@ -6,6 +6,7 @@ import ActionButton from '../ui/ActionButton';
 import ImageUpload from '../ui/ImageUpload';
 import { v4 as uuidv4 } from 'uuid';
 import { articleService } from '../../utils/api';
+import slugify from 'slugify';
 
 // Стили для формы
 const FormWrapper = styled.div`
@@ -125,7 +126,12 @@ interface ArticleFormProps {
 
 const ArticleForm: React.FC<ArticleFormProps> = ({ initialData, onSave, onCancel }) => {
   // Состояние для основных полей
-  const [formData, setFormData] = useState<Partial<ArticleType>>({});
+  const [formData, setFormData] = useState<Partial<ArticleType>>({
+      title: '',
+      slug: '',
+      imageUrl: undefined,
+      imagePublicId: undefined,
+  });
   // Один intro-блок для простого текста
   const [introText, setIntroText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -136,6 +142,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({ initialData, onSave, onCancel
       setFormData({
         _id: initialData._id,
         title: initialData.title || '',
+        slug: initialData.slug || '',
         imageUrl: initialData.imageUrl,
         imagePublicId: initialData.imagePublicId,
       });
@@ -145,14 +152,27 @@ const ArticleForm: React.FC<ArticleFormProps> = ({ initialData, onSave, onCancel
     } else {
       setFormData({
         title: '',
+        slug: '',
       });
       setIntroText('');
     }
   }, [initialData]);
 
+  // Функция для генерации slug
+  const generateSlug = (title: string): string => {
+    return slugify(title, { lower: true, strict: true, remove: /[*+~.()'"!:@]/g });
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+        const newState = { ...prev, [name]: value };
+        // Если изменился заголовок, генерируем slug
+        if (name === 'title') {
+            newState.slug = generateSlug(value);
+        }
+        return newState;
+    });
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -166,6 +186,10 @@ const ArticleForm: React.FC<ArticleFormProps> = ({ initialData, onSave, onCancel
   const handleSaveClick = async () => {
     if (!formData.title) {
         toast.error("Заголовок статьи обязателен.");
+        return;
+    }
+    if (!formData.slug) {
+        toast.error("Не удалось сгенерировать URL (slug) для статьи.");
         return;
     }
     if (!introText.trim()) {
@@ -201,6 +225,11 @@ const ArticleForm: React.FC<ArticleFormProps> = ({ initialData, onSave, onCancel
           disabled={isSaving}
           required
         />
+        {formData.slug && (
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>
+                Предполагаемый URL: /blog/{formData.slug}
+            </p>
+        )}
       </FormGroup>
       <FormGroup>
         <Label htmlFor="introText">Текст*</Label>

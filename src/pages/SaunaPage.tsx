@@ -393,29 +393,31 @@ const SaunaPage: React.FC = () => {
       {/* Секция с описанием, часами работы и бронированием */}
       <TextContentWrapper>
         <Section>
-           <SectionTitle>Описание</SectionTitle>
-           {/* Используем description из content */}
-           <DescriptionSection>
-              {content.description ? (
-                  content.description.split('\n').map((paragraph, index) => (
+           {/* Убираем заголовок "Описание" */} 
+           {/* <SectionTitle>Описание</SectionTitle> */} 
+           
+           {/* Отображаем описание из content */}
+           {content && content.description ? (
+               <DescriptionSection>
+                  {content.description.split('\n').map((paragraph, index) => (
                       <p key={index}>{paragraph || '\u00A0'}</p>
-                  ))
-              ) : (
-                  <p>Подробное описание сауны скоро появится...</p>
-              )}
+                  ))}
 
-              {/* Отображаем features из content */} 
-              {content.features && content.features.length > 0 && (
-                  <>
-                      <h3>К вашим услугам:</h3>
-                      <ul>
-                          {content.features.map((feature, index) => (
-                              <li key={index}><i className="fas fa-check"></i>{feature}</li>
-                          ))}
-                      </ul>
-                  </>
-              )}
-           </DescriptionSection>
+                  {/* Отображаем features из content */} 
+                  {content.features && content.features.length > 0 && (
+                      <>
+                          <h3>К вашим услугам:</h3>
+                          <ul>
+                              {content.features.map((feature, index) => (
+                                  <li key={index}><i className="fas fa-check"></i>{feature}</li>
+                              ))}
+                          </ul>
+                      </>
+                  )}
+               </DescriptionSection>
+           ) : (
+               <p>Подробное описание сауны скоро появится...</p>
+           )}
         </Section>
         
         <Section>

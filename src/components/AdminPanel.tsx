@@ -51,13 +51,24 @@ const adminTabs: TabItem[] = [
 
 const AdminPanel: React.FC<AdminPanelProps> = () => {
   const [activeTab, setActiveTab] = useState(adminTabs[0].id);
+  const [homepageUnsaved, setHomepageUnsaved] = useState(false);
+
+  // Обработчик смены вкладки с предупреждением
+  const handleTabChange = (id: string) => {
+    if (activeTab === 'homepage' && homepageUnsaved) {
+      if (!window.confirm('У вас есть несохранённые изменения на главной странице. Перейти без сохранения?')) {
+        return;
+      }
+    }
+    setActiveTab(id);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard setActiveTab={setActiveTab} />;
       case 'homepage':
-        return <HomepageEditor />;
+        return <HomepageEditor onUnsavedChange={setHomepageUnsaved} />;
       case 'rooms':
         return <RoomsAdminPanel />;
       case 'services':
@@ -83,7 +94,7 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
     <AdminLayout 
       menuItems={adminTabs} 
       activeMenuItemId={activeTab} 
-      onMenuItemSelect={setActiveTab}
+      onMenuItemSelect={handleTabChange}
     >
       <AnimatePresence mode='wait'>
           <motion.div

@@ -101,6 +101,7 @@ const BannerText = styled.p`
   color: white;
   opacity: 0.9;
   text-align: center;
+  white-space: pre-line;
   
   @media screen and (max-width: 992px) {
     font-size: 1.1rem;

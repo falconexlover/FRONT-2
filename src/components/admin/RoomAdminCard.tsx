@@ -214,6 +214,12 @@ const RoomAdminCard: React.FC<RoomAdminCardProps> = ({ room, onEdit, onDelete })
            <i className="fas fa-star"></i>
            <span>Особенности: {displayFeatures}</span>
         </DetailItem>
+        {room.description && (
+          <DetailItem>
+            <i className="fas fa-info-circle"></i>
+            <span>Описание: {room.description}</span>
+          </DetailItem>
+        )}
       </CardDetails>
 
       <CardActions>

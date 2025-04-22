@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
 import { TabItem } from '../ui/Tabs'; // Импортируем тип из Tabs для элементов меню
 // import { NavLink } from 'react-router-dom'; // Убираем неиспользуемый импорт
@@ -133,6 +133,21 @@ const CloseButton = styled.button`
   }
 `;
 
+const GROUPS = [
+  {
+    label: 'Контент',
+    ids: ['homepage', 'edit-conference', 'edit-party', 'edit-sauna', 'gallery', 'articles']
+  },
+  {
+    label: 'Управление',
+    ids: ['dashboard', 'rooms', 'services', 'promotions']
+  },
+  {
+    label: 'Прочее',
+    ids: [] // сюда можно добавить upload, настройки и т.д.
+  }
+];
+
 const Sidebar: React.FC<SidebarProps> = ({ 
     menuItems, 
     activeItemId, 
@@ -141,6 +156,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     isMobileOpen, 
     closeMobileSidebar 
 }) => {
+  const [search, setSearch] = useState('');
+
   // Можно добавить иконки к menuItems, если нужно
   const getIcon = (id: string): string => {
       switch (id) {
@@ -167,6 +184,21 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  // Фильтрация по поиску
+  const filteredMenuItems = useMemo(() => {
+    if (!search.trim()) return menuItems;
+    const lower = search.trim().toLowerCase();
+    return menuItems.filter(item => item.label.toLowerCase().includes(lower));
+  }, [menuItems, search]);
+
+  // Группировка
+  const groupedItems = useMemo(() => {
+    return GROUPS.map(group => ({
+      ...group,
+      items: filteredMenuItems.filter(item => group.ids.includes(item.id))
+    })).filter(group => group.items.length > 0);
+  }, [filteredMenuItems]);
+
   return (
     <>
       {/* Показываем кнопку закрытия только если сайдбар открыт на мобильных */} 
@@ -175,21 +207,35 @@ const Sidebar: React.FC<SidebarProps> = ({
               <i className="fas fa-times"></i>
           </CloseButton>
       )}
-      {/* Можно добавить лого или заголовок админки сюда */}
+      {/* Поиск по разделам */}
+      <div style={{ padding: '0 1.5rem 1rem' }}>
+        <input
+          type="text"
+          placeholder="Поиск..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ width: '100%', padding: '0.5rem', borderRadius: 6, border: '1px solid var(--border-color)' }}
+        />
+      </div>
       <SidebarNav>
-        <NavList>
-          {menuItems.map(item => (
-            <NavItem key={item.id}>
-              <NavLinkStyled 
-                $isActive={item.id === activeItemId}
-                onClick={() => handleItemClick(item.id)} // Используем новый обработчик
-              >
-                <i className={`fas ${getIcon(item.id)}`}></i>
-                {item.label}
-              </NavLinkStyled>
-            </NavItem>
-          ))}
-        </NavList>
+        {groupedItems.map(group => (
+          <div key={group.label} style={{ marginBottom: 16 }}>
+            <div style={{ fontWeight: 600, color: 'var(--text-secondary)', fontSize: '0.95rem', margin: '8px 0 4px 12px' }}>{group.label}</div>
+            <NavList>
+              {group.items.map(item => (
+                <NavItem key={item.id}>
+                  <NavLinkStyled 
+                    $isActive={item.id === activeItemId}
+                    onClick={() => handleItemClick(item.id)}
+                  >
+                    <i className={`fas ${getIcon(item.id)}`}></i>
+                    {item.label}
+                  </NavLinkStyled>
+                </NavItem>
+              ))}
+            </NavList>
+          </div>
+        ))}
       </SidebarNav>
       <LogoutButton onClick={onLogout}>
         <i className="fas fa-sign-out-alt"></i>

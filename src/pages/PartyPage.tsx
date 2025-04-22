@@ -49,12 +49,6 @@ const ContentSection = styled.section`
   border: 1px solid var(--border-color);
 `;
 
-const Description = styled.p`
-  font-size: 1.1rem;
-  line-height: 1.7;
-  margin-bottom: 1.5rem;
-`;
-
 // Стили для списка с иконками (как в ConferencePage)
 const FeatureItem = styled.li`
   margin-bottom: 0.8rem;
@@ -224,19 +218,7 @@ const PartyPage: React.FC = () => {
       </motion.div>
 
       <ContentSection>
-        <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={1}>
-           {/* Используем content из контента, разбиваем на параграфы для стилизации */}
-           {content.content ? (
-               content.content.split('\n').map((paragraph, index) => (
-                   <Description key={index}>{paragraph || '\u00A0'}</Description> // \u00A0 для пустых строк
-               ))
-           ) : (
-               <Description>Описание скоро появится...</Description>
-           )}
-        </motion.div>
-        
         <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={1.5}> 
-          <h3>Что мы предлагаем:</h3>
           {/* Этот список можно оставить статическим или перенести в админку */}
           <FeaturesList>
             <FeatureItem><i className="fas fa-utensils"></i>Собственная кухня с детским и взрослым меню - вкусно будет всем!</FeatureItem>
@@ -272,7 +254,6 @@ const PartyPage: React.FC = () => {
         <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={3}>
           <ContactInfo>
             {/* Контактная информация остается статической */}
-            <p className="call-to-action">Скорее звоните и узнавайте подробности!</p>
             <p>
               <i className="fas fa-phone-alt" style={{ marginRight: '0.5rem' }}></i>
               Телефон: <a href={`tel:${PARTY_PHONE_NUMBER}`}>{PARTY_PHONE_NUMBER_DISPLAY}</a> 

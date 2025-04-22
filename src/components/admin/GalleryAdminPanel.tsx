@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import GalleryUploadManager from '../GalleryUploadManager';
 import ExistingImagesList from './ExistingImagesList';
 import ImageEditForm from './ImageEditForm';

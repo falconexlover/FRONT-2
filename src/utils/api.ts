@@ -672,7 +672,9 @@ export const promotionsService = {
 };
 
 // --- Page Service ---
-const PAGES_API_URL = `${API_BASE_URL}/pages`;
+// const PROMOTIONS_API_URL = `${API_BASE_URL}/promotions`; // Удалено
+// const ARTICLES_API_URL = `${API_BASE_URL}/articles`; // Удалено
+// const SETTINGS_API_URL = `${API_BASE_URL}/settings`; // Удалено
 
 // Тип для ответа API (содержит content)
 interface PageApiResponse {

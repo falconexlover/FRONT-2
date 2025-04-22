@@ -10,17 +10,8 @@ import 'swiper/css/autoplay';
 import { RoomType } from '../types/Room';
 import { roomsService } from '../utils/api'; 
 import { toast } from 'react-toastify';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
-
-// Определяем цвета, которые будем использовать для кнопок и элементов
-const colors = {
-  primary: 'var(--primary-color)',
-  secondary: 'var(--secondary-color)',
-  accent: 'var(--accent-color)',
-  primaryLight: 'rgba(33, 113, 72, 0.1)',  // Светло-зеленый цвет для hover
-  bgColor: 'var(--bg-color, #fff)'
-};
 
 /**
  * Стили для секции номеров
@@ -204,92 +195,6 @@ const RoomActions = styled.div`
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-sm); /* 8px */
-  }
-`;
-
-// --- СТИЛИ ДЛЯ КНОПОК ---
-const ActionButton = styled.button`
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.3s ease;
-  text-align: center;
-  display: inline-block;
-  border: none;
-  color: var(--text-primary);
-  background-color: #f5f5f5;
-  
-  &:hover {
-    background-color: #e0e0e0;
-  }
-`;
-
-// --- НОВЫЙ СТИЛЬ ДЛЯ КНОПКИ "ПОДРОБНЕЕ" ---
-const DetailsButton = styled(ActionButton)`
-  background-color: transparent;
-  border: 1px solid ${colors.primary};
-  color: ${colors.primary};
-  
-  &:hover {
-    background-color: ${colors.primaryLight};
-  }
-`;
-
-// --- НОВЫЙ СТИЛЬ ДЛЯ ССЫЛКИ "ПОДРОБНЕЕ" ---
-const DetailsLink = styled(Link)`
-  color: var(--primary-color);
-  font-weight: 500;
-  text-decoration: none;
-  font-size: 0.9rem;
-  transition: color 0.2s ease;
-
-  &:hover {
-    color: var(--secondary-color); 
-    text-decoration: underline;
-  }
-
-  @media (max-width: 576px) {
-    font-size: 0.85rem;
-    text-align: center;
-    margin-bottom: var(--space-sm); /* 8px */
-  }
-`;
-
-const BookingButton = styled(Link)`
-  display: inline-block;
-  padding: var(--space-sm) var(--space-xl); /* 8px 32px */
-  background-color: var(--primary-color);
-  color: var(--text-on-primary-bg);
-  border: none;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  transition: var(--transition), transform 0.2s ease, box-shadow 0.2s ease;
-  text-align: center;
-  box-shadow: var(--shadow-sm);
-  font-size: 0.95rem;
-
-  &:hover {
-    background-color: var(--secondary-color);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-  }
-  
-  &:active {
-      transform: translateY(0);
-      box-shadow: var(--shadow-sm);
-  }
-
-  @media (max-width: 768px) {
-    padding: var(--space-sm) var(--space-lg); /* 8px 24px */
-    font-size: 0.9rem;
-  }
-  @media (max-width: 576px) {
-    padding: var(--space-sm) var(--space-md); /* 8px 16px */
-    font-size: 0.85rem;
-    width: 100%;
   }
 `;
 

@@ -461,13 +461,19 @@ const Header: React.FC = () => {
     if (location.pathname === '/') {
       const element = document.getElementById(targetId);
       if (element) {
-        const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - scrollOffset;
-
-        window.scrollTo({
-             top: offsetPosition,
-             behavior: "smooth"
-        });
+        if (targetId === 'services-section') {
+          element.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+          });
+        } else {
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - scrollOffset;
+          window.scrollTo({
+               top: offsetPosition,
+               behavior: "smooth"
+          });
+        }
       }
     } else {
       localStorage.setItem('scrollToAnchor', targetId);
@@ -478,39 +484,36 @@ const Header: React.FC = () => {
   useEffect(() => {
     const anchor = localStorage.getItem('scrollToAnchor');
     if (anchor && location.pathname === '/' && location.hash === '') {
-      // Функция для попытки прокрутки к элементу
       const tryScrollToElement = (remainingAttempts = 10) => {
         const element = document.getElementById(anchor);
         
         if (element) {
-          // Элемент найден - выполняем прокрутку
-          const headerHeight = headerRef.current?.offsetHeight ?? 80;
-          const scrollOffset = headerHeight + 10;
-          const elementPosition = element.getBoundingClientRect().top;
-          const offsetPosition = elementPosition + window.pageYOffset - scrollOffset;
-          
-          window.scrollTo({ 
-            top: offsetPosition, 
-            behavior: "smooth" 
-          });
-          
-          // Убираем метку из localStorage
+          if (anchor === 'services-section') {
+            element.scrollIntoView({
+              behavior: "smooth",
+              block: "center"
+            });
+          } else {
+            const headerHeight = headerRef.current?.offsetHeight ?? 80;
+            const scrollOffset = headerHeight + 10;
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - scrollOffset;
+            window.scrollTo({ 
+              top: offsetPosition, 
+              behavior: "smooth" 
+            });
+          }
           localStorage.removeItem('scrollToAnchor');
         } else if (remainingAttempts > 0) {
-          // Элемент не найден, но у нас еще есть попытки
-          // Ждем 100мс и пробуем снова
           setTimeout(() => {
             tryScrollToElement(remainingAttempts - 1);
           }, 100);
         } else {
-          // Исчерпаны все попытки, элемент не найден
           console.warn(`Не удалось найти элемент с id "${anchor}" после нескольких попыток`);
           localStorage.removeItem('scrollToAnchor');
         }
       };
       
-      // Запускаем механизм проверки
-      // Небольшая начальная задержка, чтобы страница успела загрузиться
       setTimeout(() => {
         tryScrollToElement();
       }, 200);

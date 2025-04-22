@@ -6,9 +6,6 @@ import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
 import { toast } from 'react-toastify';
 import { LoadingSpinner } from '../components/AdminPanel';
 import { useNavigate } from 'react-router-dom';
-import Lightbox from 'yet-another-react-lightbox';
-import 'yet-another-react-lightbox/styles.css';
-import Zoom from 'yet-another-react-lightbox/plugins/zoom';
 
 // --- ОПРЕДЕЛЕНИЯ СТИЛЕЙ --- 
 const PageWrapper = styled.div`
@@ -217,8 +214,6 @@ const ConferencePage: React.FC = () => {
   const [content, setContent] = useState<PageContentData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -278,7 +273,7 @@ const ConferencePage: React.FC = () => {
   return (
     <PageWrapper>
       <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={0}>
-        <PageTitle>Конференц-зал в "Лесном дворике"</PageTitle>
+        <PageTitle>Конференц-зал</PageTitle>
       </motion.div>
 
       <ContentSection>
@@ -299,7 +294,6 @@ const ConferencePage: React.FC = () => {
              {/* Отображаем список преимуществ из content */}
              {content.features && content.features.length > 0 ? (
                 <FeaturesList>
-                  <h3>Наши преимущества:</h3>
                   {content.features.map((feature, index) => (
                     <FeatureItem key={index}><i className="fas fa-check-circle"></i>{feature}</FeatureItem>
                   ))}

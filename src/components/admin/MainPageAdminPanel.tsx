@@ -77,12 +77,26 @@ const ErrorMessage = styled.p`
   margin-top: 1rem;
 `;
 
-const MainPageAdminPanel: React.FC = () => {
+const CollapsibleSection: React.FC<{ title: string; children: React.ReactNode; defaultOpen?: boolean }> = ({ title, children, defaultOpen = false }) => {
+    const [open, setOpen] = useState(defaultOpen);
+    return (
+        <SectionWrapper>
+            <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', marginBottom: 8 }} onClick={() => setOpen(o => !o)}>
+                <span style={{ fontWeight: 600, fontSize: '1.1rem', flex: 1 }}>{title}</span>
+                <span style={{ fontSize: 22, color: 'var(--primary-color)', marginLeft: 8 }}>{open ? '▼' : '►'}</span>
+            </div>
+            {open && children}
+        </SectionWrapper>
+    );
+};
+
+const MainPageAdminPanel: React.FC<{ onUnsavedChange?: (hasUnsaved: boolean) => void }> = ({ onUnsavedChange }) => {
     const [formData, setFormData] = useState<HomePageContent | null>(null);
     const [initialData, setInitialData] = useState<HomePageContent | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isSaving, setIsSaving] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const [hasUnsaved, setHasUnsaved] = useState<boolean>(false);
 
     const loadMainPageData = useCallback(async () => {
         setIsLoading(true);
@@ -109,6 +123,32 @@ const MainPageAdminPanel: React.FC = () => {
     useEffect(() => {
         loadMainPageData();
     }, [loadMainPageData]);
+
+    // Проверка на несохранённые изменения
+    useEffect(() => {
+        if (!formData || !initialData) {
+            setHasUnsaved(false);
+            onUnsavedChange && onUnsavedChange(false);
+            return;
+        }
+        const isChanged = JSON.stringify(formData) !== JSON.stringify(initialData);
+        setHasUnsaved(isChanged);
+        onUnsavedChange && onUnsavedChange(isChanged);
+    }, [formData, initialData, onUnsavedChange]);
+
+    // Предупреждение при попытке покинуть страницу
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (hasUnsaved) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [hasUnsaved]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -425,23 +465,27 @@ const MainPageAdminPanel: React.FC = () => {
         }
     };
 
+    // --- ВСТАВКА: Визуальный индикатор несохранённых изменений ---
+    const UnsavedIndicator = () => (
+        hasUnsaved ? <span style={{ color: 'var(--danger-color)', marginLeft: 8, fontWeight: 600 }} title="Есть несохранённые изменения">●</span> : null
+    );
+
     if (isLoading) return <div>Загрузка...</div>;
     if (error && !formData) return <ErrorMessage>Ошибка загрузки данных: {error}</ErrorMessage>;
     if (!formData) return <ErrorMessage>Данные главной страницы не найдены.</ErrorMessage>;
 
     return (
         <AdminPanelWrapper>
-            <h2>Управление главной страницей</h2>
+            <h2>Управление главной страницей <UnsavedIndicator /></h2>
 
-            <SectionWrapper>
-                <h3>Баннер</h3>
+            <CollapsibleSection title="Баннер" defaultOpen>
                 <FormField>
                     <Label htmlFor="banner.title">Заголовок баннера</Label>
-                    <Input id="banner.title" name="banner.title" value={formData.banner?.title || ''} onChange={handleInputChange} disabled={isSaving} />
+                    <Textarea id="banner.title" name="banner.title" value={formData.banner?.title || ''} onChange={handleInputChange} disabled={isSaving} rows={2} />
                 </FormField>
                 <FormField>
                     <Label htmlFor="banner.subtitle">Подзаголовок баннера</Label>
-                    <Input id="banner.subtitle" name="banner.subtitle" value={formData.banner?.subtitle || ''} onChange={handleInputChange} disabled={isSaving} />
+                    <Textarea id="banner.subtitle" name="banner.subtitle" value={formData.banner?.subtitle || ''} onChange={handleInputChange} disabled={isSaving} rows={2} />
                 </FormField>
                 <ImageUpload
                     currentImageUrl={formData.banner?.image}
@@ -449,10 +493,9 @@ const MainPageAdminPanel: React.FC = () => {
                     disabled={isSaving}
                 />
                 <Label style={{marginTop: '0.5rem', fontWeight: 'normal', fontSize: '0.9rem'}}>Изображение баннера</Label>
-            </SectionWrapper>
+            </CollapsibleSection>
 
-            <SectionWrapper>
-                 <h3>О нас</h3>
+            <CollapsibleSection title="О нас">
                  <FormField>
                      <Label htmlFor="about.content">Текст "О нас"</Label>
                      <Textarea
@@ -470,10 +513,9 @@ const MainPageAdminPanel: React.FC = () => {
                     disabled={isSaving}
                  />
                  <Label style={{marginTop: '0.5rem', fontWeight: 'normal', fontSize: '0.9rem'}}>Изображение 'О нас'</Label>
-            </SectionWrapper>
+            </CollapsibleSection>
 
-             <SectionWrapper>
-                  <h3>Конференц-зал</h3>
+            <CollapsibleSection title="Конференц-зал">
                   <FormField>
                      <Label htmlFor="conference.content">Текст "Конференц-зал"</Label>
                      <Textarea
@@ -493,10 +535,9 @@ const MainPageAdminPanel: React.FC = () => {
                      onDelete={handleDeleteConferenceImage}
                      disabled={isSaving}
                  />
-             </SectionWrapper>
+            </CollapsibleSection>
 
-             <SectionWrapper>
-                 <h3>Праздники</h3>
+            <CollapsibleSection title="Праздники">
                   <FormField>
                      <Label htmlFor="party.content">Текст "Праздники"</Label>
                      <Textarea id="party.content" name="party.content" value={formData.party?.content || ''} onChange={handleInputChange} rows={5} disabled={isSaving} />
@@ -509,7 +550,7 @@ const MainPageAdminPanel: React.FC = () => {
                      onDelete={handleDeleteHolidaysImage}
                      disabled={isSaving}
                  />
-             </SectionWrapper>
+            </CollapsibleSection>
 
             <ButtonContainer>
                 <ActionButton type="button" onClick={handleReset} disabled={isSaving} className="secondary">

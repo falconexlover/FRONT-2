@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
 import { articleService } from '../../utils/api';
@@ -34,6 +34,8 @@ const PanelTitle = styled.h2`
   font-family: 'Playfair Display', serif;
 `;
 
+const PAGE_SIZE = 10;
+
 const ArticlesAdminPanel: React.FC = () => {
   const [articles, setArticles] = useState<ArticleType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,6 +50,30 @@ const ArticlesAdminPanel: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingArticle, setEditingArticle] = useState<ArticleType | null>(null);
   const [isSaving, setIsSaving] = useState(false); // Состояние для блокировки кнопок во время сохранения
+  const [search, setSearch] = useState('');
+  const [authorFilter, setAuthorFilter] = useState('');
+  const [page, setPage] = useState(1);
+
+  // Получаем уникальных авторов для фильтра
+  const authors = useMemo(() => Array.from(new Set(articles.map(a => a.author).filter(Boolean))), [articles]);
+
+  // Фильтрация и поиск
+  const filtered = useMemo(() => {
+    let arr = articles;
+    if (search.trim()) {
+      arr = arr.filter(a => a.title.toLowerCase().includes(search.trim().toLowerCase()));
+    }
+    if (authorFilter) {
+      arr = arr.filter(a => a.author === authorFilter);
+    }
+    return arr;
+  }, [articles, search, authorFilter]);
+
+  // Пагинация
+  const pageCount = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+  const paged = useMemo(() => filtered.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE), [filtered, page]);
+
+  useEffect(() => { setPage(1); }, [search, authorFilter]);
 
   const loadArticles = useCallback(async () => {
     setIsLoading(true);
@@ -174,6 +200,27 @@ const ArticlesAdminPanel: React.FC = () => {
         )}
       </PanelHeader>
 
+      {/* Поиск и фильтры */}
+      {!showForm && (
+        <div style={{ display: 'flex', gap: 16, marginBottom: 20, alignItems: 'center' }}>
+          <input
+            type="text"
+            placeholder="Поиск по заголовку..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ padding: '0.5rem', borderRadius: 6, border: '1px solid var(--border-color)', flex: 2 }}
+          />
+          <select
+            value={authorFilter}
+            onChange={e => setAuthorFilter(e.target.value)}
+            style={{ padding: '0.5rem', borderRadius: 6, border: '1px solid var(--border-color)', flex: 1 }}
+          >
+            <option value="">Все авторы</option>
+            {authors.map(a => <option key={a} value={a}>{a}</option>)}
+          </select>
+        </div>
+      )}
+
       {error && <p style={{ color: 'var(--danger-color)' }}>{error}</p>}
 
       {/* Форма создания/редактирования */} 
@@ -197,7 +244,7 @@ const ArticlesAdminPanel: React.FC = () => {
       </AnimatePresence>
 
       {/* Таблица со статьями (показываем, если форма скрыта) */} 
-      {!showForm && articles.length > 0 && (
+      {!showForm && paged.length > 0 && (
           <TableContainer>
             <StyledTable>
               <thead>
@@ -209,7 +256,7 @@ const ArticlesAdminPanel: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {articles.map((article) => (
+                {paged.map((article) => (
                   <StyledTableRow key={article._id}>
                     <StyledTableCell>{article.title}</StyledTableCell>
                     <StyledTableCell>{article.author}</StyledTableCell>
@@ -240,7 +287,17 @@ const ArticlesAdminPanel: React.FC = () => {
             </StyledTable>
           </TableContainer>
       )}
-      {!showForm && articles.length === 0 && !isLoading && (
+      {/* Пагинация */}
+      {!showForm && pageCount > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, margin: '18px 0' }}>
+          <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1} style={{ padding: '0.4rem 1rem', borderRadius: 6, border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', cursor: page === 1 ? 'not-allowed' : 'pointer' }}>Назад</button>
+          {Array.from({ length: pageCount }, (_, i) => (
+            <button key={i+1} onClick={() => setPage(i+1)} disabled={page === i+1} style={{ padding: '0.4rem 0.9rem', borderRadius: 6, border: '1px solid var(--border-color)', background: page === i+1 ? 'var(--primary-color)' : 'var(--bg-secondary)', color: page === i+1 ? 'var(--text-on-primary-bg)' : 'inherit', fontWeight: page === i+1 ? 600 : 400, cursor: page === i+1 ? 'default' : 'pointer' }}>{i+1}</button>
+          ))}
+          <button onClick={() => setPage(p => Math.min(pageCount, p+1))} disabled={page === pageCount} style={{ padding: '0.4rem 1rem', borderRadius: 6, border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', cursor: page === pageCount ? 'not-allowed' : 'pointer' }}>Вперёд</button>
+        </div>
+      )}
+      {!showForm && paged.length === 0 && !isLoading && (
             <p style={{ textAlign: 'center', padding: '2rem' }}>Нет статей для отображения.</p>
       )}
 

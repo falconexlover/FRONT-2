@@ -59,17 +59,6 @@ const CardImage = styled.img`
   display: block;
 `;
 
-const ImagePlaceholder = styled.div`
-  width: 100%;
-  height: 100%;
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-`;
-
 // Добавляем "ручку" для перетаскивания
 const DragHandle = styled.div`
     position: absolute;

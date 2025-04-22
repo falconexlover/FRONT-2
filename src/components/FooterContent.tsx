@@ -1,4 +1,5 @@
 import React from 'react';
+// import styled from 'styled-components'; // Удалено
 import { Link } from 'react-router-dom';
 import {
   FooterContainer,
@@ -6,7 +7,6 @@ import {
   FooterSection,
   FooterBottom
 } from './styles/FooterStyles';
-import MapPin from '../assets/map-pin.png';
 
 const FooterContent: React.FC = () => {
   return (

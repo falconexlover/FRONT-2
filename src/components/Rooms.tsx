@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 interface RoomsProps {
   title?: string;
   subtitle?: string;
+  showAllRoomsLink?: boolean;
 }
 
 const RoomsSection = styled.section`
@@ -170,27 +171,22 @@ const RoomPrice = styled.div`
 `;
 
 const RoomDetails = styled.div`
-  padding: var(--space-xl); /* 32px */
+  padding: 20px;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
-  
-  h3 {
-    margin-bottom: var(--space-md); /* 16px */
-    color: var(--dark-color);
-    font-family: 'Playfair Display', serif;
-    font-size: 1.5rem;
+  justify-content: space-between;
 
-    @media screen and (max-width: 768px) {
-      font-size: 1.3rem;
-    }
-    @media screen and (max-width: 576px) {
-      font-size: 1.2rem;
-    }
+  h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.2rem;
+    color: #333;
   }
 
-  @media screen and (max-width: 576px) {
-    padding: var(--space-lg); /* 24px */
+  p {
+    margin: 0 0 15px 0;
+    color: #666;
+    line-height: 1.4;
   }
 `;
 
@@ -201,25 +197,6 @@ const RoomButtons = styled.div`
   
   @media (max-width: 576px) {
     flex-direction: column;
-  }
-`;
-
-const DetailsButton = styled(Link)`
-  flex: 1;
-  padding: var(--space-sm) var(--space-md); /* 8px 16px */
-  background-color: transparent;
-  color: var(--primary-color);
-  border: 1px solid var(--primary-color);
-  border-radius: var(--radius-sm);
-  text-align: center;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.3s;
-  
-  &:hover {
-    background-color: var(--primary-color-light);
-    color: white;
-    border-color: var(--primary-color-light);
   }
 `;
 
@@ -234,6 +211,7 @@ const ExpandButton = styled.button`
   font-weight: 600;
   text-decoration: none;
   transition: all 0.3s;
+  cursor: pointer;
   
   &:hover {
     background-color: var(--primary-color-light);
@@ -279,66 +257,91 @@ const ViewAllButton = styled(Link)`
   }
 `;
 
-const LoadingPlaceholder = styled.div`
+const ExpandedCardLayout = styled(motion.div)`
   display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 300px;
-  font-size: 1.2rem;
-  color: var(--text-color);
-`;
-
-const ErrorPlaceholder = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 300px;
-  font-size: 1.1rem;
-  color: var(--danger-color);
-  padding: var(--space-xl); /* 32px */
-  text-align: center;
-  background-color: var(--danger-bg-light);
-  border: 1px solid var(--danger-color);
-  border-radius: var(--radius-sm);
-  max-width: 800px;
-  margin: 0 auto;
-`;
-
-const ErrorMessage = styled.p`
-  color: var(--danger-color);
-  margin: var(--space-md) 0; /* 16px 0 */
-  padding: var(--space-sm) var(--space-md); /* 8px 16px */
-  background-color: var(--danger-bg-light);
-  border: 1px solid var(--danger-color);
-  border-radius: var(--radius-sm);
-  font-size: 0.9rem;
-`;
-
-// Добавляем стилизованный motion.div для расширенного контента карточки
-const DetailsContent = styled(motion.div)`
-  background-color: white;
-  border: 1px dashed var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: var(--space-md);
+  gap: 2rem;
+  background: #fff;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
   margin-top: var(--space-md);
-`;
-
-const FeatureList = styled.ul`
-  margin: 0;
-  padding-left: 1.2rem;
-  li {
-    margin-bottom: 0.5rem;
+  padding: var(--space-xl);
+  position: relative;
+  @media (max-width: 900px) {
+    flex-direction: column;
+    padding: var(--space-lg);
   }
 `;
 
-const Description = styled.p`
-  margin-top: var(--space-md);
+const ExpandedLeft = styled.div`
+  flex: 1 1 350px;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+const ExpandedMainImage = styled.img`
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 4 / 3;
+  height: auto;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-md);
+`;
+
+const ExpandedRight = styled.div`
+  flex: 2 1 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+`;
+
+const ExpandedTitle = styled.h3`
+  font-size: 1.5rem;
+  font-family: 'Playfair Display', serif;
+  margin-bottom: var(--space-md);
+  color: var(--dark-color);
+`;
+
+const ExpandedFeatures = styled.ul`
+  margin: 0 0 var(--space-md) 0;
+  padding-left: 1.2rem;
+  color: var(--primary-color);
+  font-size: 1rem;
+  li {
+    margin-bottom: 0.3rem;
+    list-style: disc;
+  }
+`;
+
+const ExpandedDescription = styled.p`
   color: var(--text-secondary);
+  font-size: 1.05rem;
+  margin-bottom: var(--space-lg);
+  white-space: pre-line;
+`;
+
+const GalleryGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-top: var(--space-lg);
+`;
+
+const GalleryImage = styled.img`
+  width: 100%;
+  height: 90px;
+  object-fit: cover;
+  border-radius: var(--radius-xs);
+  box-shadow: var(--shadow-xs);
 `;
 
 const Rooms: React.FC<RoomsProps> = ({ 
-  title = 'Наши номера',
-  subtitle = 'Выберите идеальный номер для вашего отдыха' 
+  title = 'Номера',
+  subtitle = 'Выберите идеальный вариант для вашего комфортного отдыха',
+  showAllRoomsLink = false
 }) => {
   const [rooms, setRooms] = useState<RoomType[]>([]);
   const [expandedRoomId, setExpandedRoomId] = useState<string | null>(null);
@@ -416,31 +419,52 @@ const Rooms: React.FC<RoomsProps> = ({
                 </RoomImage>
                 <RoomDetails>
                   <h3>{room.title}</h3>
+                  {room.description && <p>{room.description}</p>}
                   <RoomButtons>
-                    <ExpandButton onClick={() => toggleExpand(room._id)}>
-                      {isExpanded ? 'Свернуть' : 'Подробнее'}
-                    </ExpandButton>
                     <BookButtonAsButton type="button" onClick={() => handleBookClick(room)}>
                       Забронировать
                     </BookButtonAsButton>
                   </RoomButtons>
                   <AnimatePresence>
                     {isExpanded && (
-                      <DetailsContent
+                      <ExpandedCardLayout
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.3 }}
                       >
-                        <FeatureList>
-                          {room.features.map(feature => (
-                            <li key={feature}>{feature}</li>
-                          ))}
-                        </FeatureList>
-                        {room.description && <Description>{room.description}</Description>}
-                      </DetailsContent>
+                        <ExpandedLeft>
+                          <ExpandedMainImage
+                            src={optimizeCloudinaryImage(room.imageUrls[0], 'f_auto,q_auto,w_600,h_450,c_fill')}
+                            alt={room.title}
+                            onError={handleImageError}
+                          />
+                        </ExpandedLeft>
+                        <ExpandedRight>
+                          <ExpandedTitle>{room.title}</ExpandedTitle>
+                          <ExpandedFeatures>
+                            {room.features.map((feature, i) => (
+                              <li key={i}>{feature}</li>
+                            ))}
+                          </ExpandedFeatures>
+                          {room.description && <ExpandedDescription>{room.description}</ExpandedDescription>}
+                        </ExpandedRight>
+                      </ExpandedCardLayout>
                     )}
                   </AnimatePresence>
+                  {/* Галерея всех фото */}
+                  {isExpanded && room.imageUrls.length > 1 && (
+                    <GalleryGrid>
+                      {room.imageUrls.map((url, i) => (
+                        <GalleryImage
+                          key={url + i}
+                          src={optimizeCloudinaryImage(url, 'f_auto,q_auto,w_200,h_120,c_fill')}
+                          alt={room.title + ' фото ' + (i + 1)}
+                          onError={handleImageError}
+                        />
+                      ))}
+                    </GalleryGrid>
+                  )}
                 </RoomDetails>
               </RoomCard>
             );

@@ -17,4 +17,6 @@ export interface RoomType {
   displayOrder?: number; // Добавляем поле для порядка
   createdAt?: string; // Дата создания (опционально)
   updatedAt?: string; // Дата обновления (опционально)
+  bathroomImages?: string[];
+  bathroomCloudinaryPublicIds?: string[];
 } 

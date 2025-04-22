@@ -147,7 +147,10 @@ const getNested = <T,>(obj: any, path: string, defaultValue: T): T => {
 
 // --- Component ---
 
-const HomepageEditor: React.FC = () => {
+interface HomepageEditorProps {
+  onUnsavedChange?: (hasUnsaved: boolean) => void;
+}
+const HomepageEditor: React.FC<HomepageEditorProps> = ({ onUnsavedChange }) => {
   const [content, setContent] = useState<Partial<HomePageContent>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -340,10 +343,9 @@ const HomepageEditor: React.FC = () => {
         <SectionTitle>Баннер</SectionTitle>
         <FormGroup>
           <Label>Заголовок</Label>
-          <Input
-            type="text"
+          <TextArea
             value={getNested<string>(content, 'banner.title', '')}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('banner', 'title', e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('banner', 'title', e.target.value)}
           />
         </FormGroup>
         <FormGroup>

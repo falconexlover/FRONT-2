@@ -148,10 +148,10 @@ const HomePage: React.FC = () => {
                                 </ContactDetail>
                                 
                                 <ContactDetail>
-                                    <Icon className="fas fa-envelope" />
+                                    <Icon className="fab fa-vk" />
                                     <div>
-                                        <h4>Email</h4>
-                                        <p>{contact?.email}</p>
+                                        <h4>ВКонтакте</h4>
+                                        <p><a href="https://vk.com/lesnoy_dvorik" target="_blank" rel="noopener noreferrer">Наша группа ВКонтакте</a></p>
                                     </div>
                                 </ContactDetail>
                             </ContactInfo>

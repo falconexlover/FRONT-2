@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { articleService } from '../utils/api';
 import { ArticleType } from '../types/Article';
 import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
-import { motion } from 'framer-motion';
 
 // Стили (можно доработать)
 const PageWrapper = styled.div`

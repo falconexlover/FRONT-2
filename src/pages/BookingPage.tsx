@@ -274,7 +274,7 @@ const BookingPage: React.FC = () => {
         const data = await response.json();
 
         if (data.confirmationUrl) {
-            window.location.href = data.confirmationUrl;
+            window.open(data.confirmationUrl, '_blank');
         } else {
             throw new Error('Не удалось получить ссылку на оплату.');
         }
@@ -318,11 +318,11 @@ const BookingPage: React.FC = () => {
           <GuestInputs>
               <FormGroup>
                   <Label htmlFor="adults">Взрослые</Label>
-                  <Input type="number" id="adults" name="adults" value={formData.adults} onChange={handleChange} required min="1" max={roomCapacity ?? undefined} />
+                  <Input type="number" id="adults" name="adults" value={formData.adults} onChange={handleChange} required min="1" max={typeof roomCapacity === 'number' ? roomCapacity : undefined} />
               </FormGroup>
               <FormGroup>
                   <Label htmlFor="children">Дети</Label>
-                  <Input type="number" id="children" name="children" value={formData.children} onChange={handleChange} required min="0" max={roomCapacity !== null ? Math.max(0, roomCapacity - formData.adults) : undefined} />
+                  <Input type="number" id="children" name="children" value={formData.children} onChange={handleChange} required min="0" max={typeof roomCapacity === 'number' ? Math.max(0, roomCapacity - formData.adults) : undefined} />
               </FormGroup>
               {roomCapacity !== null && (
                 <div style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: 8 }}>

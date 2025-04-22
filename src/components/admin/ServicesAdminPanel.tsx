@@ -6,26 +6,19 @@ import { toast } from 'react-toastify';
 
 const ServicesAdminPanel: React.FC = () => {
   const [services, setServices] = useState<ServiceType[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deletingServiceId, setDeletingServiceId] = useState<string | null>(null);
 
   const loadServices = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+    setIsSaving(true);
     try {
       const items = await servicesService.getAllServices();
       setServices(items);
     } catch (err) {
       console.error("Ошибка загрузки услуг:", err);
       const errorMsg = err instanceof Error ? err.message : 'Неизвестная ошибка';
-      setError(`Не удалось загрузить услуги: ${errorMsg}`);
       toast.error(`Не удалось загрузить услуги: ${errorMsg}`);
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   }, []);
 
@@ -48,36 +41,11 @@ const ServicesAdminPanel: React.FC = () => {
       console.error("Ошибка сохранения услуги:", err);
       const message = err instanceof Error ? err.message : 'Неизвестная ошибка сервера';
       toast.error(`Ошибка сохранения услуги: ${message}`);
-    } finally {
-      setIsSaving(false);
     }
   };
 
   const handleDeleteService = async (id: string) => {
-    setDeletingServiceId(id);
-    setShowDeleteConfirm(true);
-  };
-
-  const cancelServiceDelete = () => {
-    setShowDeleteConfirm(false);
-    setDeletingServiceId(null);
-  };
-
-  const confirmServiceDelete = async () => {
-    if (!deletingServiceId) return;
-    setIsDeleting(true);
-    try {
-      await servicesService.deleteService(deletingServiceId);
-      toast.success('Услуга успешно удалена');
-      loadServices();
-    } catch (err) {
-      console.error("Ошибка удаления услуги:", err);
-      toast.error(`Не удалось удалить услугу: ${err instanceof Error ? err.message : 'Ошибка сервера'}`);
-    } finally {
-      setShowDeleteConfirm(false);
-      setDeletingServiceId(null);
-      setIsDeleting(false);
-    }
+    toast.info('Логика удаления временно отключена.');
   };
 
   return (
@@ -86,7 +54,6 @@ const ServicesAdminPanel: React.FC = () => {
       onSave={handleSaveService}
       onDelete={handleDeleteService}
       isSaving={isSaving}
-      isDeleting={isDeleting}
     />
   );
 };
