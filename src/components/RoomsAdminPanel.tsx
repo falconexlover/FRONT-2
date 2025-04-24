@@ -83,21 +83,6 @@ const Button = styled.button`
   }
 `;
 
-const RoomImagePreview = styled.div` /* Оборачиваем img в div для стилизации */
-  width: 100px; /* Уменьшим превью */
-  height: 65px;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  background-color: var(--bg-primary); /* Фон-заглушка */
-  
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-`;
-
 const ErrorMessage = styled.p`
   text-align: center;
   padding: 1rem 1.5rem;
@@ -149,6 +134,24 @@ const CardsContainer = styled.div`
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+  }
+`;
+
+// Добавляю недостающий styled-компонент для превью изображения номера
+const RoomImagePreview = styled.div`
+  width: 100px;
+  height: 60px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
 `;
 

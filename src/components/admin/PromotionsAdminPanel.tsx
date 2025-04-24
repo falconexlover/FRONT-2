@@ -8,6 +8,7 @@ import ActionButton from '../ui/ActionButton';
 import ConfirmModal from '../ui/ConfirmModal';
 import PromotionForm from './PromotionForm';
 import { LoadingSpinner } from '../AdminPanel';
+import { useCrud } from '../../hooks/useCrud';
 
 // Стили (можно вынести или оставить здесь для начала)
 const PanelContainer = styled.div``; // Пока пустой, общие стили в AdminLayout
@@ -123,38 +124,33 @@ const NoItemsMessage = styled.div`
 
 // --- Компонент --- 
 const PromotionsAdminPanel: React.FC = () => {
-  const [promotions, setPromotions] = useState<PromotionType[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
+  const {
+    items: promotions,
+    setItems: setPromotions,
+    isLoading,
+    isSaving,
+    isDeleting: isProcessingDelete,
+    error,
+    loadAll,
+    createItem,
+    updateItem,
+    deleteItem,
+  } = useCrud<
+    PromotionType,
+    FormData | Partial<PromotionType>,
+    FormData | Partial<PromotionType>
+  >();
+
+  // UI-состояния
   const [showForm, setShowForm] = useState(false);
   const [editingPromotion, setEditingPromotion] = useState<PromotionType | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingPromotionId, setDeletingPromotionId] = useState<string | null>(null);
-  const [isProcessingDelete, setIsProcessingDelete] = useState(false);
 
-  // Загрузка акций
-  const fetchPromotions = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data: PromotionType[] = await promotionsService.getAllPromotions(); 
-      setPromotions(data);
-    } catch (err) {
-      console.error("Ошибка загрузки акций:", err);
-      const message = err instanceof Error ? err.message : 'Не удалось загрузить акции';
-      setError(message);
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
+  // Загрузка акций при монтировании
   useEffect(() => {
-    fetchPromotions();
-  }, [fetchPromotions]);
+    loadAll(promotionsService.getAllPromotions);
+  }, [loadAll]);
 
   // Обработчики для формы
   const handleAddClick = () => {
@@ -173,59 +169,34 @@ const PromotionsAdminPanel: React.FC = () => {
   };
 
   const handleSave = async (formData: Omit<PromotionType, '_id' | 'createdAt' | 'updatedAt'> | Partial<PromotionType>, imageFile?: File | null) => {
-    setIsSaving(true);
     try {
-      let savedPromotion: PromotionType;
-      // Используем FormData, если есть файл
-      const dataToSend: FormData | Partial<PromotionType> | Omit<PromotionType, '_id' | 'createdAt' | 'updatedAt'> = new FormData();
-
-      // Добавляем данные формы в FormData
-      Object.entries(formData).forEach(([key, value]) => {
-        // Пропускаем null/undefined значения, кроме isActive (может быть false)
-        if (value !== null && value !== undefined) {
-           // Преобразуем булевы значения в строки 'true'/'false', если нужно для бэкенда
-           // Если бэкэнд ожидает булевы, эту строку можно убрать
-           if (typeof value === 'boolean') {
-               dataToSend.append(key, String(value));
-           } else {
-               dataToSend.append(key, value as string | Blob); // Допускаем Blob для файлов
-           }
-        }
-      });
-
-      // Добавляем файл, если он есть
+      let dataToSend: FormData | Partial<PromotionType> = formData as Partial<PromotionType>;
       if (imageFile) {
-        dataToSend.append('image', imageFile); // 'image' - ключ для файла на бэкенде
+        const fd = new FormData();
+        Object.entries(formData).forEach(([key, value]) => {
+          if (value !== null && value !== undefined) {
+            if (typeof value === 'boolean') {
+              fd.append(key, String(value));
+            } else {
+              fd.append(key, value as string | Blob);
+            }
+          }
+        });
+        fd.append('image', imageFile);
+        dataToSend = fd;
       }
-
-      if (editingPromotion && editingPromotion._id) {
-         // При обновлении, если есть imageFile, передаем FormData, иначе - обычный объект
-         const payload = imageFile ? dataToSend : formData;
-         // Если файл не меняется, и imageUrl уже есть, добавляем его явно (если бэк не сохраняет старый)
-         if (!imageFile && formData.imageUrl && payload instanceof FormData) {
-             payload.append('imageUrl', formData.imageUrl);
-         } else if (!imageFile && formData.imageUrl && !(payload instanceof FormData)) {
-             (payload as Partial<PromotionType>).imageUrl = formData.imageUrl;
-         }
-        savedPromotion = await promotionsService.updatePromotion(editingPromotion._id, payload);
-        toast.success(`Акция "${savedPromotion.title}" успешно обновлена!`);
+      if (editingPromotion?._id) {
+        await updateItem(promotionsService.updatePromotion, editingPromotion._id, dataToSend);
       } else {
-         // При создании всегда передаем FormData, т.к. может быть файл
-        savedPromotion = await promotionsService.createPromotion(dataToSend); 
-        toast.success(`Акция "${savedPromotion.title}" успешно создана!`);
+        await createItem(promotionsService.createPromotion, dataToSend);
       }
-      fetchPromotions(); // Обновляем список после сохранения
-      handleFormCancel(); // Закрываем форму
+      handleFormCancel();
     } catch (err) {
-      console.error("Ошибка сохранения акции:", err);
-      const message = err instanceof Error ? err.message : 'Не удалось сохранить акцию';
-      toast.error(`Ошибка сохранения: ${message}`);
-    } finally {
-      setIsSaving(false);
+      // Ошибка уже обработана в useCrud
     }
   };
 
-  // Обработчики удаления
+  // --- Обработчики удаления --- //
   const handleDeleteClick = (id: string) => {
     setDeletingPromotionId(id);
     setShowDeleteConfirm(true);
@@ -238,18 +209,13 @@ const PromotionsAdminPanel: React.FC = () => {
 
   const confirmDelete = async () => {
     if (!deletingPromotionId) return;
-    setIsProcessingDelete(true);
     try {
-      await promotionsService.deletePromotion(deletingPromotionId);
-      toast.success('Акция успешно удалена');
+      await deleteItem(promotionsService.deletePromotion, deletingPromotionId);
+    } catch (err) {
+      // Ошибка уже обработана в useCrud
+    } finally {
       setShowDeleteConfirm(false);
       setDeletingPromotionId(null);
-      fetchPromotions();
-    } catch (err: any) {
-      console.error("Ошибка удаления акции:", err);
-      toast.error(`Ошибка удаления: ${err.message || 'Неизвестная ошибка'}`);
-    } finally {
-      setIsProcessingDelete(false);
     }
   };
   

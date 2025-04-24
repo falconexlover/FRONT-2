@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import GalleryUploadManager from '../GalleryUploadManager';
-import ExistingImagesList from './ExistingImagesList';
+import React, { useState, useEffect } from 'react';
+import GalleryUploadManager from './GalleryUploadManager';
 import ImageEditForm from './ImageEditForm';
 import ConfirmModal from '../ui/ConfirmModal';
 import Modal from '../ui/Modal';
@@ -10,6 +9,8 @@ import { toast } from 'react-toastify';
 import { arrayMove } from '@dnd-kit/sortable';
 import { DragEndEvent } from '@dnd-kit/core';
 import styled, { keyframes } from 'styled-components';
+import { useCrud } from '../../hooks/useCrud';
+import GalleryImagesBlock from './GalleryImagesBlock';    
 
 const CATEGORIES = [
   { id: 'rooms', label: 'Номера' },
@@ -41,39 +42,28 @@ export const LoadingSpinner = styled.div`
 `;
 
 const GalleryAdminPanel: React.FC = () => {
-  const [galleryItems, setGalleryItems] = useState<GalleryImageItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    items: galleryItems,
+    setItems: setGalleryItems,
+    isLoading,
+    isSaving,
+    isDeleting,
+    error,
+    loadAll,
+    updateItem,
+    deleteItem,
+  } = useCrud<GalleryImageItem, Partial<GalleryImageItem>>();
+
   const [editingImage, setEditingImage] = useState<GalleryImageItem | null>(null);
   const [editedData, setEditedData] = useState<Partial<GalleryImageItem>>({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const loadGalleryItems = useCallback(async (category?: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const items = await galleryService.getAllImages(category);
-      setGalleryItems(items);
-    } catch (err) {
-      console.error("Ошибка загрузки галереи:", err);
-      const errorMsg = err instanceof Error ? err.message : 'Неизвестная ошибка';
-      setError(`Не удалось загрузить изображения: ${errorMsg}`);
-      toast.error(`Не удалось загрузить изображения: ${errorMsg}`);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    loadGalleryItems();
-  }, [loadGalleryItems]);
-
-  const handleImageUpload = useCallback((category: string) => {
-    loadGalleryItems(category);
-  }, [loadGalleryItems]);
+    loadAll(() => galleryService.getAllImages(selectedCategory));
+  }, [loadAll, selectedCategory]);
 
   const handleEditClick = (image: GalleryImageItem) => {
     setEditingImage(image);
@@ -96,18 +86,12 @@ const GalleryAdminPanel: React.FC = () => {
 
   const saveImageChanges = async () => {
     if (!editingImage?._id) return;
-    setIsSaving(true);
     try {
-      await galleryService.updateImage(editingImage._id, editedData);
-      toast.success("Изменения сохранены!");
+      await updateItem(galleryService.updateImage, editingImage._id, editedData);
       setEditingImage(null);
       setEditedData({});
-      loadGalleryItems();
     } catch (err) {
-      console.error("Ошибка обновления изображения:", err);
-      toast.error("Не удалось сохранить изменения.");
-    } finally {
-      setIsSaving(false);
+      // Ошибка уже обработана в useCrud
     }
   };
 
@@ -123,18 +107,15 @@ const GalleryAdminPanel: React.FC = () => {
 
   const confirmDelete = async () => {
     if (!deletingImageId) return;
-    setIsDeleting(true);
     try {
-      await galleryService.deleteImage(deletingImageId);
-      toast.success("Изображение удалено.");
-      setGalleryItems(prev => prev.filter(item => item._id !== deletingImageId));
+      await deleteItem(galleryService.deleteImage, deletingImageId);
     } catch (err) {
-      console.error("Ошибка удаления изображения:", err);
-      toast.error("Не удалось удалить изображение.");
+      // Ошибка уже обработана в useCrud
+      toast.error('Не удалось удалить изображение. Возможно, оно уже было удалено.');
     } finally {
+      loadAll(() => galleryService.getAllImages(selectedCategory));
       setShowDeleteConfirm(false);
       setDeletingImageId(null);
-      setIsDeleting(false);
     }
   };
 
@@ -158,23 +139,36 @@ const GalleryAdminPanel: React.FC = () => {
     }
   };
 
+  const handleCategoryChange = async (id: string, category: string) => {
+    try {
+      await updateItem(galleryService.updateImage, id, { category });
+      toast.success('Категория обновлена');
+      loadAll(() => galleryService.getAllImages(selectedCategory));
+    } catch (err) {
+      toast.error('Ошибка при обновлении категории');
+    }
+  };
+
   return (
     <>
-      <GalleryUploadManager categories={CATEGORIES} onImageUpload={handleImageUpload} />
-      {isLoading ? (
-        <LoadingSpinner><i className="fas fa-spinner"></i> Загрузка...</LoadingSpinner>
-      ) : error ? (
-        <p style={{ color: 'red' }}>{error}</p>
-      ) : (
-        <ExistingImagesList 
-          images={galleryItems}
-          onEdit={handleEditClick} 
-          onDelete={handleDeleteClick}
-          onDragEnd={handleGalleryDragEnd}
-          onRefresh={loadGalleryItems}
-        />
-      )}
-
+      <GalleryUploadManager 
+        categories={CATEGORIES} 
+        onImageUpload={() => loadAll(() => galleryService.getAllImages(selectedCategory))} 
+      />
+      <GalleryImagesBlock
+        images={galleryItems}
+        onEdit={handleEditClick}
+        onDelete={handleDeleteClick}
+        onDragEnd={handleGalleryDragEnd}
+        onRefresh={() => loadAll(() => galleryService.getAllImages(selectedCategory))}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        isLoading={isLoading}
+        error={error}
+        onCategoryChange={handleCategoryChange}
+      />
       <Modal isOpen={!!editingImage} onClose={cancelEdit} title="Редактировать информацию">
         {editingImage && (
           <ImageEditForm 
@@ -188,7 +182,6 @@ const GalleryAdminPanel: React.FC = () => {
           />
         )}
       </Modal>
-
       <ConfirmModal
         isOpen={showDeleteConfirm}
         onCancel={cancelDelete}

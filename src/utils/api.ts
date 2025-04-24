@@ -169,91 +169,117 @@ export const authService = {
   }
 };
 
+// Универсальная функция для формирования headers с авторизацией
+function getAuthHeaders(contentType: string | null = null): Record<string, string> {
+  const token = authService.getToken();
+  if (!token) throw new Error('Требуется аутентификация');
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${token}`
+  };
+  if (contentType) headers['Content-Type'] = contentType;
+  return headers;
+}
+
+// Универсальная обработка ошибок API
+function handleApiError(error: any, context?: string) {
+  let message = 'Ошибка запроса к серверу';
+  if (error?.response?.data?.message) {
+    message = error.response.data.message;
+  } else if (error?.message) {
+    message = error.message;
+  }
+  if (context) {
+    // eslint-disable-next-line no-console
+    console.error(`[API] ${context}:`, error);
+  }
+  throw new Error(message);
+}
+
 /**
  * Функции для работы с галереей
  */
 export const galleryService = {
   // Получить все изображения
   async getAllImages(category?: string): Promise<GalleryImageItem[]> {
-    const url = category ? `${API_BASE_URL}/gallery?category=${category}` : `${API_BASE_URL}/gallery`;
-    const response = await fetch(url);
-    const result = await handleResponse<GalleryImageItem[] | null>(response);
-    return Array.isArray(result) ? result : [];
+    try {
+      const url = category ? `${API_BASE_URL}/gallery?category=${category}` : `${API_BASE_URL}/gallery`;
+      const response = await fetch(url);
+      const result = await handleResponse<GalleryImageItem[] | null>(response);
+      return Array.isArray(result) ? result : [];
+    } catch (error) {
+      handleApiError(error, 'galleryService.getAllImages');
+      throw error;
+    }
   },
   
   // Получить изображение по ID
   async getImageById(id: string): Promise<GalleryImageItem | null> {
-    const response = await fetch(`${API_BASE_URL}/gallery/${id}`);
-    return handleResponse<GalleryImageItem | null>(response);
+    try {
+      const response = await fetch(`${API_BASE_URL}/gallery/${id}`);
+      return handleResponse<GalleryImageItem | null>(response);
+    } catch (error) {
+      handleApiError(error, 'galleryService.getImageById');
+      throw error;
+    }
   },
   
   // Загрузить новое изображение
   async uploadImage(formData: FormData): Promise<GalleryImageItem> {
-    const token = authService.getToken();
-    if (!token) {
-      return Promise.reject(new Error('Требуется аутентификация'));
+    try {
+      const response = await fetch(`${API_BASE_URL}/gallery`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: formData
+      });
+      return handleResponse<GalleryImageItem>(response);
+    } catch (error) {
+      handleApiError(error, 'galleryService.uploadImage');
+      throw error;
     }
-    
-    const response = await fetch(`${API_BASE_URL}/gallery`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    });
-    return handleResponse<GalleryImageItem>(response);
   },
   
   // Обновить информацию об изображении
   async updateImage(id: string, updates: Partial<GalleryImageItem>): Promise<GalleryImageItem> {
-    const token = authService.getToken();
-    if (!token) {
-      return Promise.reject(new Error('Требуется аутентификация'));
+    try {
+      const response = await fetch(`${API_BASE_URL}/gallery/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders('application/json'),
+        body: JSON.stringify(updates)
+      });
+      return handleResponse<GalleryImageItem>(response);
+    } catch (error) {
+      handleApiError(error, 'galleryService.updateImage');
+      throw error;
     }
-    
-    const response = await fetch(`${API_BASE_URL}/gallery/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(updates)
-    });
-    return handleResponse<GalleryImageItem>(response);
   },
   
   // Удалить изображение
   async deleteImage(id: string): Promise<void> {
-    const token = authService.getToken();
-    if (!token) {
-      return Promise.reject(new Error('Требуется аутентификация'));
+    try {
+      const response = await fetch(`${API_BASE_URL}/gallery/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      await handleResponse<null>(response);
+    } catch (error) {
+      handleApiError(error, 'galleryService.deleteImage');
+      throw error;
     }
-    
-    const response = await fetch(`${API_BASE_URL}/gallery/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    await handleResponse<null>(response);
   },
   
   // Обновить порядок изображений
   async updateImageOrder(orderedIds: string[]): Promise<{ message: string, modifiedCount: number }> {
-      const token = authService.getToken();
-      if (!token) {
-          return Promise.reject(new Error('Требуется аутентификация'));
-      }
-      
+    try {
       const response = await fetch(`${API_BASE_URL}/gallery/order`, {
-          method: 'PUT',
-          headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ orderedIds })
+        method: 'PUT',
+        headers: getAuthHeaders('application/json'),
+        body: JSON.stringify({ orderedIds })
       });
       return handleResponse<{ message: string, modifiedCount: number }>(response);
+    } catch (error) {
+      handleApiError(error, 'galleryService.updateImageOrder');
+      throw error;
+    }
   }
 };
 

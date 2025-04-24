@@ -3,6 +3,7 @@ import styled from 'styled-components';
 export const TableContainer = styled.div`
   margin-top: 2rem;
   overflow-x: auto;
+  min-width: 400px; /* Минимальная ширина для узкой таблицы */
   width: 100%;
   background-color: var(--bg-secondary); /* Фон для таблицы */
   border: 1px solid var(--border-color);
@@ -34,11 +35,12 @@ export const StyledTableRow = styled.tr<{ $isDragging?: boolean }>`
 `;
 
 export const StyledTableCell = styled.td`
-  padding: 1rem 1.2rem; /* Такой же padding, как у заголовков */
+  padding: 0.3rem 0.5rem; /* Меньше отступы */
   color: black;
-  vertical-align: middle; /* Выравниваем по центру вертикально */
+  vertical-align: middle;
   white-space: normal; /* Разрешаем перенос текста */
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* Меньше шрифт */
+  line-height: 1.1;
 
   /* Классы для специфичных ячеек можно добавлять по месту использования */
   &.drag-handle {
@@ -86,14 +88,14 @@ export const StyledTableCell = styled.td`
 `;
 
 export const TableHeader = styled.th`
-  padding: 1rem 1.2rem; 
+  padding: 0.3rem 0.5rem;
   text-align: left;
-  border-bottom: 1px solid var(--border-color); 
+  border-bottom: 1px solid var(--border-color);
   color: black;
-  white-space: nowrap;
-  font-size: 0.9rem;
+  white-space: normal;
+  font-size: 0.85rem;
   font-weight: 500;
-  text-transform: uppercase; 
+  text-transform: uppercase;
   letter-spacing: 0.5px;
 
   // Скрываем колонки на мобильных
@@ -115,17 +117,17 @@ export const ActionButtonsContainer = styled.div`
     /* justify-content: flex-end; */ 
 `;
 
-export const IconButton = styled.button` 
-    padding: 0.5rem;
+export const IconButton = styled.button`
+    padding: 0.3rem;
     min-width: auto;
     line-height: 1;
-    font-size: 1rem;
+    font-size: 0.95rem;
     background: none;
     border: none;
-    color: var(--text-secondary); 
-    border-radius: 50%; 
-    width: 32px;
-    height: 32px;
+    color: var(--text-secondary);
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -1,6 +1,5 @@
 import React, { ReactNode } from 'react';
 import styled from 'styled-components';
-// Удаляем неиспользуемый импорт motion
 // import { motion } from 'framer-motion'; 
 import Modal from './Modal'; // Используем базовый Modal
 import ActionButton from './ActionButton';

@@ -190,15 +190,6 @@ const RoomAdminCard: React.FC<RoomAdminCardProps> = ({ room, onEdit, onDelete })
   return (
     <Card>
       <CardHeader>
-        <CardImagePreview>
-          {room.imageUrls?.[0] ? (
-            <img
-              src={optimizeCloudinaryImage(room.imageUrls[0], 'f_auto,q_auto,w_100,h_60,c_fill')}
-              alt={room.title}
-              loading="lazy"
-            />
-          ) : <i className="fas fa-image" style={{ fontSize: '2rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}></i>}
-        </CardImagePreview>
         <CardTitlePrice>
           <CardRoomName>{room.title}</CardRoomName>
           <CardRoomPrice>{displayPrice}</CardRoomPrice>

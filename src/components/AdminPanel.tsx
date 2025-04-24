@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled, { keyframes } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TabItem } from './ui/Tabs';
@@ -13,6 +13,7 @@ import SaunaPageEditor from './admin/editors/SaunaPageEditor';
 import GalleryAdminPanel from './admin/GalleryAdminPanel';
 import ServicesAdminPanel from './admin/ServicesAdminPanel';
 import ArticlesAdminPanel from './admin/ArticlesAdminPanel';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 
 interface AdminPanelProps {}
 
@@ -49,9 +50,29 @@ const adminTabs: TabItem[] = [
     { id: 'articles', label: 'Блог' },
 ];
 
+const tabToRoute: Record<string, string> = {
+  dashboard: '',
+  homepage: 'homepage',
+  rooms: 'rooms',
+  services: 'services',
+  'edit-conference': 'edit-conference',
+  'edit-party': 'edit-party',
+  'edit-sauna': 'edit-sauna',
+  gallery: 'gallery',
+  promotions: 'promotions',
+  articles: 'articles',
+};
+
+const routeToTab: Record<string, string> = Object.fromEntries(
+  Object.entries(tabToRoute).map(([k, v]) => [v, k])
+);
+
 const AdminPanel: React.FC<AdminPanelProps> = () => {
-  const [activeTab, setActiveTab] = useState(adminTabs[0].id);
-  const [homepageUnsaved, setHomepageUnsaved] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const path = location.pathname.replace(/^\/admin\/?/, '');
+  const activeTab = routeToTab[path] || 'dashboard';
+  const [homepageUnsaved, setHomepageUnsaved] = React.useState(false);
 
   // Обработчик смены вкладки с предупреждением
   const handleTabChange = (id: string) => {
@@ -60,34 +81,7 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
         return;
       }
     }
-    setActiveTab(id);
-  };
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard setActiveTab={setActiveTab} />;
-      case 'homepage':
-        return <HomepageEditor onUnsavedChange={setHomepageUnsaved} />;
-      case 'rooms':
-        return <RoomsAdminPanel />;
-      case 'services':
-        return <ServicesAdminPanel />;
-      case 'gallery':
-        return <GalleryAdminPanel />;
-      case 'promotions':
-        return <PromotionsAdminPanel />;
-      case 'edit-conference':
-        return <ConferencePageEditor />;
-      case 'edit-party':
-        return <PartyPageEditor />;
-      case 'edit-sauna':
-        return <SaunaPageEditor />;
-      case 'articles':
-        return <ArticlesAdminPanel />;
-      default:
-        return <p>Раздел в разработке.</p>;
-    }
+    navigate(tabToRoute[id] ? `/admin/${tabToRoute[id]}` : '/admin');
   };
 
   return (
@@ -97,15 +91,27 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
       onMenuItemSelect={handleTabChange}
     >
       <AnimatePresence mode='wait'>
-          <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-          >
-             {renderContent()}
-          </motion.div>
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+        >
+          <Routes>
+            <Route path="" element={<Dashboard setActiveTab={handleTabChange} />} />
+            <Route path="homepage" element={<HomepageEditor onUnsavedChange={setHomepageUnsaved} />} />
+            <Route path="rooms" element={<RoomsAdminPanel />} />
+            <Route path="services" element={<ServicesAdminPanel />} />
+            <Route path="gallery" element={<GalleryAdminPanel />} />
+            <Route path="promotions" element={<PromotionsAdminPanel />} />
+            <Route path="edit-conference" element={<ConferencePageEditor />} />
+            <Route path="edit-party" element={<PartyPageEditor />} />
+            <Route path="edit-sauna" element={<SaunaPageEditor />} />
+            <Route path="articles" element={<ArticlesAdminPanel />} />
+            <Route path="*" element={<Navigate to="" replace />} />
+          </Routes>
+        </motion.div>
       </AnimatePresence>
     </AdminLayout>
   );

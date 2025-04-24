@@ -1,6 +1,7 @@
 import React, { useState, useRef, ChangeEvent, useEffect } from 'react';
 import styled from 'styled-components';
 import { optimizeCloudinaryImage } from '../../utils/cloudinaryUtils'; // Для оптимизации превью
+import { useImageUpload } from '../../hooks/useImageUpload';
 
 interface ImageUploadProps {
   currentImageUrl?: string | null;
@@ -75,7 +76,6 @@ const RemoveButton = styled(UploadButton)`
   }
 `;
 
-
 const ImageUpload: React.FC<ImageUploadProps> = ({
   currentImageUrl,
   onFileSelect,
@@ -83,42 +83,20 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   label,
   disabled = false,
 }) => {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const {
+    previewUrl,
+    file,
+    error,
+    fileInputRef,
+    handleFileChange,
+    handleRemove,
+  } = useImageUpload({ initialUrl: currentImageUrl });
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      onFileSelect(file);
-      // Генерируем превью для нового файла
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-     // Сбрасываем значение инпута, чтобы можно было выбрать тот же файл снова
-     if(fileInputRef.current) {
-         fileInputRef.current.value = '';
-     }
-  };
-
-  const handleRemoveImage = () => {
-    setPreviewUrl(null);
-    onFileSelect(null); // Сообщаем родителю, что изображение нужно убрать/сбросить
-     if(fileInputRef.current) {
-         fileInputRef.current.value = '';
-     }
-  };
-
-  const handleTriggerClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  // Обновляем превью, если currentImageUrl изменился извне
-  useEffect(() => {
-    setPreviewUrl(currentImageUrl ? optimizeCloudinaryImage(currentImageUrl, 'w_300') : null);
-  }, [currentImageUrl]);
+  // Передаём выбранный файл наружу
+  React.useEffect(() => {
+    onFileSelect(file);
+    // eslint-disable-next-line
+  }, [file]);
 
   return (
     <UploadContainer>
@@ -138,15 +116,16 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           onChange={handleFileChange}
           disabled={disabled}
         />
-        <UploadButton type="button" onClick={handleTriggerClick} disabled={disabled}>
+        <UploadButton type="button" onClick={() => fileInputRef.current?.click()} disabled={disabled}>
           {previewUrl ? 'Заменить' : 'Загрузить'}
         </UploadButton>
         {previewUrl && (
-           <RemoveButton type="button" onClick={handleRemoveImage} disabled={disabled}>
+           <RemoveButton type="button" onClick={handleRemove} disabled={disabled}>
              Удалить
            </RemoveButton>
         )}
       </ActionsContainer>
+      {error && <div style={{ color: 'red', marginTop: 4 }}>{error}</div>}
     </UploadContainer>
   );
 };

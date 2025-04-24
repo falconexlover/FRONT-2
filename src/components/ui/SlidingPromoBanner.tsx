@@ -1,14 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom'; // Импортируем useNavigate
-// import { PromotionType } from '../../types/Promotion'; // Больше не нужно
-
-// Удаляем promotion из интерфейса
-/*
-interface SlidingPromoBannerProps {
-  promotion: PromotionType; 
-}
-*/
 
 const BANNER_WIDTH = '250px'; // Ширина выезжающей части
 const TAB_WIDTH = '35px'; // Ширина видимого язычка
@@ -94,56 +86,6 @@ const Content = styled.div`
   }
 `;
 
-// Удаляем неиспользуемые стили
-/*
-const PromoTitle = styled.h4`
-  margin: 0 0 0.5rem 0;
-  color: white; 
-`;
-
-const PromoText = styled.p`
-  margin: 0 0 1rem 0;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  color: white; 
-`;
-
-const ToggleButton = styled.button<{
-  $visible: boolean;
-  $position: 'left' | 'right';
-}>`
-  position: absolute;
-  top: 50%;
-  ${({ $position, $visible }) => $position === 'left' ? 'right' : 'left'}: -40px; 
-  transform: translateY(-50%) rotate(${({ $position }) => $position === 'left' ? '-90deg' : '90deg'});
-  transform-origin: center;
-  width: 80px;
-  height: 40px;
-  background-color: var(--danger-color); 
-  color: white;
-  border: none;
-`;
-
-const DismissButton = styled.button`
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.7); 
-  font-size: 1.2rem;
-`;
-
-const ClaimButton = styled.button`
-  background-color: rgba(255, 255, 255, 0.9);
-  color: var(--danger-color); 
-  border: none;
-  padding: 0.6rem 1.2rem;
-`;
-*/
-
-// Удаляем пропс promotion
-// const SlidingPromoBanner: React.FC<SlidingPromoBannerProps> = ({ promotion }) => {
 const SlidingPromoBanner: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const navigate = useNavigate(); // Получаем функцию навигации

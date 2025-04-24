@@ -6,6 +6,8 @@ import { HomePageContent } from '../types/HomePage'; // Импортируем �
 import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils'; // Импортируем оптимизатор
 import { toast } from 'react-toastify'; // Для сообщений об ошибках
 import { LoadingSpinner } from '../components/AdminPanel'; // Импортируем спиннер загрузки
+import { galleryService } from '../utils/api';
+import { GalleryImageItem } from '../types/GalleryImage';
 
 // --- Стили ---
 // Используем стили, похожие на другие страницы, например, SaunaPage или ConferencePage
@@ -163,6 +165,7 @@ const VK_LINK = "https://vk.com/lesnoy_dvorik";
 
 const PartyPage: React.FC = () => {
   const [content, setContent] = useState<HomePageContent['party'] | null>(null);
+  const [galleryImages, setGalleryImages] = useState<GalleryImageItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -175,19 +178,17 @@ const PartyPage: React.FC = () => {
         if (homeData && homeData.party) {
           setContent(homeData.party);
         } else {
-          // Устанавливаем дефолтные значения, если секция не найдена
-          setContent({ title: 'Детские праздники', content: 'Информация скоро появится...', imageUrls: [], cloudinaryPublicIds: [] });
-          console.warn("Секция 'party' не найдена в данных главной страницы.");
+          setContent({ title: 'Детские праздники', content: 'Информация скоро появится...' });
         }
+        const images = await galleryService.getAllImages('party');
+        setGalleryImages(Array.isArray(images) ? images : []);
       } catch (err) {
-        console.error("Ошибка загрузки данных страницы Детских праздников:", err);
         setError("Не удалось загрузить информацию о странице.");
         toast.error("Не удалось загрузить информацию о странице.");
       } finally {
         setIsLoading(false);
       }
     };
-    
     loadData();
   }, []);
 
@@ -231,16 +232,16 @@ const PartyPage: React.FC = () => {
           </FeaturesList>
         </motion.div>
 
-        {/* Отображаем изображения из content.imageUrls */}
-        {(content.imageUrls && content.imageUrls.length > 0) && (
+        {/* Отображаем изображения из galleryImages */}
+        {galleryImages.length > 0 && (
            <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={2}>
              <ImageGridContainer>
                <ImageGrid>
-                 {content.imageUrls.map((url, index) => (
+                 {galleryImages.map((img, index) => (
                    <motion.img 
-                     key={content.cloudinaryPublicIds?.[index] || url} // Используем publicId для ключа, если есть
-                     src={optimizeCloudinaryImage(url, 'w_400,h_300,c_fill,q_auto')} 
-                     alt={`${content.title || 'Детский праздник'} - Фото ${index + 1}`}
+                     key={img._id}
+                     src={optimizeCloudinaryImage(img.imageUrl, 'w_400,h_300,c_fill,q_auto')} 
+                     alt={`${content?.title || 'Детский праздник'} - Фото ${index + 1}`}
                      loading="lazy"
                      whileHover={{ scale: 1.03 }}
                      transition={{ duration: 0.2 }}

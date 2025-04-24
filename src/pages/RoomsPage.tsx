@@ -8,7 +8,9 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'swiper/css/autoplay';
 import { RoomType } from '../types/Room';
-import { roomsService } from '../utils/api'; 
+import { roomsService } from '../utils/api';
+import { galleryService } from '../utils/api';
+import { GalleryImageItem } from '../types/GalleryImage';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
@@ -276,6 +278,7 @@ const RoomFeatures = styled.div`
  */
 const RoomsPage: React.FC = () => {
   const [rooms, setRooms] = useState<RoomType[]>([]);
+  const [galleryImages, setGalleryImages] = useState<GalleryImageItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -288,6 +291,8 @@ const RoomsPage: React.FC = () => {
         const data = await roomsService.getAllRooms();
         const fetchedRooms = Array.isArray(data) ? data : [];
         setRooms(fetchedRooms);
+        const images = await galleryService.getAllImages('rooms');
+        setGalleryImages(Array.isArray(images) ? images : []);
       } catch (err: any) {
         const message = err.message || 'Не удалось загрузить информацию о номерах.';
         setError(message);
@@ -389,19 +394,20 @@ const RoomsPage: React.FC = () => {
                       navigation
                       pagination={{ clickable: true }}
                       autoplay={{ delay: 5000, disableOnInteraction: true }}
-                      loop={room.imageUrls.length > 1}
+                      loop={galleryImages.filter(img => img.roomId === room._id).length > 1}
                     >
-                      {room.imageUrls.map((url, imgIndex) => (
-                        <SwiperSlide key={imgIndex}>
-                          <img 
-                            src={optimizeCloudinaryImage(url, 'f_auto,q_auto,w_600,h_450,c_fill')}
-                            alt={`${room.title} - изображение ${imgIndex + 1}`}
-                            onError={handleImageError}
-                            loading="lazy"
-                          />
-                        </SwiperSlide>
-                      ))}
-                      {room.imageUrls.length === 0 && (
+                      {galleryImages.filter(img => img.roomId === room._id).length > 0 ? (
+                        galleryImages.filter(img => img.roomId === room._id).map((img, imgIndex) => (
+                          <SwiperSlide key={img._id}>
+                            <img 
+                              src={optimizeCloudinaryImage(img.imageUrl, 'f_auto,q_auto,w_600,h_450,c_fill')}
+                              alt={`${room.title} - изображение ${imgIndex + 1}`}
+                              onError={handleImageError}
+                              loading="lazy"
+                            />
+                          </SwiperSlide>
+                        ))
+                      ) : (
                         <SwiperSlide>
                           <img src="/placeholder-image.jpg" alt={`${room.title} - нет изображения`} />
                         </SwiperSlide>

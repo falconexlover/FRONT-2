@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
-import { pageService } from '../utils/api';
+import { pageService, galleryService } from '../utils/api';
 import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
 import { toast } from 'react-toastify';
 import { LoadingSpinner } from '../components/AdminPanel';
 import { useNavigate } from 'react-router-dom';
+import { GalleryImageItem } from '../types/GalleryImage';
 
 // --- ОПРЕДЕЛЕНИЯ СТИЛЕЙ --- 
 const PageWrapper = styled.div`
@@ -212,6 +213,7 @@ interface PageContentData {
 // --- Основной компонент страницы --- 
 const ConferencePage: React.FC = () => {
   const [content, setContent] = useState<PageContentData | null>(null);
+  const [galleryImages, setGalleryImages] = useState<GalleryImageItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -223,27 +225,23 @@ const ConferencePage: React.FC = () => {
       try {
         const pageData = await pageService.getPageContent(PAGE_ID);
         if (pageData && pageData.content && typeof pageData.content === 'object') {
-           // Добавляем проверку типов для полей
            const loadedContent: PageContentData = {
               description: typeof pageData.content.description === 'string' ? pageData.content.description : '',
               features: Array.isArray(pageData.content.features) ? pageData.content.features : [],
-              imageUrls: Array.isArray(pageData.content.imageUrls) ? pageData.content.imageUrls : [],
-              cloudinaryPublicIds: Array.isArray(pageData.content.cloudinaryPublicIds) ? pageData.content.cloudinaryPublicIds : [],
            };
            setContent(loadedContent);
         } else {
-          console.warn(`Контент для страницы '${PAGE_ID}' не найден или имеет неверный формат.`);
-          setContent({ description: 'Информация о конференц-зале скоро появится...', features: [], imageUrls: [] });
+          setContent({ description: 'Информация о конференц-зале скоро появится...', features: [] });
         }
+        const images = await galleryService.getAllImages('conference');
+        setGalleryImages(Array.isArray(images) ? images : []);
       } catch (err) {
-        console.error(`Ошибка загрузки данных страницы ${PAGE_ID}:`, err);
         setError("Не удалось загрузить информацию о конференц-зале.");
         toast.error("Не удалось загрузить информацию о конференц-зале.");
       } finally {
         setIsLoading(false);
       }
     };
-
     loadData();
   }, []);
 
@@ -304,16 +302,16 @@ const ConferencePage: React.FC = () => {
           </motion.div>
         </TwoColumnLayout>
 
-        {/* Отображаем изображения из content.imageUrls */}
-        {content.imageUrls && content.imageUrls.length > 0 && (
+        {/* Отображаем изображения из galleryImages */}
+        {galleryImages.length > 0 && (
             <motion.div initial="hidden" animate="visible" variants={sectionVariants} custom={2}>
               <ImageGridContainer>
                 <h3>Галерея</h3>
                  <ImageGrid>
-                  {content.imageUrls.map((url, index) => (
+                  {galleryImages.map((img, index) => (
                     <motion.img 
-                      key={content.cloudinaryPublicIds?.[index] || url}
-                      src={optimizeCloudinaryImage(url, 'w_400,h_300,c_fill,q_auto')}
+                      key={img._id}
+                      src={optimizeCloudinaryImage(img.imageUrl, 'w_400,h_300,c_fill,q_auto')}
                       alt={`Конференц-зал - Фото ${index + 1}`}
                       loading="lazy"
                       whileHover={{ scale: 1.03 }}

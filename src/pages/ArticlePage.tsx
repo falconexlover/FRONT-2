@@ -27,6 +27,7 @@ const ArticleTitle = styled.h1`
   margin: 0 0 1rem 0;
   font-size: 2.6rem;
   line-height: 1.3;
+  text-align: center;
 `;
 
 const ArticleMeta = styled.div`
@@ -58,6 +59,78 @@ const BackLink = styled(Link)`
 
 const LoadingPlaceholder = styled.div` /* Стили как в других компонентах */ `;
 const ErrorPlaceholder = styled.div` /* Стили как в других компонентах */ `;
+
+const ArticleContentWrapper = styled.div`
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 16px 0 rgba(60,80,80,0.07);
+  border: 1px solid var(--border-color-light);
+  padding: 2.2rem 2.2rem 2.5rem 2.2rem;
+  margin-bottom: 2.5rem;
+  margin-top: 0.5rem;
+  transition: box-shadow 0.18s;
+  @media (max-width: 600px) {
+    padding: 1.1rem 0.7rem 1.5rem 0.7rem;
+  }
+  & h2 {
+    font-size: 1.35rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5em;
+    margin-top: 1.5em;
+    font-family: 'Playfair Display', serif;
+  }
+  & p {
+    font-size: 1.13rem;
+    color: var(--text-primary);
+    margin-bottom: 1.2em;
+  }
+  & blockquote {
+    font-style: italic;
+    color: #6a7;
+    background: #f6fff6;
+    border-left: 4px solid #7b9;
+    padding: 0.7em 1em;
+    margin: 0 0 0.7em 0;
+    border-radius: 6px;
+    font-size: 1.08rem;
+  }
+  & .conclusion {
+    margin-top: 2em;
+    font-weight: 600;
+    font-size: 1.13rem;
+    color: var(--primary-color);
+    background: #f7f7f7;
+    border-radius: 8px;
+    padding: 1em 1.2em;
+    display: inline-block;
+  }
+`;
+
+const renderArticleContent = (blocks: any[] | undefined) => {
+  if (!blocks || !blocks.length) return <div style={{color:'#888',textAlign:'center',margin:'2rem 0'}}>Нет содержимого для отображения.</div>;
+  return (
+    <ArticleContentWrapper>
+      {blocks.map((block, idx) => {
+        if (block.type === 'intro') {
+          return <p key={idx}>{block.text}</p>;
+        }
+        if (block.type === 'section') {
+          return (
+            <section key={idx}>
+              {block.title && <h2>{block.title}</h2>}
+              {block.mythText && <blockquote>{block.mythText}</blockquote>}
+              {block.explanationText && <div style={{fontSize:'1.08rem',color:'var(--text-primary)'}}>{block.explanationText}</div>}
+            </section>
+          );
+        }
+        if (block.type === 'conclusion') {
+          return <div key={idx} className="conclusion">{block.text}</div>;
+        }
+        return null;
+      })}
+    </ArticleContentWrapper>
+  );
+};
 
 const ArticlePage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -121,12 +194,8 @@ const ArticlePage: React.FC = () => {
         )}
       </ArticleHeader>
       
-      {/* Временно убираем рендеринг контента, пока не реализован рендеринг блоков */}
-
       {/* TODO: Реализовать рендеринг блоков из article.contentBlocks */} 
-      <div style={{ padding: '2rem', border: '1px dashed grey', margin: '2rem 0', textAlign: 'center' }}>
-          Рендеринг контента статьи (блоков) еще не реализован.
-      </div>
+      {renderArticleContent(article.contentBlocks)}
       
       <BackLink to="/blog">← Назад к списку статей</BackLink>
 

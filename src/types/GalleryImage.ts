@@ -9,4 +9,5 @@ export interface GalleryImageItem {
   createdAt?: string; // Дата добавления (если нужна)
   updatedAt?: string;
   displayOrder?: number; // Поле для сортировки
+  roomId?: string; // Привязка к конкретному номеру (если категория rooms)
 } 

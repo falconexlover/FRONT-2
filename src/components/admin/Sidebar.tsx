@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
 import { TabItem } from '../ui/Tabs'; // Импортируем тип из Tabs для элементов меню
-// import { NavLink } from 'react-router-dom'; // Убираем неиспользуемый импорт
 
 interface SidebarProps {
   menuItems: TabItem[];

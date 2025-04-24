@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { pageService } from '../utils/api';
+import { pageService, galleryService } from '../utils/api';
 import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils';
 import { toast } from 'react-toastify';
 import { LoadingSpinner } from '../components/AdminPanel';
+import { GalleryImageItem } from '../types/GalleryImage';
 
 // Используем стили, похожие на GalleryPage, но адаптируем
 const PageContainer = styled.div`
@@ -291,20 +292,17 @@ interface SaunaPageContentData {
   workingHours: string;
   contactPhone: string;
   bookingButtonText: string;
-  imageUrls?: string[];
-  cloudinaryPublicIds?: string[];
 }
 
 const PAGE_ID = 'sauna';
 
 // --- Компонент страницы --- 
 const SaunaPage: React.FC = () => {
-  // Состояния для контента страницы
   const [content, setContent] = useState<SaunaPageContentData | null>(null);
+  const [galleryImages, setGalleryImages] = useState<GalleryImageItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Загрузка данных страницы
   useEffect(() => {
     const loadPageContent = async () => {
       setIsLoading(true);
@@ -312,24 +310,22 @@ const SaunaPage: React.FC = () => {
       try {
         const pageData = await pageService.getPageContent(PAGE_ID);
         if (pageData && pageData.content && typeof pageData.content === 'object') {
-          // Валидируем и устанавливаем контент
           setContent({
-            title: pageData.content.title || 'Наша Сауна', // Дефолтные значения
+            title: pageData.content.title || 'Наша Сауна',
             subtitle: pageData.content.subtitle || 'Идеальное место для отдыха...',
             description: pageData.content.description || '',
             features: Array.isArray(pageData.content.features) ? pageData.content.features : [],
             workingHours: pageData.content.workingHours || 'Ежедневно с 10:00 до 23:00',
             contactPhone: pageData.content.contactPhone || '+7 (XXX) XXX-XX-XX',
             bookingButtonText: pageData.content.bookingButtonText || 'Позвонить для бронирования',
-            imageUrls: Array.isArray(pageData.content.imageUrls) ? pageData.content.imageUrls : [],
-            cloudinaryPublicIds: Array.isArray(pageData.content.cloudinaryPublicIds) ? pageData.content.cloudinaryPublicIds : []
           });
         } else {
-          console.warn(`Контент для страницы '${PAGE_ID}' не найден.`);
           setError('Не удалось загрузить содержимое страницы.');
         }
+        // Загружаем фото из галереи
+        const images = await galleryService.getAllImages('sauna');
+        setGalleryImages(Array.isArray(images) ? images : []);
       } catch (err) {
-        console.error(`Ошибка загрузки страницы ${PAGE_ID}:`, err);
         setError("Не удалось загрузить информацию о сауне.");
         toast.error("Не удалось загрузить информацию о сауне.");
       } finally {
@@ -368,21 +364,21 @@ const SaunaPage: React.FC = () => {
         <p>{content.subtitle}</p>
       </PageHeader>
 
-      {/* Отображаем галерею из content.imageUrls */}
-      {content.imageUrls && content.imageUrls.length > 0 && (
+      {/* Отображаем галерею из galleryImages */}
+      {galleryImages.length > 0 && (
         <PhotoGrid layout>
-          {content.imageUrls.map((url, index) => (
+          {galleryImages.map((img, index) => (
             <PhotoItem
-              key={content.cloudinaryPublicIds?.[index] || url}
-              layoutId={content.cloudinaryPublicIds?.[index] || url}
+              key={img._id}
+              layoutId={img._id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               style={{ cursor: 'default' }}
             >
               <img 
-                src={optimizeCloudinaryImage(url, 'w_400,h_300,c_fill,q_auto')} 
-                alt={`${content.title} - Фото ${index + 1}`}
+                src={optimizeCloudinaryImage(img.imageUrl, 'w_400,h_300,c_fill,q_auto')} 
+                alt={`${content?.title || 'Сауна'} - Фото ${index + 1}`}
                 loading="lazy"
               />
             </PhotoItem>
