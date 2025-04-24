@@ -113,25 +113,12 @@ const NoRoomsMessage = styled.div`
   }
 `;
 
-// Контейнер для таблицы, СКРЫТЫЙ на малых экранах
-const TableWrapper = styled.div`
-  display: block;
-  @media (max-width: 992px) {
-    display: none;
-  }
-`;
-
-// Контейнер для карточек, ВИДИМЫЙ ТОЛЬКО на малых экранах
+// Контейнер для карточек, теперь всегда grid
 const CardsContainer = styled.div`
-  display: none; // Скрыт по умолчанию
+  display: grid;
   margin-top: 2rem;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
   gap: 1.5rem;
-
-  @media (max-width: 992px) {
-    display: grid; // Показываем как grid только на малых экранах
-  }
-
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
   }
@@ -441,61 +428,16 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
       {isLoading && <p style={{textAlign: 'center', padding: '2rem'}}>Загрузка...</p>}
 
       {!isLoading && !showForm && rooms.length > 0 && (
-        <>
-          {/* Таблица для больших экранов */}
-          <TableWrapper>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <TableContainer>
-                <StyledTable>
-                  <thead>
-                    <tr>
-                      <TableHeader style={{ width: '40px' }}></TableHeader>
-                      <TableHeader className="image-cell">Фото</TableHeader>
-                      <TableHeader>Название</TableHeader>
-                      <TableHeader>Цена</TableHeader>
-                      <TableHeader className="hide-mobile">Вмест.</TableHeader>
-                      <TableHeader className="hide-mobile">Особенности</TableHeader>
-                      <TableHeader>Доступен</TableHeader>
-                      <TableHeader className="actions">Действия</TableHeader>
-                    </tr>
-                  </thead>
-                  <SortableContext
-                    items={rooms.map(room => room._id!)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <tbody>
-                      {rooms.map(room => (
-                        <SortableRoomRow 
-                          key={room._id} 
-                          room={room} 
-                          onEdit={() => handleEditRoomClick(room)} 
-                          onDelete={() => handleDeleteRoomClick(room._id)} 
-                          disabled={isSaving}
-                        />
-                      ))}
-                    </tbody>
-                  </SortableContext>
-                </StyledTable>
-              </TableContainer>
-            </DndContext>
-          </TableWrapper>
-
-          {/* Контейнер с карточками, видимый только на малых экранах */}
-          <CardsContainer>
-            {rooms.map((room) => (
-              <RoomAdminCard 
-                key={room._id} 
-                room={room} 
-                onEdit={() => handleEditRoomClick(room)} 
-                onDelete={() => handleDeleteRoomClick(room._id)} 
-              />
-            ))}
-          </CardsContainer>
-        </>
+        <CardsContainer>
+          {rooms.map((room) => (
+            <RoomAdminCard 
+              key={room._id} 
+              room={room} 
+              onEdit={() => handleEditRoomClick(room)} 
+              onDelete={() => handleDeleteRoomClick(room._id)} 
+            />
+          ))}
+        </CardsContainer>
       )}
       
       {!isLoading && !showForm && rooms.length === 0 && (
