@@ -233,7 +233,9 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
   };
 
   const handleEditRoomClick = (room: RoomType) => {
-    setEditingRoom(room);
+    // Берём актуальные данные из массива rooms по _id
+    const freshRoom = rooms.find(r => r._id === room._id) || room;
+    setEditingRoom(freshRoom);
     setShowForm(true);
   };
 
@@ -279,25 +281,19 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
 
       // Добавляем новые файлы
       newFiles.forEach((file) => {
-        formData.append('images', file); // Ключ 'images' должен совпадать с ожидаемым на бэкенде (multer)
+        formData.append('imageFiles', file); // Ключ 'imageFiles' должен совпадать с ожидаемым на бэкенде (multer)
       });
 
-      // Добавляем ID удаляемых изображений (если они есть и имеют publicId)
-      const deletedPublicIds = imagesToDelete
-        .map(img => img.publicId)
-        .filter((id): id is string => id !== null); // Убираем null и сужаем тип
-        
-      if (deletedPublicIds.length > 0) {
-        // Отправляем как JSON-строку или по одному, зависит от бэкенда
-        // Вариант 1: JSON-строка
-        formData.append('deletedImagePublicIds', JSON.stringify(deletedPublicIds));
-        // Вариант 2: По одному (если бэк умеет собирать массив)
-        // deletedPublicIds.forEach(id => formData.append('deletedImagePublicIds', id));
+      // Добавляем удаляемые изображения (url + publicId)
+      if (imagesToDelete.length > 0) {
+        formData.append('imagesToDelete', JSON.stringify(imagesToDelete));
       }
 
       // Вызываем API
       if (isEditing && roomId) {
-        await roomsService.updateRoom(roomId, formData);
+        const updatedRoom = await roomsService.updateRoom(roomId, formData);
+        setRooms(prevRooms => prevRooms.map(r => r._id === updatedRoom._id ? updatedRoom : r));
+        setEditingRoom(updatedRoom);
         toast.success(`Номер "${roomData.title}" успешно обновлен!`);
       } else {
         await roomsService.createRoom(formData);
@@ -428,16 +424,16 @@ const RoomsAdminPanel: React.FC<RoomsAdminPanelProps> = ({ onLogout }) => {
       {isLoading && <p style={{textAlign: 'center', padding: '2rem'}}>Загрузка...</p>}
 
       {!isLoading && !showForm && rooms.length > 0 && (
-        <CardsContainer>
-          {rooms.map((room) => (
-            <RoomAdminCard 
-              key={room._id} 
-              room={room} 
-              onEdit={() => handleEditRoomClick(room)} 
-              onDelete={() => handleDeleteRoomClick(room._id)} 
-            />
-          ))}
-        </CardsContainer>
+          <CardsContainer>
+            {rooms.map((room) => (
+              <RoomAdminCard 
+                key={room._id} 
+                room={room} 
+                onEdit={() => handleEditRoomClick(room)} 
+                onDelete={() => handleDeleteRoomClick(room._id)} 
+              />
+            ))}
+          </CardsContainer>
       )}
       
       {!isLoading && !showForm && rooms.length === 0 && (

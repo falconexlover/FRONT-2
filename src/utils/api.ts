@@ -873,8 +873,8 @@ export const articleService = {
   },
 
   // Обновить статью по ID (админка)
-  // Принимаем Partial<Omit<ArticleType, '_id' | 'slug' | 'createdAt' | 'updatedAt'>> для обновления
-  async updateArticle(id: string, articleData: Partial<Omit<ArticleType, '_id' | 'slug' | 'createdAt' | 'updatedAt'>>): Promise<ArticleType> {
+  // Принимаем Partial<Omit<ArticleType, '_id' | 'createdAt' | 'updatedAt'>> для обновления
+  async updateArticle(id: string, articleData: Partial<Omit<ArticleType, '_id' | 'createdAt' | 'updatedAt'>>): Promise<ArticleType> {
     const token = authService.getToken();
     if (!token) {
       return Promise.reject(new Error('Требуется аутентификация'));

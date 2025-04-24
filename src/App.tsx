@@ -33,7 +33,12 @@ const LoadingFallback = () => <div style={{ textAlign: 'center', padding: '50px'
 
 const App: React.FC = () => {
   return (
-    <Router>
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <ScrollToTop />
       <GlobalStyle />
       <Header />

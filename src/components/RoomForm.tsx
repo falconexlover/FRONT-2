@@ -9,7 +9,7 @@ import { optimizeCloudinaryImage } from '../utils/cloudinaryUtils'; // Импо�
 // import { roomsService } from '../utils/api';
 // import { toast } from 'react-toastify';
 import ConfirmModal from './ui/ConfirmModal';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
 // Удаляем локальное определение интерфейса RoomType
 /*
@@ -355,40 +355,34 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
 
   // Новый useEffect для инициализации существующих изображений и сброса файлов при изменении initialData
   useEffect(() => {
+    // Основные фото номера
     if (initialData?.imageUrls && initialData?.cloudinaryPublicIds) {
-        // Совмещаем URL и Public ID 
-        // Предполагаем, что массивы имеют одинаковую длину и соответствуют друг другу
-        const images = initialData.imageUrls.map((url, index) => ({
-            url: url,
-            publicId: initialData.cloudinaryPublicIds?.[index] || null 
-        }));
-        setExistingImages(images);
-    } else {
-        // Сбрасываем, если initialData удален или не содержит изображений
-        setExistingImages([]);
-    }
-    // Сбрасываем новые файлы/превью/отметки об удалении при изменении initialData
-    setNewFiles([]);
-    setNewFilePreviews(prev => {
-        prev.forEach(URL.revokeObjectURL); // Освобождаем старые превью
-        return [];
-    });
-    setImagesMarkedForDeletion([]);
-
-    if (initialData?.bathroomImages && initialData?.bathroomCloudinaryPublicIds) {
-      const images = initialData.bathroomImages.map((url, index) => ({
+      const images = initialData.imageUrls.map((url, index) => ({
         url: url,
-        publicId: initialData.bathroomCloudinaryPublicIds?.[index] || null
+        publicId: initialData.cloudinaryPublicIds?.[index] || null
       }));
       setExistingImages(images);
     } else {
       setExistingImages([]);
     }
+    // Фото санузла
+    if (initialData?.bathroomImages && initialData?.bathroomCloudinaryPublicIds) {
+      const bathImages = initialData.bathroomImages.map((url, index) => ({
+        url: url,
+        publicId: initialData.bathroomCloudinaryPublicIds?.[index] || null
+      }));
+      setBathroomExistingImages(bathImages);
+    } else {
+      setBathroomExistingImages([]);
+    }
+    // Сброс новых файлов и превью
     setNewFiles([]);
     setNewFilePreviews(prev => { prev.forEach(URL.revokeObjectURL); return []; });
     setImagesMarkedForDeletion([]);
-
-  }, [initialData]); // Зависимость от initialData
+    setBathroomNewFiles([]);
+    setBathroomNewFilePreviews(prev => { prev.forEach(URL.revokeObjectURL); return []; });
+    // setBathroomImagesMarkedForDeletion([]); // если используется
+  }, [initialData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -563,9 +557,16 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
       isAvailable: formData.isAvailable,
       bathroomImages: formData.bathroomImages,
       bathroomCloudinaryPublicIds: formData.bathroomCloudinaryPublicIds,
-    };
+      // --- КЛЮЧЕВОЕ: imageUrls теперь только не удалённые + новые ---
+      imageUrls: [
+        ...((initialData?.imageUrls || []).filter(
+          url => !imagesMarkedForDeletion.some(img => img.url === url)
+        )),
+        ...publicNewPreviews // если publicNewPreviews содержит url новых фото, иначе используйте массив новых файлов после загрузки
+      ],
+    } as any;
     try {
-      await onSave(dataToSend, newFiles, imagesMarkedForDeletion); 
+      await onSave(dataToSend, [...newFiles, ...publicNewFiles], imagesMarkedForDeletion); 
       // Успех обработается в RoomsAdminPanel
     } catch (error) {
        console.error("Ошибка при вызове onSave:", error);
@@ -654,6 +655,52 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
     }
   };
 
+  // --- ДОБАВЛЯЕМ СОСТОЯНИЕ ДЛЯ ПУБЛИЧНЫХ ФОТО ---
+  const [publicNewFiles, setPublicNewFiles] = useState<File[]>([]);
+  const [publicNewPreviews, setPublicNewPreviews] = useState<string[]>([]);
+  // Больше не храним локальный массив publicImages, всегда используем initialData?.imageUrls
+
+  // --- ОБРАБОТЧИКИ ДЛЯ ПУБЛИЧНЫХ ФОТО ---
+  const handleRemovePublicImage = (url: string) => {
+    console.log('Удаляю фото:', url);
+    // Если фото уже есть в initialData (то есть оно уже на сервере)
+    const idx = initialData?.imageUrls?.indexOf(url);
+    if (idx !== undefined && idx !== -1 && initialData?.cloudinaryPublicIds) {
+      const publicId = initialData.cloudinaryPublicIds[idx];
+      setImagesMarkedForDeletion(prev => {
+        const updated = [...prev, { url, publicId }];
+        console.log('imagesMarkedForDeletion:', updated);
+        return updated;
+      });
+    } else {
+      setImagesMarkedForDeletion(prev => {
+        const updated = [...prev, { url, publicId: null }];
+        console.log('imagesMarkedForDeletion:', updated);
+        return updated;
+      });
+    }
+    // Не меняем локальный массив, просто скрываем фото в UI через фильтрацию при рендере
+    if (initialData?.imageUrls) {
+      initialData.imageUrls.forEach(u => {
+        console.log('Сравниваю:', u, '===', url, u === url);
+      });
+    }
+  };
+  const handleAddPublicFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files);
+      setPublicNewFiles(prev => [...prev, ...filesArray]);
+      const previews = filesArray.map(file => URL.createObjectURL(file));
+      setPublicNewPreviews(prev => [...prev, ...previews]);
+    }
+    if (e.target) e.target.value = '';
+  };
+  const handleRemoveNewPublicFile = (idx: number) => {
+    if (publicNewPreviews[idx]) URL.revokeObjectURL(publicNewPreviews[idx]);
+    setPublicNewFiles(prev => prev.filter((_, i) => i !== idx));
+    setPublicNewPreviews(prev => prev.filter((_, i) => i !== idx));
+  };
+
   return (
     <FormWrapper>
       <FormTitle>{initialData ? 'Редактировать номер' : 'Добавить новый номер'}</FormTitle>
@@ -674,108 +721,33 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
         
         {/* --- Секция Изображений --- */}
         <ImageSection>
-          <Label>Изображения номера</Label>
-          {/* Поле для загрузки новых файлов */}
+          <Label>Фото, которые видны на сайте</Label>
+          <ImageGrid>
+            {initialData?.imageUrls && initialData.imageUrls
+              .filter(url => !imagesMarkedForDeletion.some(img => img.url === url))
+              .map((url, idx) => (
+                <ImagePreviewContainer key={url}>
+                  <img src={optimizeCloudinaryImage(url, 'w_200,h_150,c_fill,q_auto')} alt={`Фото ${idx + 1}`} />
+                  <button type="button" className="delete-btn" title="Удалить это фото" onClick={() => handleRemovePublicImage(url)}>&times;</button>
+                </ImagePreviewContainer>
+              ))}
+            {publicNewPreviews.map((preview, idx) => (
+              <ImagePreviewContainer key={preview}>
+                <img src={preview} alt={`Новое фото ${idx + 1}`} />
+                <button type="button" className="delete-btn" title="Убрать это фото" onClick={() => handleRemoveNewPublicFile(idx)}>&times;</button>
+              </ImagePreviewContainer>
+            ))}
+          </ImageGrid>
           <FormGroup>
-             <Label htmlFor="roomImages">Добавить изображения</Label>
-             {/* --- Добавляем ref к input --- */}
-             <FileInput
-                ref={fileInputRef} // <-- Добавлен ref
-                type="file"
-                id="roomImages"
-                multiple
-                accept="image/*"
-                onChange={handleFileChange}
-             />
-          </FormGroup>
-
-          {/* Сетка для превью */}
-          <DragDropContext onDragEnd={onMainImageDragEnd}>
-            <Droppable droppableId="main-images" direction="horizontal">
-              {(provided) => (
-                <ImageGrid ref={provided.innerRef} {...provided.droppableProps}>
-                  {existingImages.map((image, idx) => (
-                    <Draggable key={image.publicId || image.url} draggableId={image.publicId || image.url} index={idx}>
-                      {(dragProvided) => (
-                        <ImagePreviewContainer ref={dragProvided.innerRef} {...dragProvided.draggableProps} {...dragProvided.dragHandleProps}>
-                          <img src={optimizeCloudinaryImage(image.url, 'w_200,h_150,c_fill,q_auto')} alt="Превью номера" />
-                          <button type="button" className="delete-btn" title="Удалить это изображение" onClick={() => handleDeleteExistingImageClick(image.url, image.publicId)}>&times;</button>
-                        </ImagePreviewContainer>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </ImageGrid>
-              )}
-            </Droppable>
-            <Droppable droppableId="main-new" direction="horizontal">
-              {(provided) => (
-                <ImageGrid ref={provided.innerRef} {...provided.droppableProps}>
-                  {newFiles.map((file, idx) => (
-                    <Draggable key={idx + '-new'} draggableId={idx + '-new'} index={idx}>
-                      {(dragProvided) => (
-                        <ImagePreviewContainer ref={dragProvided.innerRef} {...dragProvided.draggableProps} {...dragProvided.dragHandleProps}>
-                          {newFilePreviews[idx] && (<img src={newFilePreviews[idx]} alt={`Превью ${file.name}`} />)}
-                          <button type="button" className="delete-btn" title="Убрать этот файл" onClick={() => handleRemoveNewFileClick(idx)}>&times;</button>
-                        </ImagePreviewContainer>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </ImageGrid>
-              )}
-            </Droppable>
-          </DragDropContext>
-        </ImageSection>
-
-        <ImageSection>
-          <Label>Фото санузла</Label>
-          <FormGroup>
-            <Label htmlFor="bathroomImages">Добавить фото санузла</Label>
+            <Label htmlFor="publicImagesInput">Добавить фото</Label>
             <FileInput
               type="file"
-              id="bathroomImages"
+              id="publicImagesInput"
               multiple
               accept="image/*"
-              onChange={handleBathroomFileChange}
+              onChange={handleAddPublicFiles}
             />
           </FormGroup>
-          <DragDropContext onDragEnd={onBathroomImageDragEnd}>
-            <Droppable droppableId="bathroom-images" direction="horizontal">
-              {(provided) => (
-                <ImageGrid ref={provided.innerRef} {...provided.droppableProps}>
-                  {bathroomExistingImages.map((image, idx) => (
-                    <Draggable key={image.publicId || image.url} draggableId={image.publicId || image.url} index={idx}>
-                      {(dragProvided) => (
-                        <ImagePreviewContainer ref={dragProvided.innerRef} {...dragProvided.draggableProps} {...dragProvided.dragHandleProps}>
-                          <img src={optimizeCloudinaryImage(image.url, 'w_200,h_150,c_fill,q_auto')} alt="Санузел" />
-                          <button type="button" className="delete-btn" title="Удалить это фото санузла" onClick={() => handleDeleteExistingBathroomImageClick(image.url, image.publicId)}>&times;</button>
-                        </ImagePreviewContainer>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </ImageGrid>
-              )}
-            </Droppable>
-            <Droppable droppableId="bathroom-new" direction="horizontal">
-              {(provided) => (
-                <ImageGrid ref={provided.innerRef} {...provided.droppableProps}>
-                  {bathroomNewFiles.map((file, idx) => (
-                    <Draggable key={idx + '-bath-new'} draggableId={idx + '-bath-new'} index={idx}>
-                      {(dragProvided) => (
-                        <ImagePreviewContainer ref={dragProvided.innerRef} {...dragProvided.draggableProps} {...dragProvided.dragHandleProps}>
-                          {bathroomNewFilePreviews[idx] && (<img src={bathroomNewFilePreviews[idx]} alt={`Санузел ${file.name}`} />)}
-                          <button type="button" className="delete-btn" title="Убрать это фото санузла" onClick={() => handleRemoveNewBathroomFileClick(idx)}>&times;</button>
-                        </ImagePreviewContainer>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </ImageGrid>
-              )}
-            </Droppable>
-          </DragDropContext>
         </ImageSection>
 
         <Grid>

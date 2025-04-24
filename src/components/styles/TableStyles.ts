@@ -90,12 +90,12 @@ export const StyledTableCell = styled.td`
 export const TableHeader = styled.th`
   padding: 0.3rem 0.5rem;
   text-align: left;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color); 
   color: black;
   white-space: normal;
   font-size: 0.85rem;
   font-weight: 500;
-  text-transform: uppercase;
+  text-transform: uppercase; 
   letter-spacing: 0.5px;
 
   // Скрываем колонки на мобильных
@@ -117,15 +117,15 @@ export const ActionButtonsContainer = styled.div`
     /* justify-content: flex-end; */ 
 `;
 
-export const IconButton = styled.button`
+export const IconButton = styled.button` 
     padding: 0.3rem;
     min-width: auto;
     line-height: 1;
     font-size: 0.95rem;
     background: none;
     border: none;
-    color: var(--text-secondary);
-    border-radius: 50%;
+    color: var(--text-secondary); 
+    border-radius: 50%; 
     width: 26px;
     height: 26px;
     display: flex;

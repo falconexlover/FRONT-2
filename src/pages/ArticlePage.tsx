@@ -193,7 +193,7 @@ const ArticlePage: React.FC = () => {
           />
         )}
       </ArticleHeader>
-      
+
       {/* TODO: Реализовать рендеринг блоков из article.contentBlocks */} 
       {renderArticleContent(article.contentBlocks)}
       

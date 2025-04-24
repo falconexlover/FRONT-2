@@ -139,10 +139,15 @@ const ArticleForm: React.FC<ArticleFormProps> = ({ initialData, onSave, onCancel
 
   useEffect(() => {
     if (initialData) {
+      const title = initialData.title || '';
+      let slug = initialData.slug || '';
+      if (title && !slug) {
+        slug = generateSlug(title);
+      }
       setFormData({
         _id: initialData._id,
-        title: initialData.title || '',
-        slug: initialData.slug || '',
+        title,
+        slug,
         imageUrl: initialData.imageUrl,
         imagePublicId: initialData.imagePublicId,
       });
@@ -157,6 +162,15 @@ const ArticleForm: React.FC<ArticleFormProps> = ({ initialData, onSave, onCancel
       setIntroText('');
     }
   }, [initialData]);
+
+  useEffect(() => {
+    if (formData.title && !formData.slug) {
+      setFormData(prev => ({
+        ...prev,
+        slug: generateSlug(formData.title || "")
+      }));
+    }
+  }, [formData.title]);
 
   // Функция для генерации slug
   const generateSlug = (title: string): string => {
@@ -187,6 +201,10 @@ const ArticleForm: React.FC<ArticleFormProps> = ({ initialData, onSave, onCancel
     if (!formData.title) {
         toast.error("Заголовок статьи обязателен.");
         return;
+    }
+    // Гарантируем, что slug всегда есть
+    if ((!formData.slug || formData.slug === "") && formData.title) {
+        formData.slug = generateSlug(formData.title);
     }
     if (!formData.slug) {
         toast.error("Не удалось сгенерировать URL (slug) для статьи.");

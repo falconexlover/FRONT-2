@@ -378,6 +378,8 @@ const RoomsPage: React.FC = () => {
           <RoomsList>
             {rooms.map((room, index) => {
               const featuresArray = parseFeatures(room.features);
+              const galleryForRoom = galleryImages.filter(img => img.roomId === room._id);
+              const fallbackImages = room.imageUrls || [];
               return (
                 <RoomCard 
                   key={room._id}
@@ -394,10 +396,12 @@ const RoomsPage: React.FC = () => {
                       navigation
                       pagination={{ clickable: true }}
                       autoplay={{ delay: 5000, disableOnInteraction: true }}
-                      loop={galleryImages.filter(img => img.roomId === room._id).length > 1}
+                      loop={
+                        galleryForRoom.length > 1 || (galleryForRoom.length === 0 && fallbackImages.length > 1)
+                      }
                     >
-                      {galleryImages.filter(img => img.roomId === room._id).length > 0 ? (
-                        galleryImages.filter(img => img.roomId === room._id).map((img, imgIndex) => (
+                      {galleryForRoom.length > 0 ? (
+                        galleryForRoom.map((img, imgIndex) => (
                           <SwiperSlide key={img._id}>
                             <img 
                               src={optimizeCloudinaryImage(img.imageUrl, 'f_auto,q_auto,w_600,h_450,c_fill')}
@@ -407,9 +411,20 @@ const RoomsPage: React.FC = () => {
                             />
                           </SwiperSlide>
                         ))
+                      ) : fallbackImages.length > 0 ? (
+                        fallbackImages.map((url, idx) => (
+                          <SwiperSlide key={url}>
+                            <img
+                              src={optimizeCloudinaryImage(url, 'f_auto,q_auto,w_600,h_450,c_fill')}
+                              alt={`${room.title} - изображение ${idx + 1}`}
+                              onError={handleImageError}
+                              loading="lazy"
+                            />
+                          </SwiperSlide>
+                        ))
                       ) : (
                         <SwiperSlide>
-                          <img src="/placeholder-image.jpg" alt={`${room.title} - нет изображения`} />
+                          <img src="/placeholder-image.jpg" alt="Нет изображения" />
                         </SwiperSlide>
                       )}
                     </Swiper>
