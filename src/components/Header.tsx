@@ -367,7 +367,7 @@ const MobileMenuButton = styled.button<{ $isOpen: boolean }>`
   @media screen and (max-width: 768px) {
     display: block;
     position: fixed;
-    bottom: calc(var(--space-xxxl) + env(safe-area-inset-bottom));
+    bottom: 110px;
     right: calc(var(--space-md) + env(safe-area-inset-right));
   }
 `;

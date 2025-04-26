@@ -13,6 +13,7 @@ export interface RoomType {
   capacity: number;
   features: string[];
   description?: string; // Описание номера
+  fullDescription?: string; // Подробное описание номера
   isAvailable?: boolean; // Доступность номера
   displayOrder?: number; // Добавляем поле для порядка
   createdAt?: string; // Дата создания (опционально)

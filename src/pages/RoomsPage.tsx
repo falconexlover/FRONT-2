@@ -91,48 +91,48 @@ const RoomsList = styled.div`
 
 // Основная карточка
 const RoomCard = styled(motion.div)`
-  display: grid;
-  grid-template-columns: 1fr 2fr; // Оставляем грид для фото и контента
+  display: flex;
   background-color: white;
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-md);
   border: 1px solid var(--border-color-light, #e0e0e0);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  
   &:hover {
-      transform: translateY(-5px);
-      box-shadow: var(--shadow-lg);
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
   }
-  
   @media (max-width: 992px) {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 `;
 
 // Слайдер
 const SliderWrapper = styled.div`
-  position: relative;
-  overflow: hidden;
-  height: 100%; 
-  
-  .swiper,
-  .swiper-slide {
+  width: 340px;
+  min-width: 240px;
+  aspect-ratio: 4 / 3;
+  background: #f8f9fa;
+  flex-shrink: 0;
+  .swiper, .swiper-slide {
+    width: 100%;
     height: 100%;
+    aspect-ratio: 4 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  
   .swiper-slide img {
-    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    aspect-ratio: 4 / 3;
     transition: transform 0.4s ease;
+    border-radius: 0;
   }
-  
   &:hover .swiper-slide img {
-    transform: scale(1.05); 
+    transform: scale(1.05);
   }
-  
   .swiper-pagination-bullet {
     background-color: white;
     opacity: 0.7;
@@ -281,6 +281,8 @@ const RoomsPage: React.FC = () => {
   const [galleryImages, setGalleryImages] = useState<GalleryImageItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedRoomId, setExpandedRoomId] = useState<string | null>(null);
+  const [sliderIndex, setSliderIndex] = useState<number>(0);
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -357,12 +359,29 @@ const RoomsPage: React.FC = () => {
     });
   };
 
+  const handleExpand = (roomId: string) => {
+    setExpandedRoomId(roomId);
+    setSliderIndex(0);
+  };
+
+  const handleCollapse = () => {
+    setExpandedRoomId(null);
+  };
+
+  const handlePrevImage = (images: string[]) => {
+    setSliderIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const handleNextImage = (images: string[]) => {
+    setSliderIndex((prev) => (prev + 1) % images.length);
+  };
+
   return (
     <RoomsSection id="rooms">
       <RoomsContainer>
         <motion.div initial="hidden" animate="visible" variants={titleVariants}>
           <SectionTitle>
-            <h1>Наши Номера</h1>
+            <h1>Номера</h1>
             <p>Выберите идеальный вариант для вашего комфортного отдыха</p>
           </SectionTitle>
         </motion.div>
@@ -380,6 +399,7 @@ const RoomsPage: React.FC = () => {
               const featuresArray = parseFeatures(room.features);
               const galleryForRoom = galleryImages.filter(img => img.roomId === room._id);
               const fallbackImages = room.imageUrls || [];
+              const isExpanded = expandedRoomId === room._id;
               return (
                 <RoomCard 
                   key={room._id}
@@ -388,69 +408,142 @@ const RoomsPage: React.FC = () => {
                   animate="visible"
                   custom={index}
                 >
-                  <SliderWrapper>
-                    <Swiper
-                      modules={[Navigation, Pagination, Autoplay, A11y]}
-                      spaceBetween={0}
-                      slidesPerView={1}
-                      navigation
-                      pagination={{ clickable: true }}
-                      autoplay={{ delay: 5000, disableOnInteraction: true }}
-                      loop={
-                        galleryForRoom.length > 1 || (galleryForRoom.length === 0 && fallbackImages.length > 1)
-                      }
-                    >
-                      {galleryForRoom.length > 0 ? (
-                        galleryForRoom.map((img, imgIndex) => (
-                          <SwiperSlide key={img._id}>
-                            <img 
-                              src={optimizeCloudinaryImage(img.imageUrl, 'f_auto,q_auto,w_600,h_450,c_fill')}
-                              alt={`${room.title} - изображение ${imgIndex + 1}`}
-                              onError={handleImageError}
-                              loading="lazy"
-                            />
-                          </SwiperSlide>
-                        ))
-                      ) : fallbackImages.length > 0 ? (
-                        fallbackImages.map((url, idx) => (
-                          <SwiperSlide key={url}>
-                            <img
-                              src={optimizeCloudinaryImage(url, 'f_auto,q_auto,w_600,h_450,c_fill')}
-                              alt={`${room.title} - изображение ${idx + 1}`}
-                              onError={handleImageError}
-                              loading="lazy"
-                            />
-                          </SwiperSlide>
-                        ))
-                      ) : (
-                        <SwiperSlide>
-                          <img src="/placeholder-image.jpg" alt="Нет изображения" />
-                        </SwiperSlide>
-                      )}
-                    </Swiper>
-                  </SliderWrapper>
-                  <RoomContent>
-                    <RoomTitle>{room.title}</RoomTitle>
-                    {room.description && (
-                      <div style={{ color: 'var(--text-secondary)', margin: '0.5rem 0 1rem 0', fontSize: '1.05rem', whiteSpace: 'pre-line' }}>
-                        {room.description}
-                      </div>
-                    )}
-                    {featuresArray.length > 0 && (
-                      <RoomFeatures>
-                        <span><i className="fas fa-users"></i> {room.capacity} {room.capacity > 1 ? 'гостя' : 'гость'}</span>
-                        {featuresArray.map((feature, fIndex) => (
-                          <span key={fIndex}>{feature}</span>
-                        ))}
-                      </RoomFeatures>
-                    )}
-                    <RoomActions>
-                      <RoomPrice>{room.pricePerNight} ₽ <small>за ночь</small></RoomPrice>
-                      <BookingButtonAsButton type="button" onClick={() => handleBookClick(room)}>
-                        Забронировать
-                      </BookingButtonAsButton>
-                    </RoomActions>
-                  </RoomContent>
+                  {!isExpanded ? (
+                    <>
+                      <SliderWrapper>
+                        <Swiper
+                          modules={[Navigation, Pagination, Autoplay, A11y]}
+                          spaceBetween={0}
+                          slidesPerView={1}
+                          navigation
+                          pagination={{ clickable: true }}
+                          autoplay={{ delay: 5000, disableOnInteraction: true }}
+                          loop={galleryForRoom.length > 1 || (galleryForRoom.length === 0 && fallbackImages.length > 1)}
+                        >
+                          {galleryForRoom.length > 0 ? (
+                            galleryForRoom.map((img, imgIndex) => (
+                              <SwiperSlide key={img._id}>
+                                <img 
+                                  src={optimizeCloudinaryImage(img.imageUrl, 'f_auto,q_auto,w_600,h_450,c_fill')}
+                                  alt={`${room.title} - изображение ${imgIndex + 1}`}
+                                  onError={handleImageError}
+                                  loading="lazy"
+                                />
+                              </SwiperSlide>
+                            ))
+                          ) : fallbackImages.length > 0 ? (
+                            fallbackImages.map((url, idx) => (
+                              <SwiperSlide key={url}>
+                                <img
+                                  src={optimizeCloudinaryImage(url, 'f_auto,q_auto,w_600,h_450,c_fill')}
+                                  alt={`${room.title} - изображение ${idx + 1}`}
+                                  onError={handleImageError}
+                                  loading="lazy"
+                                />
+                              </SwiperSlide>
+                            ))
+                          ) : (
+                            <SwiperSlide>
+                              <img src="/placeholder-image.jpg" alt="Нет изображения" />
+                            </SwiperSlide>
+                          )}
+                        </Swiper>
+                      </SliderWrapper>
+                      <RoomContent>
+                        <RoomTitle>{room.title}</RoomTitle>
+                        {room.description && (
+                          <div style={{ color: 'var(--text-secondary)', margin: '0.5rem 0 1rem 0', fontSize: '1.05rem', whiteSpace: 'pre-line', maxHeight: 60, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {room.description}
+                          </div>
+                        )}
+                        {featuresArray.length > 0 && (
+                          <RoomFeatures>
+                            <span><i className="fas fa-users"></i> {room.capacity} {room.capacity > 1 ? 'гостя' : 'гость'}</span>
+                            {featuresArray.map((feature, fIndex) => (
+                              <span key={fIndex}>{feature}</span>
+                            ))}
+                          </RoomFeatures>
+                        )}
+                        <RoomActions>
+                          <RoomPrice>{room.pricePerNight} ₽ <small>за ночь</small></RoomPrice>
+                          <div style={{ display: 'flex', gap: 12 }}>
+                            <button type="button" onClick={() => handleExpand(room._id)} style={{ border: '1px solid var(--primary-color)', background: 'transparent', color: 'var(--primary-color)', borderRadius: 6, padding: '8px 18px', fontWeight: 600, cursor: 'pointer' }}>Подробнее</button>
+                            <button type="button" onClick={() => handleBookClick(room)} style={{ background: 'var(--primary-color)', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, cursor: 'pointer' }}>Забронировать</button>
+                          </div>
+                        </RoomActions>
+                      </RoomContent>
+                    </>
+                  ) : (
+                    <>
+                      <SliderWrapper>
+                        <Swiper
+                          modules={[Navigation, Pagination, Autoplay, A11y]}
+                          spaceBetween={0}
+                          slidesPerView={1}
+                          navigation
+                          pagination={{ clickable: true }}
+                          autoplay={{ delay: 5000, disableOnInteraction: true }}
+                          loop={galleryForRoom.length > 1 || (galleryForRoom.length === 0 && fallbackImages.length > 1)}
+                        >
+                          {galleryForRoom.length > 0 ? (
+                            galleryForRoom.map((img, imgIndex) => (
+                              <SwiperSlide key={img._id}>
+                                <img 
+                                  src={optimizeCloudinaryImage(img.imageUrl, 'f_auto,q_auto,w_600,h_450,c_fill')}
+                                  alt={`${room.title} - изображение ${imgIndex + 1}`}
+                                  onError={handleImageError}
+                                  loading="lazy"
+                                />
+                              </SwiperSlide>
+                            ))
+                          ) : fallbackImages.length > 0 ? (
+                            fallbackImages.map((url, idx) => (
+                              <SwiperSlide key={url}>
+                                <img
+                                  src={optimizeCloudinaryImage(url, 'f_auto,q_auto,w_600,h_450,c_fill')}
+                                  alt={`${room.title} - изображение ${idx + 1}`}
+                                  onError={handleImageError}
+                                  loading="lazy"
+                                />
+                              </SwiperSlide>
+                            ))
+                          ) : (
+                            <SwiperSlide>
+                              <img src="/placeholder-image.jpg" alt="Нет изображения" />
+                            </SwiperSlide>
+                          )}
+                        </Swiper>
+                      </SliderWrapper>
+                      <RoomContent>
+                        <RoomTitle>{room.title}</RoomTitle>
+                        {room.description && (
+                          <div style={{ color: 'var(--text-secondary)', margin: '0.5rem 0 1rem 0', fontSize: '1.05rem', whiteSpace: 'pre-line' }}>
+                            {room.description}
+                          </div>
+                        )}
+                        {room.fullDescription && (
+                          <div style={{ color: 'var(--text-secondary)', margin: '0 0 1.5rem 0', fontSize: '1.08rem', whiteSpace: 'pre-line', borderTop: '1px solid #eee', paddingTop: 12 }}>
+                            {room.fullDescription}
+                          </div>
+                        )}
+                        {featuresArray.length > 0 && (
+                          <RoomFeatures>
+                            <span><i className="fas fa-users"></i> {room.capacity} {room.capacity > 1 ? 'гостя' : 'гость'}</span>
+                            {featuresArray.map((feature, fIndex) => (
+                              <span key={fIndex}>{feature}</span>
+                            ))}
+                          </RoomFeatures>
+                        )}
+                        <RoomActions>
+                          <RoomPrice>{room.pricePerNight} ₽ <small>за ночь</small></RoomPrice>
+                          <div style={{ display: 'flex', gap: 12 }}>
+                            <button type="button" onClick={handleCollapse} style={{ border: '1px solid var(--primary-color)', background: 'transparent', color: 'var(--primary-color)', borderRadius: 6, padding: '8px 18px', fontWeight: 600, cursor: 'pointer' }}>Скрыть</button>
+                            <button type="button" onClick={() => handleBookClick(room)} style={{ background: 'var(--primary-color)', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, cursor: 'pointer' }}>Забронировать</button>
+                          </div>
+                        </RoomActions>
+                      </RoomContent>
+                    </>
+                  )}
                 </RoomCard>
               );
             })}

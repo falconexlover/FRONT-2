@@ -187,6 +187,8 @@ const DEFAULT_ROOM: Omit<RoomType, '_id'> = {
   isAvailable: true,
   bathroomImages: [],
   bathroomCloudinaryPublicIds: [],
+  description: '',
+  fullDescription: '',
 };
 
 // Типы для состояния формы
@@ -332,6 +334,8 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
       isAvailable: data.isAvailable !== undefined ? data.isAvailable : true,
       bathroomImages: data.bathroomImages || [],
       bathroomCloudinaryPublicIds: data.bathroomCloudinaryPublicIds || [],
+      description: data.description || '',
+      fullDescription: data.fullDescription || '',
     };
   });
   
@@ -557,6 +561,8 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
       isAvailable: formData.isAvailable,
       bathroomImages: formData.bathroomImages,
       bathroomCloudinaryPublicIds: formData.bathroomCloudinaryPublicIds,
+      description: formData.description,
+      fullDescription: formData.fullDescription,
       // --- КЛЮЧЕВОЕ: imageUrls теперь только не удалённые + новые ---
       imageUrls: [
         ...((initialData?.imageUrls || []).filter(
@@ -857,11 +863,23 @@ const RoomForm: React.FC<RoomFormProps> = ({ initialData, onSave, onCancel }) =>
           <TextArea
             id="description"
             name="description"
-            value={(formData as any).description || ''}
+            value={formData.description}
             onChange={handleChange}
             placeholder="Введите описание номера"
           />
           {errors.description && <ErrorText>{errors.description}</ErrorText>}
+        </FormGroup>
+
+        {/* Поле для подробного описания номера */}
+        <FormGroup>
+          <Label htmlFor="fullDescription">Подробное описание</Label>
+          <TextArea
+            id="fullDescription"
+            name="fullDescription"
+            value={formData.fullDescription || ''}
+            onChange={handleChange}
+            placeholder="Введите подробное описание номера"
+          />
         </FormGroup>
 
         {/* Сообщение об общей ошибке формы */}

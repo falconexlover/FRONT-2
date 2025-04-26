@@ -351,6 +351,8 @@ const Rooms: React.FC<RoomsProps> = ({
   const [rooms, setRooms] = useState<RoomType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedRoomId, setExpandedRoomId] = useState<string | null>(null);
+  const [sliderIndex, setSliderIndex] = useState<number>(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -387,6 +389,23 @@ const Rooms: React.FC<RoomsProps> = ({
     });
   };
 
+  const handleExpand = (roomId: string) => {
+    setExpandedRoomId(roomId);
+    setSliderIndex(0);
+  };
+
+  const handleCollapse = () => {
+    setExpandedRoomId(null);
+  };
+
+  const handlePrevImage = (images: string[]) => {
+    setSliderIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const handleNextImage = (images: string[]) => {
+    setSliderIndex((prev) => (prev + 1) % images.length);
+  };
+
   return (
     <RoomsSection>
       <SectionTitle>
@@ -400,6 +419,7 @@ const Rooms: React.FC<RoomsProps> = ({
       {!isLoading && !error && rooms.length > 0 && (
         <RoomsGrid>
           {rooms.map((room, index) => {
+            const isExpanded = expandedRoomId === room._id;
             return (
               <RoomCard
                 key={room._id}
@@ -407,23 +427,125 @@ const Rooms: React.FC<RoomsProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <RoomImage>
-                  <RoomPrice>{room.price}</RoomPrice>
-                  <img 
-                    src={optimizeCloudinaryImage(room.imageUrls[0], 'f_auto,q_auto,w_600')}
-                    alt={room.title}
-                    loading="lazy"
-                    onError={handleImageError}
-                  />
-                </RoomImage>
-                <RoomDetails>
-                  <h3>{room.title}</h3>
-                  <RoomButtons>
-                    <BookButtonAsButton type="button" onClick={() => handleBookClick(room)}>
-                      Забронировать
-                    </BookButtonAsButton>
-                  </RoomButtons>
-                </RoomDetails>
+                {!isExpanded ? (
+                  <>
+                    <RoomImage>
+                      <RoomPrice>{room.price}</RoomPrice>
+                      <img 
+                        src={optimizeCloudinaryImage(room.imageUrls[0], 'f_auto,q_auto,w_600')}
+                        alt={room.title}
+                        loading="lazy"
+                        onError={handleImageError}
+                      />
+                    </RoomImage>
+                    <RoomDetails>
+                      <h3>{room.title}</h3>
+                      <RoomButtons>
+                        <ExpandButton type="button" onClick={() => handleExpand(room._id)}>
+                          Подробнее
+                        </ExpandButton>
+                        <BookButtonAsButton type="button" onClick={() => handleBookClick(room)}>
+                          Забронировать
+                        </BookButtonAsButton>
+                      </RoomButtons>
+                    </RoomDetails>
+                  </>
+                ) : (
+                  <ExpandedCardLayout
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 30 }}
+                  >
+                    <ExpandedLeft>
+                      {room.imageUrls && room.imageUrls.length > 0 && (
+                        <div style={{ position: 'relative', width: '100%', maxWidth: 420 }}>
+                          <ExpandedMainImage
+                            src={optimizeCloudinaryImage(room.imageUrls[sliderIndex], 'f_auto,q_auto,w_600')}
+                            alt={room.title}
+                            onError={handleImageError}
+                          />
+                          {room.imageUrls.length > 1 && (
+                            <>
+                              <button
+                                style={{
+                                  position: 'absolute',
+                                  left: 0,
+                                  top: '50%',
+                                  transform: 'translateY(-50%)',
+                                  background: 'rgba(0,0,0,0.3)',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '50%',
+                                  width: 36,
+                                  height: 36,
+                                  cursor: 'pointer',
+                                  fontSize: 22
+                                }}
+                                onClick={() => handlePrevImage(room.imageUrls)}
+                                aria-label="Предыдущее фото"
+                              >&#8592;</button>
+                              <button
+                                style={{
+                                  position: 'absolute',
+                                  right: 0,
+                                  top: '50%',
+                                  transform: 'translateY(-50%)',
+                                  background: 'rgba(0,0,0,0.3)',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '50%',
+                                  width: 36,
+                                  height: 36,
+                                  cursor: 'pointer',
+                                  fontSize: 22
+                                }}
+                                onClick={() => handleNextImage(room.imageUrls)}
+                                aria-label="Следующее фото"
+                              >&#8594;</button>
+                            </>
+                          )}
+                          {room.imageUrls.length > 1 && (
+                            <div style={{ textAlign: 'center', marginTop: 8 }}>
+                              {room.imageUrls.map((_, idx) => (
+                                <span
+                                  key={idx}
+                                  style={{
+                                    display: 'inline-block',
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: '50%',
+                                    background: idx === sliderIndex ? '#2aa76e' : '#ccc',
+                                    margin: '0 3px'
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </ExpandedLeft>
+                    <ExpandedRight>
+                      <ExpandedTitle>{room.title}</ExpandedTitle>
+                      <ExpandedDescription>{room.description}</ExpandedDescription>
+                      <ExpandedFeatures>
+                        {room.features && room.features.length > 0 && room.features.map((f, i) => (
+                          <li key={i}>{f}</li>
+                        ))}
+                      </ExpandedFeatures>
+                      <div style={{ fontWeight: 600, fontSize: '1.2rem', marginBottom: 16 }}>
+                        {room.price} <span style={{ color: '#2aa76e', fontWeight: 400, fontSize: '1rem' }}>/ ночь</span>
+                      </div>
+                      <RoomButtons>
+                        <BookButtonAsButton type="button" onClick={() => handleBookClick(room)}>
+                          Забронировать
+                        </BookButtonAsButton>
+                        <ExpandButton type="button" onClick={handleCollapse}>
+                          Скрыть
+                        </ExpandButton>
+                      </RoomButtons>
+                    </ExpandedRight>
+                  </ExpandedCardLayout>
+                )}
               </RoomCard>
             );
           })}
