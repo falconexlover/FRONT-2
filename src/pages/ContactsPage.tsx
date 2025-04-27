@@ -246,6 +246,7 @@ const ContactsPage: React.FC = () => {
   
   const { address, phone } = content.contact;
   const coordinates = content.contact.coordinates?.length === 2 ? content.contact.coordinates : ZHUKOVSKY_COORDINATES; // Используем координаты из API или фоллбэк
+  const VK_LINK = content.contact.vk || "https://vk.com/lesnoy_dvorik";
 
   return (
     <PageContainer>
@@ -274,15 +275,13 @@ const ContactsPage: React.FC = () => {
               </div>
             </ContactItem>
           )}
-          {content.contact.vk && (
-            <ContactItem>
-              <i className="fab fa-vk"></i>
-              <div>
-                <strong>ВКонтакте:</strong>
-                <a href={content.contact.vk} target="_blank" rel="noopener noreferrer">{content.contact.vk}</a>
-              </div>
-            </ContactItem>
-          )}
+          <ContactItem>
+            <i className="fab fa-vk"></i>
+            <div>
+              <strong>ВКонтакте:</strong>
+              <a href={VK_LINK} target="_blank" rel="noopener noreferrer">{VK_LINK.replace('https://','').replace('vk.com/','vk.com/')}</a>
+            </div>
+          </ContactItem>
           {content.contact.openingHours && (
              <ContactItem>
               <i className="fas fa-clock"></i>
