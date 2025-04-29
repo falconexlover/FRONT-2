@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 // Удаляем homePageUtils
@@ -169,7 +169,7 @@ const Banner: React.FC<BannerProps> = ({ content }) => {
   const title = content?.title || 'Добро пожаловать!';
   const subtitle = content?.subtitle || 'Лучшее место для отдыха и оздоровления.';
   const buttonText = content?.buttonText || 'Забронировать';
-  const buttonLink = content?.buttonLink || '/rooms'; // Изменяем fallback на /rooms
+  // const buttonLink = content?.buttonLink || '/rooms'; // больше не нужен
 
   // Предполагаем, что backgroundImage будет частью content.banner или передаваться отдельно
   // const backgroundImage = content?.backgroundImage || '/default-banner.jpg';
@@ -178,6 +178,14 @@ const Banner: React.FC<BannerProps> = ({ content }) => {
 
   // Применяем оптимизацию к URL фона
   const optimizedBackgroundUrl = optimizeCloudinaryImage(backgroundUrl, 'f_auto,q_auto,w_1920'); // Задаем большую ширину для баннера
+
+  const handleBookClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const section = document.getElementById('rooms-section');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
 
   return (
     // Передаем оптимизированный URL в стилизованный компонент
@@ -191,7 +199,8 @@ const Banner: React.FC<BannerProps> = ({ content }) => {
         <BannerText>{subtitle}</BannerText>
         {/* Используем buttonLink для href */} 
         <BookButton 
-          href={buttonLink} 
+          href="#rooms-section"
+          onClick={handleBookClick}
           whileHover={{ y: -5 }}
           whileTap={{ scale: 0.95 }}
         >

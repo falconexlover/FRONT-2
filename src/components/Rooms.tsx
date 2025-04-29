@@ -122,13 +122,13 @@ const SectionTitle = styled.div`
 const RoomCard = styled(motion.div)`
   background-color: white;
   border-radius: var(--radius-md);
-  overflow: hidden;
+  overflow: visible;
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: auto;
   
   &:hover {
     transform: translateY(-15px);
@@ -264,25 +264,33 @@ const ViewAllButton = styled(Link)`
 
 const ExpandedCardLayout = styled(motion.div)`
   display: flex;
-  gap: 2rem;
+  flex-direction: column;
   background: #fff;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   margin-top: var(--space-md);
   padding: var(--space-xl);
   position: relative;
+  overflow: visible;
+  gap: var(--space-xl);
   @media (max-width: 900px) {
-    flex-direction: column;
     padding: var(--space-lg);
+    gap: var(--space-lg);
   }
 `;
 
-const ExpandedLeft = styled.div`
-  flex: 1 1 350px;
-  min-width: 280px;
+const ExpandedTop = styled.div`
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+`;
+
+const ExpandedBottom = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 `;
 
 const ExpandedMainImage = styled.img`
@@ -294,13 +302,6 @@ const ExpandedMainImage = styled.img`
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
   margin-bottom: var(--space-md);
-`;
-
-const ExpandedRight = styled.div`
-  flex: 2 1 400px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
 `;
 
 const ExpandedTitle = styled.h3`
@@ -456,7 +457,7 @@ const Rooms: React.FC<RoomsProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 30 }}
                   >
-                    <ExpandedLeft>
+                    <ExpandedTop>
                       {room.imageUrls && room.imageUrls.length > 0 && (
                         <div style={{ position: 'relative', width: '100%', maxWidth: 420 }}>
                           <ExpandedMainImage
@@ -523,8 +524,8 @@ const Rooms: React.FC<RoomsProps> = ({
                           )}
                         </div>
                       )}
-                    </ExpandedLeft>
-                    <ExpandedRight>
+                    </ExpandedTop>
+                    <ExpandedBottom>
                       <ExpandedTitle>{room.title}</ExpandedTitle>
                       <ExpandedDescription>{room.description}</ExpandedDescription>
                       <ExpandedFeatures>
@@ -543,7 +544,7 @@ const Rooms: React.FC<RoomsProps> = ({
                           Скрыть
                         </ExpandButton>
                       </RoomButtons>
-                    </ExpandedRight>
+                    </ExpandedBottom>
                   </ExpandedCardLayout>
                 )}
               </RoomCard>

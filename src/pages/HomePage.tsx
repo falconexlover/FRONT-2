@@ -114,7 +114,9 @@ const HomePage: React.FC = () => {
             <div id="about-section">
                 <About content={about} />
             </div>
-            <Rooms title={rooms?.title} subtitle={rooms?.subtitle} />
+            <div id="rooms-section">
+                <Rooms title={rooms?.title} subtitle={rooms?.subtitle} />
+            </div>
             <div id="services-section">
                 <Services title={services?.title} subtitle={services?.subtitle} />
             </div>
